@@ -2,6 +2,8 @@ import { db } from "@/lib/db";
 import { branches, services, settings } from "@/lib/db/schema";
 import { BookingForm } from "@/components/sections/BookingForm";
 
+export const revalidate = 0;
+
 export const metadata = {
   title: "Reservasi Layanan - Radja Bekam",
   description: "Pesan jadwal terapi bekam, refleksi, dan medical check up di cabang Radja Bekam terdekat secara online.",

@@ -1,33 +1,13 @@
 import Link from "next/link";
 import { Check, ShieldAlert } from "lucide-react";
+import { db } from "@/lib/db";
+import { services } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 
-export default function ServicesPage() {
-  const services = [
-    {
-      id: "bekam-sunnah",
-      name: "Bekam Sunnah",
-      price: "Rp 150.000",
-      duration: "45 Menit",
-      description: "Terapi pengeluaran darah kotor (toksin) dari dalam tubuh melalui permukaan kulit dengan sayatan tipis dan steril. Sangat baik untuk melancarkan peredaran darah, mengatasi darah tinggi, kolesterol, dan meredakan pegal-pegal.",
-      benefits: ["Melancarkan peredaran darah", "Membuang racun (detoks)", "Meringankan nyeri otot", "Meningkatkan sistem imun"]
-    },
-    {
-      id: "pijat-refleksi",
-      name: "Pijat Refleksi Seluruh Tubuh",
-      price: "Rp 120.000",
-      duration: "60 Menit",
-      description: "Terapi pijat yang berfokus pada titik-titik saraf pada telapak kaki dan tangan yang terhubung dengan organ-organ tubuh. Dikombinasikan dengan pijat badan untuk relaksasi maksimal.",
-      benefits: ["Mengurangi stres dan cemas", "Meningkatkan kualitas tidur", "Melemaskan otot kaku", "Memulihkan energi"]
-    },
-    {
-      id: "paket-bundling",
-      name: "Paket Sehat (Bekam + Refleksi)",
-      price: "Rp 250.000",
-      duration: "105 Menit",
-      description: "Kombinasi sempurna antara pijat refleksi untuk relaksasi otot dan bekam sunnah untuk detoksifikasi. Paket hemat untuk hasil terapi yang lebih maksimal dan menyeluruh.",
-      benefits: ["Relaksasi tubuh total", "Detoksifikasi optimal", "Harga lebih hemat", "Perawatan menyeluruh"]
-    }
-  ];
+export const revalidate = 0;
+
+export default async function ServicesPage() {
+  const activeServices = await db.select().from(services).where(eq(services.isActive, true));
 
   return (
     <div className="flex flex-col w-full pb-20">
@@ -45,13 +25,13 @@ export default function ServicesPage() {
       <section className="py-16 bg-background">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto space-y-12">
-            {services.map((service, index) => (
+            {activeServices.length > 0 ? activeServices.map((service, index) => (
               <div key={service.id} className="bg-background border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col md:flex-row">
                 <div className={`md:w-1/3 p-8 flex flex-col justify-center ${index % 2 === 0 ? 'bg-primary/5 border-r border-border' : 'bg-accent/10 border-r border-border md:order-last md:border-r-0 md:border-l'}`}>
                   <h3 className="text-2xl font-bold text-foreground mb-2">{service.name}</h3>
-                  <div className="text-3xl font-extrabold text-primary mb-2">{service.price}</div>
+                  <div className="text-3xl font-extrabold text-primary mb-2">Rp {service.price.toLocaleString('id-ID')}</div>
                   <div className="text-sm font-medium text-foreground/60 mb-6 bg-background/50 inline-block px-3 py-1 rounded-full w-max">
-                    Durasi: {service.duration}
+                    Durasi: {service.durationMinutes} Menit
                   </div>
                   <Link
                     href={`/booking?service=${service.id}`}
@@ -64,18 +44,18 @@ export default function ServicesPage() {
                   <p className="text-foreground/70 leading-relaxed mb-6">
                     {service.description}
                   </p>
-                  <h4 className="font-semibold text-foreground mb-3">Manfaat Utama:</h4>
-                  <ul className="grid sm:grid-cols-2 gap-3">
-                    {service.benefits.map((benefit, i) => (
-                      <li key={i} className="flex items-start gap-2 text-foreground/80">
-                        <Check className="h-5 w-5 text-green-500 shrink-0" />
-                        <span className="text-sm">{benefit}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <h4 className="font-semibold text-foreground mb-3">Kategori:</h4>
+                  <div className="flex items-start gap-2 text-foreground/80">
+                    <Check className="h-5 w-5 text-green-500 shrink-0" />
+                    <span className="text-sm font-medium">{service.category}</span>
+                  </div>
                 </div>
               </div>
-            ))}
+            )) : (
+              <div className="text-center py-12 text-slate-500 bg-white rounded-2xl border border-gray-100">
+                Belum ada layanan terapi yang aktif.
+              </div>
+            )}
           </div>
         </div>
       </section>

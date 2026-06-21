@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { settings } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
+export const dynamic = "force-dynamic";
+
 // GET: Fetch company settings
 export async function GET() {
   try {

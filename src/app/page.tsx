@@ -1,6 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, ShieldCheck, Stethoscope, Users, Star, ExternalLink, Quote, Activity, AlertCircle, ChevronDown } from "lucide-react";
+import fs from "fs";
+import path from "path";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { settings, services, branches } from "@/lib/db/schema";
@@ -12,9 +14,11 @@ export const revalidate = 0; // Disable static caching so it gets the latest set
 
 export default async function Home() {
   const settingsData = await db.select().from(settings).where(eq(settings.id, "company_info")).limit(1);
-  const activeServices = await db.select().from(services).where(eq(services.isActive, true)).limit(4);
+  const allServices = await db.select().from(services).where(eq(services.isActive, true));
   const activeBranches = await db.select().from(branches).where(eq(branches.isActive, true));
   
+  const featuredServices = allServices.slice(0, 4);
+
   const companyInfo = settingsData[0] || {
     heroBadgeText: "TERPERCAYA & PROFESIONAL",
     heroTitle: "Solusi Teman Sehatku",
@@ -73,7 +77,7 @@ export default async function Home() {
             {/* Action Bar (Search/Booking) */}
             <div className="pt-4 sm:pt-6 relative z-30">
               <div className="absolute -inset-4 bg-white/40 blur-xl rounded-[2rem] sm:rounded-[3rem] -z-10"></div>
-              <HeroBookingBar branches={activeBranches} services={activeServices} />
+              <HeroBookingBar branches={activeBranches} services={allServices} />
             </div>
 
           </div>
@@ -175,11 +179,14 @@ export default async function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
-            {activeServices.map((service, idx) => (
+            {featuredServices.map((service, idx) => {
+              const imagePath = `/images/services/${service.id}.png`;
+              const exists = fs.existsSync(path.join(process.cwd(), `public${imagePath}`));
+              return (
               <div key={service.id} className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all border border-border flex flex-col sm:flex-row">
                 <div className="sm:w-2/5 h-48 sm:h-auto relative overflow-hidden group">
                    <Image 
-                     src={`/images/services/${service.id}.png`}
+                     src={exists ? imagePath : '/images/hero-bekam.jpg'}
                      alt={service.name}
                      fill
                      className="object-cover group-hover:scale-105 transition-transform duration-700 ease-in-out"
@@ -204,7 +211,7 @@ export default async function Home() {
                   </Link>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         </div>
       </section>

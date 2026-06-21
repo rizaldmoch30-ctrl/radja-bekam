@@ -2,6 +2,8 @@ import { db } from "@/lib/db";
 import { branches } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/branches — List branches
 export async function GET(request: Request) {
   try {

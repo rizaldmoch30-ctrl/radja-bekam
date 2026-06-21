@@ -9,6 +9,8 @@ import { db } from "@/lib/db";
 import { settings, branches } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
+export const revalidate = 0;
+
 const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],

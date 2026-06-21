@@ -10,6 +10,7 @@ import { settings, branches } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 export const revalidate = 0;
+export const dynamic = 'force-dynamic';
 
 const poppins = Poppins({
   variable: "--font-poppins",

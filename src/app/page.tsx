@@ -11,6 +11,7 @@ import { InteractiveGejala } from "@/components/sections/InteractiveGejala";
 import { TestimonialCarousel } from "@/components/sections/TestimonialCarousel";
 
 export const revalidate = 0; // Disable static caching so it gets the latest settings if updated
+export const dynamic = 'force-dynamic';
 
 export default async function Home() {
   const settingsData = await db.select().from(settings).where(eq(settings.id, "company_info")).limit(1);

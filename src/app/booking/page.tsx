@@ -3,6 +3,7 @@ import { branches, services, settings } from "@/lib/db/schema";
 import { BookingForm } from "@/components/sections/BookingForm";
 
 export const revalidate = 0;
+export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: "Reservasi Layanan - Radja Bekam",

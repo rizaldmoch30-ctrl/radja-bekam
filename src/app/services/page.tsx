@@ -5,6 +5,7 @@ import { services } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 export const revalidate = 0;
+export const dynamic = 'force-dynamic';
 
 export default async function ServicesPage() {
   const activeServices = await db.select().from(services).where(eq(services.isActive, true));

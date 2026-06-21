@@ -113,9 +113,9 @@ export default function ReservationsClient({
                 <thead className="text-xs text-gray-500 uppercase bg-transparent">
                   <tr>
                     <th className="px-4 py-2 font-bold tracking-wider">Pelanggan</th>
-                    <th className="px-4 py-2 font-bold tracking-wider">Kontak</th>
+                    <th className="hidden sm:table-cell px-4 py-2 font-bold tracking-wider">Kontak</th>
                     <th className="px-4 py-2 font-bold tracking-wider">Layanan & Cabang</th>
-                    <th className="px-4 py-2 font-bold tracking-wider">Jadwal</th>
+                    <th className="hidden md:table-cell px-4 py-2 font-bold tracking-wider">Jadwal</th>
                     <th className="px-4 py-2 font-bold tracking-wider">Status</th>
                     <th className="px-4 py-2 font-bold tracking-wider text-right">Aksi</th>
                   </tr>
@@ -130,10 +130,19 @@ export default function ReservationsClient({
                           </div>
                           <div>
                             <p className="font-bold text-gray-900">{res.customerName}</p>
+                            {/* Kontak dipindah ke sini untuk mobile */}
+                            <div className="sm:hidden flex items-center gap-1 text-xs text-gray-500 mt-0.5">
+                              <Phone className="w-3 h-3" />
+                              <span>{res.customerPhone}</span>
+                            </div>
+                            <div className="md:hidden flex items-center gap-1 text-xs text-blue-600 mt-0.5 font-medium">
+                              <Clock className="w-3 h-3" />
+                              <span>{res.date} • {res.time}</span>
+                            </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="hidden sm:table-cell px-4 py-4">
                         <div className="flex items-center gap-2 text-gray-600">
                           <Phone className="w-4 h-4 text-gray-400" />
                           <span className="font-medium">{res.customerPhone}</span>
@@ -151,7 +160,7 @@ export default function ReservationsClient({
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="hidden md:table-cell px-4 py-4">
                         <div className="flex flex-col gap-1">
                           <p className="font-bold text-gray-800 bg-gray-100 inline-block px-2 py-0.5 rounded-md w-max">{res.date}</p>
                           <p className="text-xs font-semibold text-blue-600">{res.time} WIB</p>

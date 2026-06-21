@@ -181,17 +181,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row pb-16 md:pb-0">
+    <div className="min-h-screen bg-gradient-to-b from-sky-200 via-sky-50 to-slate-50 flex flex-col md:flex-row pb-28 md:pb-0">
       {/* Mobile Header */}
-      <div className="md:hidden bg-foreground text-background px-4 py-3 flex items-center justify-between sticky top-0 z-40 shadow-sm">
-        <h1 className="text-xl font-bold">
-          <span className="text-background">Radja</span>{" "}
-          <span className="text-accent">Bekam</span>{" "}
-          <span className="text-background/60 font-normal text-sm">Admin</span>
+      <div className="md:hidden bg-transparent text-gray-900 px-6 pt-6 pb-2 flex items-center justify-between sticky top-0 z-40">
+        <h1 className="text-xl font-extrabold tracking-tight">
+          <span className="text-blue-600">Radja</span>{" "}
+          <span className="text-gray-900">Bekam</span>{" "}
+          <span className="text-blue-500/80 font-medium text-sm">Admin</span>
         </h1>
         {session && (
-          <div className="text-xs text-background/80 font-bold bg-white/10 px-3 py-1 rounded-full flex items-center gap-1 border border-white/10 max-w-[120px] truncate">
-            <Store className="w-3.5 h-3.5 text-accent shrink-0" />
+          <div className="text-xs text-gray-700 font-bold bg-white/40 backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-1 border border-white/60 shadow-sm max-w-[120px] truncate">
+            <Store className="w-3.5 h-3.5 text-blue-500 shrink-0" />
             <span className="truncate">{session.role === "SUPER_ADMIN" ? "Pusat" : session.branchId}</span>
           </div>
         )}
@@ -458,7 +458,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <div className="md:hidden fixed bottom-6 left-4 right-4 bg-white/80 backdrop-blur-xl border border-white shadow-2xl rounded-2xl flex justify-between items-center z-40 p-2 pb-safe-offset-2">
+      <div className="md:hidden fixed bottom-6 left-6 right-6 bg-white/70 backdrop-blur-2xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.08)] rounded-full flex justify-between items-center z-40 p-2 pb-safe-offset-2">
         {bottomNavLinks.map((link) => {
           const isActive = pathname === link.href || (link.href !== "/admin" && pathname?.startsWith(link.href));
           const Icon = link.icon;
@@ -466,34 +466,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <Link 
               key={link.name} 
               href={link.href}
-              className={`flex flex-col items-center justify-center flex-1 py-2 transition-all duration-300 rounded-xl relative overflow-hidden group ${isActive ? "text-primary" : "text-gray-400 hover:text-gray-600"}`}
+              className={`flex flex-col items-center justify-center flex-1 py-1 transition-all duration-300 relative group ${isActive ? "text-blue-600" : "text-gray-400 hover:text-gray-600"}`}
             >
-              {isActive && (
-                <div className="absolute inset-0 bg-primary/10 rounded-xl -z-10 animate-in fade-in zoom-in duration-300"></div>
-              )}
-              <div className="relative">
-                <Icon className={`h-[22px] w-[22px] mb-1 transition-transform duration-300 ${isActive ? "scale-110" : "group-hover:scale-110"}`} />
+              <div className={`relative flex items-center justify-center w-10 h-10 transition-all duration-300 ${isActive ? "bg-blue-600 text-white rounded-full shadow-md" : "bg-transparent group-hover:scale-110"}`}>
+                <Icon className="h-[20px] w-[20px]" />
                 {link.hasBadge && pendingReservations > 0 && (
-                  <span className="absolute -top-0.5 -right-1 flex h-2.5 w-2.5">
+                  <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border border-white"></span>
                   </span>
                 )}
               </div>
-              <span className="text-[10px] font-bold tracking-tight">{link.name}</span>
             </Link>
           );
         })}
         
         <button 
           onClick={() => setIsMobileMenuOpen(true)}
-          className={`flex flex-col items-center justify-center flex-1 py-2 transition-all duration-300 rounded-xl relative overflow-hidden group ${isMobileMenuOpen ? "text-primary" : "text-gray-400 hover:text-gray-600"}`}
+          className={`flex flex-col items-center justify-center flex-1 py-1 transition-all duration-300 relative group ${isMobileMenuOpen ? "text-blue-600" : "text-gray-400 hover:text-gray-600"}`}
         >
-           {isMobileMenuOpen && (
-             <div className="absolute inset-0 bg-primary/10 rounded-xl -z-10 animate-in fade-in zoom-in duration-300"></div>
-           )}
-          <Menu className={`h-[22px] w-[22px] mb-1 transition-transform duration-300 ${isMobileMenuOpen ? "scale-110" : "group-hover:scale-110"}`} />
-          <span className="text-[10px] font-bold tracking-tight">Lainnya</span>
+          <div className={`relative flex items-center justify-center w-10 h-10 transition-all duration-300 ${isMobileMenuOpen ? "bg-blue-600 text-white rounded-full shadow-md" : "bg-transparent group-hover:scale-110"}`}>
+            <Menu className="h-[20px] w-[20px]" />
+          </div>
         </button>
       </div>
     </div>

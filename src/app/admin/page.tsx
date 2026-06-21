@@ -95,8 +95,8 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         
         <PageHeader 
           title="Dashboard Admin"
@@ -107,7 +107,7 @@ export default function AdminDashboard() {
         <div className="mt-8 space-y-8">
           
           {/* Total Asset & Key Metrics */}
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8 relative overflow-hidden">
+          <div className="bg-white/90 backdrop-blur-md rounded-[32px] border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-6 md:p-8 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full blur-[80px] pointer-events-none"></div>
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-50 rounded-full blur-[80px] pointer-events-none"></div>
             
@@ -123,9 +123,9 @@ export default function AdminDashboard() {
             </div>
 
             <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white border border-gray-100 shadow-sm rounded-2xl p-5 hover:border-indigo-100 hover:shadow-md transition-all">
+              <div className="bg-white/90 backdrop-blur-md border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px] p-5 hover:shadow-md transition-all">
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="p-2 bg-blue-50 rounded-xl">
+                  <div className="p-2 bg-blue-50 rounded-2xl">
                     <Wallet className="w-5 h-5 text-blue-500" />
                   </div>
                   <p className="text-gray-500 text-xs font-bold tracking-wider uppercase">Kas & Bank</p>
@@ -133,9 +133,9 @@ export default function AdminDashboard() {
                 <p className="text-xl font-bold text-gray-900">{formatRupiah(summaryData.kasDanBank)}</p>
               </div>
               
-              <div className="bg-white border border-gray-100 shadow-sm rounded-2xl p-5 hover:border-indigo-100 hover:shadow-md transition-all">
+              <div className="bg-white/90 backdrop-blur-md border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px] p-5 hover:shadow-md transition-all">
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="p-2 bg-amber-50 rounded-xl">
+                  <div className="p-2 bg-amber-50 rounded-2xl">
                     <Package className="w-5 h-5 text-amber-500" />
                   </div>
                   <p className="text-gray-500 text-xs font-bold tracking-wider uppercase">Persediaan</p>
@@ -143,9 +143,9 @@ export default function AdminDashboard() {
                 <p className="text-xl font-bold text-gray-900">{summaryData.persediaan} <span className="text-sm font-normal text-gray-500">Item</span></p>
               </div>
 
-              <div className="bg-white border border-gray-100 shadow-sm rounded-2xl p-5 hover:border-indigo-100 hover:shadow-md transition-all">
+              <div className="bg-white/90 backdrop-blur-md border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px] p-5 hover:shadow-md transition-all">
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="p-2 bg-emerald-50 rounded-xl">
+                  <div className="p-2 bg-emerald-50 rounded-2xl">
                     <TrendingUp className="w-5 h-5 text-emerald-500" />
                   </div>
                   <p className="text-gray-500 text-xs font-bold tracking-wider uppercase">Pendapatan</p>
@@ -153,9 +153,9 @@ export default function AdminDashboard() {
                 <p className="text-xl font-bold text-emerald-600">{formatRupiah(summaryData.pendapatan)}</p>
               </div>
 
-              <div className="bg-white border border-gray-100 shadow-sm rounded-2xl p-5 hover:border-indigo-100 hover:shadow-md transition-all">
+              <div className="bg-white/90 backdrop-blur-md border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px] p-5 hover:shadow-md transition-all">
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="p-2 bg-purple-50 rounded-xl">
+                  <div className="p-2 bg-purple-50 rounded-2xl">
                     <Activity className="w-5 h-5 text-purple-500" />
                   </div>
                   <p className="text-gray-500 text-xs font-bold tracking-wider uppercase">Laba Bersih</p>
@@ -179,9 +179,9 @@ export default function AdminDashboard() {
                 <Link 
                   key={link.name} 
                   href={link.href}
-                  className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-4 hover:shadow-md hover:-translate-y-1 hover:border-indigo-100 transition-all group"
+                  className="bg-white/90 backdrop-blur-md rounded-[32px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white flex flex-col items-center justify-center gap-4 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1 transition-all group"
                 >
-                  <div className={`w-16 h-16 rounded-2xl ${link.bg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                  <div className={`w-16 h-16 rounded-[24px] ${link.bg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
                     <link.icon className={`w-8 h-8 ${link.color}`} />
                   </div>
                   <span className="font-bold text-gray-800 text-center">{link.name}</span>
@@ -191,7 +191,7 @@ export default function AdminDashboard() {
           </div>
 
         {/* Existing KPI Dashboard Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-12 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-12 bg-white/90 backdrop-blur-md p-6 rounded-[32px] border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
           <div className="flex items-center gap-4">
             <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3.5 rounded-2xl shadow-md text-white">
               <TrendingUp className="h-7 w-7" />
@@ -215,7 +215,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Target Settings Card */}
-        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 relative overflow-hidden">
+        <div className="bg-white/90 backdrop-blur-md rounded-[32px] p-6 border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-shadow">
           <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-teal-400 to-emerald-500"></div>
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
@@ -258,7 +258,7 @@ export default function AdminDashboard() {
               </div>
             </form>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="bg-emerald-50 rounded-2xl p-5 border border-emerald-100 flex items-center justify-between">
                 <div>
                   <p className="text-emerald-600 text-xs font-bold uppercase tracking-wider mb-1">Target Pemasukan</p>

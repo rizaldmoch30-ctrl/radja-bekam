@@ -605,12 +605,11 @@ export default function AdminFinancePage() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-white border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500">
-                    <th className="px-6 py-4 font-semibold">Tanggal</th>
-                    <th className="px-6 py-4 font-semibold">Keterangan</th>
-                    <th className="px-6 py-4 font-semibold">Kategori & Metode</th>
-                    <th className="px-6 py-4 font-semibold text-right">Pemasukan</th>
-                    <th className="px-6 py-4 font-semibold text-right">Pengeluaran</th>
-                    <th className="px-6 py-4 font-semibold text-center">Aksi</th>
+                    <th className="hidden sm:table-cell px-4 sm:px-6 py-4 font-semibold">Tanggal</th>
+                    <th className="px-4 sm:px-6 py-4 font-semibold">Keterangan</th>
+                    <th className="hidden md:table-cell px-4 sm:px-6 py-4 font-semibold">Kategori & Metode</th>
+                    <th className="px-4 sm:px-6 py-4 font-semibold text-right">Nominal</th>
+                    <th className="px-4 sm:px-6 py-4 font-semibold text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -621,12 +620,22 @@ export default function AdminFinancePage() {
                     
                     return (
                       <tr key={t.id} className="hover:bg-blue-50/50 transition-colors group">
-                        <td className="px-6 py-4">
+                        <td className="hidden sm:table-cell px-4 sm:px-6 py-4">
                           <div className="text-sm font-medium text-gray-900">{formattedDate}</div>
                           <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5"><Calendar className="w-3 h-3"/> {formattedTime}</div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 sm:px-6 py-4">
                           <div className="font-medium text-gray-900 line-clamp-2">{t.description}</div>
+                          
+                          {/* Mobile-only info (Date & Category) */}
+                          <div className="sm:hidden flex flex-col gap-1 mt-1">
+                            <span className="text-xs text-gray-500 flex items-center gap-1"><Calendar className="w-3 h-3"/> {formattedDate} {formattedTime}</span>
+                          </div>
+                          <div className="md:hidden flex items-center gap-2 mt-1">
+                            <span className="text-[10px] font-bold text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded">{t.category}</span>
+                            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">{t.paymentMethod || "CASH"}</span>
+                          </div>
+
                           <div className="flex gap-2 mt-1 items-center">
                             {t.referenceId && <span className="text-xs text-blue-600">Ref: {t.referenceId}</span>}
                             {t.attachmentUrl && (
@@ -636,7 +645,7 @@ export default function AdminFinancePage() {
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="hidden md:table-cell px-4 sm:px-6 py-4">
                           <div className="flex flex-col gap-1.5 items-start">
                             <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-xs font-medium border border-gray-200">{t.category}</span>
                             <span className="flex items-center gap-1 text-xs font-medium text-blue-700 bg-blue-50 px-2 py-1 rounded-md border border-blue-100">
@@ -644,11 +653,12 @@ export default function AdminFinancePage() {
                             </span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-right font-bold text-green-600">
-                          {t.type === "INCOME" ? formatRupiah(t.amount) : "-"}
-                        </td>
-                        <td className="px-6 py-4 text-right font-bold text-red-500">
-                          {t.type === "EXPENSE" ? formatRupiah(t.amount) : "-"}
+                        <td className="px-4 sm:px-6 py-4 text-right font-bold">
+                          {t.type === "INCOME" ? (
+                            <span className="text-green-600">+{formatRupiah(t.amount)}</span>
+                          ) : (
+                            <span className="text-red-500">-{formatRupiah(t.amount)}</span>
+                          )}
                         </td>
                         <td className="px-6 py-4 text-center">
                           <button onClick={() => handleDelete(t.id)} className="text-gray-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg transition-colors" title="Batalkan Transaksi">

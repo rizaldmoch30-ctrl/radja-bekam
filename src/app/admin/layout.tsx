@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Menu, CalendarCheck, Users, Package, Wallet, Settings, X, Inbox, MapPin, TrendingUp, TrendingDown, Activity, ShieldCheck, ChevronDown, Store, Clock, Award, Receipt, FileText } from "lucide-react";
+import { LogOut, Menu, CalendarCheck, Users, Package, Wallet, Settings, X, Inbox, MapPin, TrendingUp, TrendingDown, Activity, ShieldCheck, ChevronDown, Store, Clock, Award, Receipt, FileText, BookOpen } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -270,6 +270,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               { name: "Dashboard", href: "/admin", icon: TrendingUp },
               { name: "Reservasi Online", href: "/admin/reservations", icon: Inbox },
               { name: "Buku Pasien", href: "/admin/visits", icon: CalendarCheck },
+              { name: "Transaksi Pelanggan", href: "/admin/transactions", icon: BookOpen },
               { name: "Layanan Terapi", href: "/admin/services", icon: Activity },
               { 
                 name: "Pegawai", 
@@ -293,6 +294,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   { name: "Pengeluaran Klinik", href: "/admin/finance/expenses", icon: TrendingDown },
                   { name: "Mutasi Kas", href: "/admin/finance/cash-mutations", icon: Wallet },
                   { name: "Laporan Laba Rugi", href: "/admin/finance/laba-rugi", icon: FileText },
+                  { name: "Buku Besar", href: "/admin/finance/buku-besar", icon: Receipt },
                 ]
               },
               { 
@@ -316,6 +318,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               if (link.name === "Dashboard") return perms.includes("DASHBOARD_ANALITIK");
               if (link.name === "Reservasi Online") return perms.includes("RESERVASI_ONLINE");
               if (link.name === "Buku Pasien") return perms.includes("BUKUPASIEN_REKAMMEDIS");
+              if (link.name === "Transaksi Pelanggan") return perms.includes("KEUANGAN_PEMASUKAN") || perms.includes("BUKUPASIEN_REKAMMEDIS");
               if (link.name === "Layanan Terapi") return perms.includes("PENGATURAN_CABANG"); // Opsional
               
               if (link.name === "Pegawai") {
@@ -337,6 +340,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   if (sub.name === "Pengeluaran Klinik") return perms.includes("KEUANGAN_PENGELUARAN");
                   if (sub.name === "Mutasi Kas") return perms.includes("KEUANGAN_MUTASI");
                   if (sub.name === "Laporan Laba Rugi") return perms.includes("KEUANGAN_LABARUGI");
+                  if (sub.name === "Buku Besar") return perms.includes("KEUANGAN_LABARUGI");
                   return false;
                 });
                 return (link.subItems && link.subItems.length > 0);

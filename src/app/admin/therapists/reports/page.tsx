@@ -242,7 +242,7 @@ export default function TherapistReportsPage() {
                   type="month"
                   value={month}
                   onChange={(e) => setMonth(e.target.value)}
-                  className="pl-9 pr-4 py-2.5 bg-white/10 border border-white/20 text-white rounded-xl focus:ring-2 focus:ring-white/50 text-sm backdrop-blur-md outline-none [color-scheme:dark] cursor-pointer w-full sm:w-auto transition-all"
+                  className="pl-9 pr-4 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-blue-500/50 text-sm outline-none cursor-pointer w-full sm:w-auto transition-all"
                 />
               </div>
 

@@ -1,13 +1,11 @@
-import { createClient } from "@libsql/client";
-import { drizzle } from "drizzle-orm/libsql";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import { services } from "./schema";
 import { SERVICES_LIST, getServicePrice } from "../pricing";
 
 async function syncServices() {
-  const client = createClient({
-    url: process.env.TURSO_DATABASE_URL || "file:local.db",
-    authToken: process.env.TURSO_AUTH_TOKEN,
-  });
+  const connectionString = process.env.DATABASE_URL!;
+  const client = postgres(connectionString);
 
   const db = drizzle(client);
 
@@ -41,7 +39,7 @@ async function syncServices() {
   }
 
   console.log("Services synced successfully!");
-  client.close();
+  client.end();
 }
 
 syncServices().catch(console.error);

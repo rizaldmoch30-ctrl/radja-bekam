@@ -225,14 +225,14 @@ export default function AdminTherapistsPage() {
                   placeholder="Cari nama/spesialisasi..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 bg-white/10 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 text-white placeholder-white/50 text-sm backdrop-blur-md transition-all"
+                  className="w-full pl-9 pr-3 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 placeholder-gray-400 text-sm transition-all"
                 />
               </div>
               {session?.role === "SUPER_ADMIN" && (
                 <select 
                   value={filterBranch} 
                   onChange={(e) => setFilterBranch(e.target.value)}
-                  className="w-full sm:w-auto px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 text-white text-sm backdrop-blur-md appearance-none transition-all cursor-pointer [&>option]:text-gray-900"
+                  className="w-full sm:w-auto px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 text-sm appearance-none transition-all cursor-pointer [&>option]:text-gray-900"
                 >
                   <option value="all">Semua Cabang</option>
                   {branches.map(b => (
@@ -262,7 +262,7 @@ export default function AdminTherapistsPage() {
               {/* Header Form */}
               <div className="shrink-0 bg-gradient-to-r from-blue-900 to-indigo-900 p-5 sm:p-6 text-white flex justify-between items-center shadow-md relative z-10">
                 <div className="flex items-center gap-3 sm:gap-4">
-                  <div className="p-2 sm:p-3 bg-white/10 rounded-2xl backdrop-blur-md border border-white/20 shadow-inner hidden sm:block">
+                  <div className="p-2 sm:p-3 bg-white rounded-2xl border border-gray-200 shadow-inner hidden sm:block">
                     {formData.id ? <Edit className="w-5 h-5 sm:w-6 sm:h-6 text-blue-200" /> : <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-blue-200" />}
                   </div>
                   <div>

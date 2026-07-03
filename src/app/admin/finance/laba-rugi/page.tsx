@@ -186,7 +186,7 @@ export default function AdminLabaRugiPage() {
               <select 
                 value={selectedYear} 
                 onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 text-white text-sm backdrop-blur-md appearance-none transition-all cursor-pointer [&>option]:text-gray-900"
+                className="px-4 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 text-sm appearance-none transition-all cursor-pointer [&>option]:text-gray-900"
               >
                 {[...Array(5)].map((_, i) => {
                   const y = new Date().getFullYear() - i;
@@ -196,7 +196,7 @@ export default function AdminLabaRugiPage() {
               <select 
                 value={selectedMonth} 
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="px-4 py-2 bg-white/10 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 text-white text-sm backdrop-blur-md appearance-none transition-all cursor-pointer [&>option]:text-gray-900"
+                className="px-4 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 text-sm appearance-none transition-all cursor-pointer [&>option]:text-gray-900"
               >
                 <option value="ALL">Semua Bulan</option>
                 <option value="1">Januari</option>
@@ -212,7 +212,7 @@ export default function AdminLabaRugiPage() {
                 <option value="11">November</option>
                 <option value="12">Desember</option>
               </select>
-              <div className="flex items-center gap-2 bg-white/10 border border-white/20 rounded-xl px-3 py-2 backdrop-blur-md">
+              <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2 ">
                 <span className="text-white text-sm font-medium">Bagi Hasil Investor:</span>
                 <input 
                   type="number" 
@@ -224,7 +224,7 @@ export default function AdminLabaRugiPage() {
                 />
                 <span className="text-white text-sm">%</span>
               </div>
-              <div className="flex items-center gap-2 bg-white/10 border border-white/20 rounded-xl px-3 py-2 backdrop-blur-md">
+              <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2 ">
                 <span className="text-white text-sm font-medium">Bagi Hasil Manajemen:</span>
                 <input 
                   type="number" 

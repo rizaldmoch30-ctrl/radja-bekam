@@ -286,7 +286,7 @@ export default function AdminSettingsPage() {
           icon={Settings}
           rightContent={
             session?.role === "SUPER_ADMIN" ? (
-              <div className="flex border border-white/20 bg-white/10 p-1 rounded-xl shadow-sm w-max mt-4 md:mt-0 backdrop-blur-md">
+              <div className="flex border border-gray-200 bg-white p-1 rounded-xl shadow-sm w-max mt-4 md:mt-0 ">
                 <button
                   onClick={() => setActiveTab("company")}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === "company" ? "bg-white text-indigo-900 shadow-md" : "text-white/80 hover:text-white hover:bg-white/10"}`}

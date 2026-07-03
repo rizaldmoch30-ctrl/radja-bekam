@@ -260,7 +260,7 @@ export default function AdminExpensesPage() {
               <select
                 value={filterBranch}
                 onChange={(e) => setFilterBranch(e.target.value)}
-                className="bg-white/10 border border-white/20 text-white rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-white/50 backdrop-blur-md outline-none appearance-none transition-all cursor-pointer [&>option]:text-gray-900"
+                className="bg-white border border-gray-200 text-gray-900 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/50 outline-none appearance-none transition-all cursor-pointer [&>option]:text-gray-900"
               >
                 <option value="">Semua Cabang</option>
                 {Object.entries(branchNames).map(([id, name]) => (
@@ -271,7 +271,7 @@ export default function AdminExpensesPage() {
               <select
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="bg-white/10 border border-white/20 text-white rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-white/50 backdrop-blur-md outline-none appearance-none transition-all cursor-pointer [&>option]:text-gray-900"
+                className="bg-white border border-gray-200 text-gray-900 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/50 outline-none appearance-none transition-all cursor-pointer [&>option]:text-gray-900"
               >
                 <option value="today">Hari Ini</option>
                 <option value="thisWeek">Minggu Ini</option>
@@ -286,14 +286,14 @@ export default function AdminExpensesPage() {
                     type="date" 
                     value={customStartDate} 
                     onChange={e => setCustomStartDate(e.target.value)} 
-                    className="bg-white/10 border border-white/20 text-white rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-white/50 backdrop-blur-md outline-none [color-scheme:dark]"
+                    className="bg-white border border-gray-200 text-gray-900 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/50 outline-none "
                   />
                   <span className="text-white/50">-</span>
                   <input 
                     type="date" 
                     value={customEndDate} 
                     onChange={e => setCustomEndDate(e.target.value)} 
-                    className="bg-white/10 border border-white/20 text-white rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-white/50 backdrop-blur-md outline-none [color-scheme:dark]"
+                    className="bg-white border border-gray-200 text-gray-900 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/50 outline-none "
                   />
                 </div>
               )}

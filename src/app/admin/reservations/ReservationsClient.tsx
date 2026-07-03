@@ -56,7 +56,7 @@ export default function ReservationsClient({
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-blue-900 to-indigo-900 text-white p-8 rounded-3xl shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-[80px]"></div>
         <div className="relative z-10 flex items-center gap-5">
-          <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 shadow-inner">
+          <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center border border-gray-200 shadow-inner">
             <CalendarHeart className="w-8 h-8 text-blue-200" />
           </div>
           <div>
@@ -65,7 +65,7 @@ export default function ReservationsClient({
           </div>
         </div>
         
-        <div className="relative z-10 bg-white/10 backdrop-blur-md border border-white/20 px-6 py-3 rounded-2xl flex items-center gap-4">
+        <div className="relative z-10 bg-white border border-gray-200 px-6 py-3 rounded-2xl flex items-center gap-4">
           <div>
             <p className="text-xs text-blue-200 font-bold uppercase tracking-wider">Menunggu Konfirmasi</p>
             <p className="text-2xl font-black text-amber-300">{pendingCount}</p>

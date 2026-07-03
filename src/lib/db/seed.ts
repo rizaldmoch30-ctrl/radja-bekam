@@ -1,12 +1,10 @@
-import { createClient } from "@libsql/client";
-import { drizzle } from "drizzle-orm/libsql";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import { branches, services, settings } from "./schema";
 
 async function seed() {
-  const client = createClient({
-    url: process.env.TURSO_DATABASE_URL || "file:local.db",
-    authToken: process.env.TURSO_AUTH_TOKEN,
-  });
+  const connectionString = process.env.DATABASE_URL!;
+  const client = postgres(connectionString);
 
   const db = drizzle(client);
 
@@ -119,7 +117,7 @@ async function seed() {
 
   console.log("🎉 Database seeded successfully!");
 
-  client.close();
+  client.end();
 }
 
 seed().catch((err) => {

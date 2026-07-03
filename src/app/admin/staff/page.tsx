@@ -168,14 +168,14 @@ export default function AdminStaffPage() {
                   placeholder="Cari nama/jabatan..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 bg-white/10 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 text-white placeholder-white/50 text-sm backdrop-blur-md transition-all"
+                  className="w-full pl-9 pr-3 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 placeholder-gray-400 text-sm transition-all"
                 />
               </div>
               {session?.role === "SUPER_ADMIN" && (
                 <select 
                   value={filterBranch} 
                   onChange={(e) => setFilterBranch(e.target.value)}
-                  className="w-full sm:w-auto px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 text-white text-sm backdrop-blur-md appearance-none transition-all cursor-pointer [&>option]:text-gray-900"
+                  className="w-full sm:w-auto px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 text-sm appearance-none transition-all cursor-pointer [&>option]:text-gray-900"
                 >
                   <option value="all">Semua Cabang</option>
                   {branches.map(b => (

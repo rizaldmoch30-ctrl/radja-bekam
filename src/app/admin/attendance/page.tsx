@@ -66,7 +66,7 @@ export default function AttendancePage() {
                   placeholder="Cari terapis..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 pr-4 py-2.5 bg-white/10 border border-white/20 text-white placeholder-white/60 rounded-xl focus:ring-2 focus:ring-white/50 text-sm backdrop-blur-md outline-none w-full transition-all"
+                  className="pl-9 pr-4 py-2.5 bg-white border border-gray-200 text-gray-900 placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-blue-500/50 text-sm outline-none w-full transition-all"
                 />
               </div>
               <div className="relative w-full sm:w-auto">
@@ -76,7 +76,7 @@ export default function AttendancePage() {
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="pl-9 pr-4 py-2.5 bg-white/10 border border-white/20 text-white rounded-xl focus:ring-2 focus:ring-white/50 text-sm backdrop-blur-md outline-none [color-scheme:dark] w-full cursor-pointer transition-all"
+                  className="pl-9 pr-4 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-blue-500/50 text-sm outline-none w-full cursor-pointer transition-all"
                 />
               </div>
               <button

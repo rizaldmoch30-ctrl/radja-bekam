@@ -53,21 +53,21 @@ export default function ReservationsClient({
   return (
     <div className="space-y-8 p-2 pb-12">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-blue-900 to-indigo-900 text-white p-8 rounded-3xl shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-[80px]"></div>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-8 rounded-3xl shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-[80px]"></div>
         <div className="relative z-10 flex items-center gap-5">
-          <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center border border-gray-200 shadow-inner">
-            <CalendarHeart className="w-8 h-8 text-blue-200" />
+          <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 shadow-inner">
+            <CalendarHeart className="w-8 h-8 text-blue-100" />
           </div>
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight">Reservasi & Jadwal</h1>
-            <p className="text-blue-200 mt-1 text-sm font-medium">Kelola jadwal dan konfirmasi pasien masuk</p>
+            <p className="text-blue-100 mt-1 text-sm font-medium">Kelola jadwal dan konfirmasi pasien masuk</p>
           </div>
         </div>
         
-        <div className="relative z-10 bg-white border border-gray-200 px-6 py-3 rounded-2xl flex items-center gap-4">
+        <div className="relative z-10 bg-white/10 backdrop-blur-md border border-white/20 px-6 py-3 rounded-2xl flex items-center gap-4">
           <div>
-            <p className="text-xs text-blue-200 font-bold uppercase tracking-wider">Menunggu Konfirmasi</p>
+            <p className="text-xs text-blue-100 font-bold uppercase tracking-wider">Menunggu Konfirmasi</p>
             <p className="text-2xl font-black text-amber-300">{pendingCount}</p>
           </div>
           {pendingCount > 0 && (
@@ -173,7 +173,7 @@ export default function ReservationsClient({
                           </span>
                         )}
                         {res.status === "CONFIRMED" && (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200">
                             <CheckCircle className="h-4 w-4" /> Dikonfirmasi
                           </span>
                         )}
@@ -276,7 +276,7 @@ export default function ReservationsClient({
                             {dayReservations.map(r => (
                               <div key={r.res.id} className={`p-2 rounded-lg text-[10px] border ${
                                 r.res.status === "PENDING" ? "bg-amber-50 border-amber-200 text-amber-800" :
-                                r.res.status === "CONFIRMED" ? "bg-emerald-50 border-emerald-200 text-emerald-800" :
+                                r.res.status === "CONFIRMED" ? "bg-blue-50 border-blue-200 text-blue-800" :
                                 "bg-gray-50 border-gray-200 text-gray-500 opacity-60"
                               }`}>
                                 <div className="font-bold truncate">{r.res.customerName}</div>

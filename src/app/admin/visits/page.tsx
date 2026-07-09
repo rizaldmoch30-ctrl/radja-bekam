@@ -6,10 +6,12 @@ import {
   Plus, CalendarCheck, Search, User, Phone, MapPin, Activity, Store, 
   UserCheck, Calendar, Clock, FileText, X, ChevronDown, Users, TrendingUp, 
   Check, Receipt, Printer, MessageCircle, Link2, Download, AlertCircle, 
-  Minus, Trash2, Copy, Edit, CheckCircle2 
+  Minus, Trash2, Copy, Edit, CheckCircle2, Bell, Wallet, Save, Timer
 } from "lucide-react";
 import Pagination from "@/components/ui/Pagination";
 import PageHeader from "@/components/layout/PageHeader";
+import TherapistPicker from "@/components/ui/TherapistPicker";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 
 
 type PatientVisit = {
@@ -20,8 +22,11 @@ type PatientVisit = {
   therapistId: string | null;
   visitDate: string;
   visitTime: string;
+  checkInTime: string | null;
+  checkOutTime: string | null;
+  actualCheckOutTime: string | null;
   notes: string | null;
-  status: "completed" | "cancelled";
+  status: "in_progress" | "completed" | "cancelled";
   paymentStatus: "UNPAID" | "PAID";
   createdAt: string;
 };
@@ -29,7 +34,7 @@ type PatientVisit = {
 type Patient = { id: string; name: string; phone: string };
 type Therapist = { id: string; name: string; branchId: string | null };
 type Branch = { id: string; name: string; address?: string; phone?: string };
-type Service = { id: string; name: string; price?: number; category?: string };
+type Service = { id: string; name: string; price?: number; category?: string; durationMinutes?: number };
 
 type InvoiceItem = {
   serviceId: string;
@@ -52,6 +57,7 @@ type Invoice = {
   tax: number;
   grandTotal: number;
   paymentMethod: string;
+  splitPayments: string | null;
   amountPaid: number;
   changeAmount: number;
   createdAt: string;
@@ -71,6 +77,8 @@ export default function AdminVisitsPage() {
   const [saving, setSaving] = useState(false);
   const [selectedBranchId, setSelectedBranchId] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+  const [filterDate, setFilterDate] = useState("");
+  const [tableDensity, setTableDensity] = useState<"compact" | "comfortable" | "large">("comfortable");
   
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -97,6 +105,11 @@ export default function AdminVisitsPage() {
   const [posVisitId, setPosVisitId] = useState<string | null>(null);
   const [posModalOpen, setPosModalOpen] = useState(false);
 
+  const getFormattedTime = () => {
+    const d = new Date();
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  };
+
   const [formData, setFormData] = useState({
     phone: "",
     name: "",
@@ -106,10 +119,35 @@ export default function AdminVisitsPage() {
     branchId: "",
     therapistId: "",
     visitDate: new Date().toISOString().split('T')[0],
-    visitTime: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+    visitTime: getFormattedTime(),
+    checkInTime: getFormattedTime(),
+    checkOutTime: "",
+    bloodPressure: "",
     notes: "",
     status: "completed",
   });
+
+  // Auto-calculate checkOutTime berdasarkan checkInTime + total durasi layanan
+  useEffect(() => {
+    if (!formData.checkInTime || selectedServices.length === 0) {
+      return;
+    }
+    const totalMinutes = selectedServices.reduce((sum, id) => {
+      const svc = services.find(s => s.id === id);
+      return sum + (svc?.durationMinutes || 0);
+    }, 0);
+    if (totalMinutes <= 0) return;
+
+    // Menangani format separator waktu (bisa : atau .)
+    const normalizedTime = formData.checkInTime.replace(".", ":");
+    const [h, m] = normalizedTime.split(":").map(Number);
+    if (isNaN(h) || isNaN(m)) return;
+    const totalMins = h * 60 + m + totalMinutes;
+    const outH = Math.floor(totalMins / 60) % 24;
+    const outM = totalMins % 60;
+    const autoOut = `${String(outH).padStart(2, "0")}:${String(outM).padStart(2, "0")}`;
+    setFormData(prev => ({ ...prev, checkOutTime: autoOut }));
+  }, [formData.checkInTime, selectedServices, services]);
 
   const formatRupiah = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -129,19 +167,28 @@ export default function AdminVisitsPage() {
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [monthlyLoading, setMonthlyLoading] = useState(false);
 
+  // Patient History Modal State
+  const [selectedPatientHistoryId, setSelectedPatientHistoryId] = useState<string | null>(null);
+
   // Pagination Reset Effect
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedBranchId, activeTab]);
+  }, [searchQuery, selectedBranchId, activeTab, filterDate]);
 
   // POS (Kasir) Tab States
   const [posPhone, setPosPhone] = useState("");
   const [posPatientName, setPosPatientName] = useState("");
   const [posBranchId, setPosBranchId] = useState("");
   const [posTherapistId, setPosTherapistId] = useState("");
+  const [posVisitDate, setPosVisitDate] = useState(() => new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }));
   const [posItems, setPosItems] = useState<InvoiceItem[]>([]);
   const [posDiscount, setPosDiscount] = useState(0);
   const [posPaymentMethod, setPosPaymentMethod] = useState("CASH");
+  const [posIsSplitPayment, setPosIsSplitPayment] = useState(false);
+  const [posSplitMethod1, setPosSplitMethod1] = useState("CASH");
+  const [posSplitMethod2, setPosSplitMethod2] = useState("QRIS");
+  const [posSplitAmount1, setPosSplitAmount1] = useState(0);
+  const [posSplitAmount2, setPosSplitAmount2] = useState(0);
   const [posAmountPaid, setPosAmountPaid] = useState(0);
   const [posNotes, setPosNotes] = useState("");
   const [posProcessing, setPosProcessing] = useState(false);
@@ -151,6 +198,60 @@ export default function AdminVisitsPage() {
   const [invoiceHistory, setInvoiceHistory] = useState<Invoice[]>([]);
   const [historyDate, setHistoryDate] = useState(() => new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }));
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyPaymentFilter, setHistoryPaymentFilter] = useState("ALL");
+
+  // Timer state for active therapies
+  const [currentTime, setCurrentTime] = useState(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const renderTherapyStatus = (v: PatientVisit) => {
+    if (v.status === "completed") {
+      return (
+        <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 border border-gray-200">
+          <CheckCircle2 className="w-3 h-3" /> Selesai
+        </div>
+      );
+    }
+    if (v.status === "cancelled") {
+      return (
+        <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-600 border border-red-200">
+          <X className="w-3 h-3" /> Batal
+        </div>
+      );
+    }
+    if (v.status === "in_progress" && v.checkOutTime) {
+      const parts = v.visitDate.split('-');
+      const [h, m] = v.checkOutTime.split(":").map(Number);
+      const target = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), h, m, 0);
+      const diffMs = target.getTime() - currentTime.getTime();
+      const mins = Math.ceil(diffMs / 60000);
+      
+      if (mins > 0) {
+        return (
+          <div className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 border border-amber-200 shadow-sm animate-in fade-in">
+            <Timer className="w-3 h-3 animate-pulse" /> Sisa {mins} mnt
+          </div>
+        );
+      } else {
+        if (v.paymentStatus === "PAID") {
+          return (
+            <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 border border-gray-200">
+              <CheckCircle2 className="w-3 h-3" /> Selesai
+            </div>
+          );
+        }
+        return (
+          <div className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700 border border-red-200 shadow-sm animate-in fade-in">
+            <AlertCircle className="w-3 h-3 animate-pulse" /> Waktu Habis ({Math.abs(mins)} mnt)
+          </div>
+        );
+      }
+    }
+    return null;
+  };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -160,6 +261,8 @@ export default function AdminVisitsPage() {
         ...prev,
         phone: val,
         name: existing.name,
+        gender: existing.gender || "L",
+        address: existing.address || "",
       }));
     } else {
       setFormData(prev => ({ ...prev, phone: val }));
@@ -331,13 +434,16 @@ export default function AdminVisitsPage() {
 
   const posSubtotal = posItems.reduce((sum, i) => sum + i.subtotal, 0);
   const posGrandTotal = posSubtotal - posDiscount;
-  const posChangeAmount = Math.max(0, posAmountPaid - posGrandTotal);
+  const totalPosPaid = posIsSplitPayment ? (posSplitAmount1 + posSplitAmount2) : posAmountPaid;
+  const posChangeAmount = Math.max(0, totalPosPaid - posGrandTotal);
 
   const handlePOSSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (posItems.length === 0) return alert("Tambahkan minimal 1 item layanan!");
     if (!posPhone || !posPatientName || !posBranchId) return alert("Lengkapi data pasien & cabang!");
-    if (posAmountPaid < posGrandTotal) return alert("Uang diterima kurang dari total!");
+    
+    const totalPaid = posIsSplitPayment ? (posSplitAmount1 + posSplitAmount2) : posAmountPaid;
+    if (totalPaid < posGrandTotal) return alert("Uang diterima kurang dari total!");
 
     setPosProcessing(true);
     try {
@@ -352,10 +458,15 @@ export default function AdminVisitsPage() {
           items: posItems,
           discount: posDiscount,
           tax: 0,
-          paymentMethod: posPaymentMethod,
-          amountPaid: posAmountPaid,
+          paymentMethod: posIsSplitPayment ? "SPLIT" : posPaymentMethod,
+          splitPayments: posIsSplitPayment ? [
+            { method: posSplitMethod1, amount: posSplitAmount1 },
+            { method: posSplitMethod2, amount: posSplitAmount2 }
+          ] : null,
+          amountPaid: totalPaid,
           notes: posNotes || null,
           visitId: posVisitId,
+          transactionDate: posVisitDate,
         }),
       });
 
@@ -382,9 +493,15 @@ export default function AdminVisitsPage() {
     setPosItems([]);
     setPosDiscount(0);
     setPosPaymentMethod("CASH");
+    setPosIsSplitPayment(false);
+    setPosSplitMethod1("CASH");
+    setPosSplitMethod2("QRIS");
+    setPosSplitAmount1(0);
+    setPosSplitAmount2(0);
     setPosAmountPaid(0);
     setPosNotes("");
     setPosCreatedInvoice(null);
+    setPosVisitDate(new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }));
     setPosVisitId(null);
     setPosModalOpen(false);
   };
@@ -442,25 +559,48 @@ export default function AdminVisitsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedServices.length === 0) return alert("Pilih minimal 1 layanan!");
+    
+    // Validasi jam
+    if (formData.checkInTime && formData.checkOutTime) {
+      if (formData.checkOutTime <= formData.checkInTime) {
+        return alert("Jam keluar harus lebih besar dari jam masuk!");
+      }
+    }
+
     setSaving(true);
     try {
       const primaryServiceId = selectedServices[0];
       const extraServiceNames = selectedServices.slice(1).map(id => services.find(s => s.id === id)?.name).join(", ");
       const finalNotes = extraServiceNames ? `${formData.notes ? formData.notes + '\n\n' : ''}Layanan Tambahan: ${extraServiceNames}` : formData.notes;
 
-      await fetch("/api/patient-visits", {
+      const res = await fetch("/api/patient-visits", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
           serviceId: primaryServiceId,
-          notes: finalNotes
+          notes: finalNotes,
+          checkInTime: formData.checkInTime || null,
+          checkOutTime: formData.checkOutTime || null,
         }),
       });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        if (res.status === 409) {
+          alert(errData.error || "Konflik data!");
+          setSaving(false);
+          return;
+        }
+      }
+
       setIsFormOpen(false);
       setFormData(prev => ({
         ...prev,
-        phone: "", name: "", address: "", notes: ""
+        phone: "", name: "", address: "", bloodPressure: "", notes: "",
+        checkInTime: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }),
+        checkOutTime: "",
+        therapistId: "",
       }));
       setSelectedServices([]);
       fetchData();
@@ -507,6 +647,14 @@ export default function AdminVisitsPage() {
       setPosItems([]);
     }
     
+    // Set date based on visit if available, else today
+    const visit = visits.find(v => v.id === visitId);
+    if (visit && visit.visitDate) {
+      setPosVisitDate(visit.visitDate);
+    } else {
+      setPosVisitDate(new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }));
+    }
+    
     setPosVisitId(visitId);
     setPosModalOpen(true);
   };
@@ -519,6 +667,38 @@ export default function AdminVisitsPage() {
   const getServiceName = (id: string) => services.find(s => s.id === id)?.name || id;
   const getBranchName = (id: string) => branches.find(b => b.id === id)?.name || id;
 
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [visitToDelete, setVisitToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteVisit = (visitId: string) => {
+    setVisitToDelete(visitId);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDeleteVisit = async () => {
+    if (!visitToDelete) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/patient-visits/${visitToDelete}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setDeleteModalOpen(false);
+        setVisitToDelete(null);
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Gagal menghapus data kunjungan");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Terjadi kesalahan jaringan");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const getVisitSequenceNumber = (patientId: string, visitId: string) => {
     const patientVisits = visits.filter(v => v.patientId === patientId);
     const index = patientVisits.findIndex(v => v.id === visitId);
@@ -527,10 +707,33 @@ export default function AdminVisitsPage() {
 
   let finalVisits = visits.filter(v => {
     const matchBranch = selectedBranchId === "ALL" || v.branchId === selectedBranchId;
+    const matchDate = filterDate === "" || v.visitDate === filterDate;
     const patientName = getPatientName(v.patientId).toLowerCase();
     const matchSearch = patientName.includes(searchQuery.toLowerCase());
-    return matchBranch && matchSearch;
-  });
+    return matchBranch && matchDate && matchSearch;
+  }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  // KPI Calculations (Actual Data)
+  const todayDateString = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
+  
+  const branchVisits = visits.filter(v => selectedBranchId === "ALL" || v.branchId === selectedBranchId);
+  const kpiVisitsToday = branchVisits.filter(v => v.visitDate === todayDateString).length;
+  const kpiRevenueToday = branchVisits
+    .filter(v => v.visitDate === todayDateString && v.paymentStatus === "PAID")
+    .reduce((sum, v) => {
+      const service = services.find(s => s.id === v.serviceId);
+      return sum + (service?.price || 0);
+    }, 0);
+  const kpiNewPatientsToday = branchVisits
+    .filter(v => v.visitDate === todayDateString && getVisitSequenceNumber(v.patientId, v.id) === 1)
+    .length;
+  const kpiRetention = kpiVisitsToday > 0 
+    ? Math.round(((kpiVisitsToday - kpiNewPatientsToday) / kpiVisitsToday) * 100)
+    : 0;
+
+  const kpiRevenueFormatted = kpiRevenueToday >= 1000000 
+    ? `Rp ${(kpiRevenueToday / 1000000).toLocaleString('id-ID', { maximumFractionDigits: 1 })} Juta`
+    : formatRupiah(kpiRevenueToday);
 
   const totalPages = Math.ceil(finalVisits.length / itemsPerPage);
   const paginatedVisits = finalVisits.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -558,6 +761,7 @@ export default function AdminVisitsPage() {
                           <input
                             type="text"
                             required
+                            disabled={!!posVisitId}
                             value={posPhone}
                             onChange={e => handlePOSPhoneChange(e.target.value)}
                             placeholder="08123..."
@@ -565,14 +769,29 @@ export default function AdminVisitsPage() {
                           />
                         </div>
                         {patients.find(p => p.phone === posPhone) && (
-                          <p className="text-xs text-green-600 flex items-center gap-1"><Check className="w-3 h-3" /> Pasien terdaftar</p>
+                          <p className="text-xs text-blue-600 flex items-center gap-1"><Check className="w-3 h-3" /> Pasien terdaftar</p>
                         )}
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-semibold text-gray-700">Tanggal Transaksi</label>
+                        <div className="relative">
+                          <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                          <input
+                            type="date"
+                            required
+                            disabled={!!posVisitId}
+                            value={posVisitDate}
+                            onChange={e => setPosVisitDate(e.target.value)}
+                            className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                          />
+                        </div>
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-sm font-semibold text-gray-700">Nama Pasien</label>
                         <input
                           type="text"
                           required
+                          disabled={!!posVisitId}
                           value={posPatientName}
                           onChange={e => setPosPatientName(e.target.value)}
                           placeholder="Nama lengkap"
@@ -587,9 +806,9 @@ export default function AdminVisitsPage() {
                           <Store className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                           <select
                             required
+                            disabled={!!posVisitId || session?.role === "BRANCH_ADMIN"}
                             value={posBranchId}
                             onChange={e => setPosBranchId(e.target.value)}
-                            disabled={session?.role === "BRANCH_ADMIN"}
                             className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none"
                           >
                             <option value="">Pilih Cabang</option>
@@ -607,6 +826,12 @@ export default function AdminVisitsPage() {
                           <option value="">Pilih Terapis (opsional)</option>
                           {therapists.filter(t => !posBranchId || t.branchId === posBranchId).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                         </select>
+                        {!posTherapistId && (
+                          <p className="flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-1">
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                            Terapis belum dipilih — komisi tidak akan dicatat otomatis.
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -614,9 +839,9 @@ export default function AdminVisitsPage() {
 
                 {/* Service Selection Card */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                  <div className="px-6 py-4 bg-gradient-to-r from-teal-50 to-emerald-50 border-b border-gray-100">
+                  <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-blue-50 border-b border-gray-100">
                     <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                      <Activity className="w-5 h-5 text-teal-600" /> Pilih Layanan
+                      <Activity className="w-5 h-5 text-blue-600" /> Pilih Layanan
                     </h3>
                   </div>
                   <div className="p-6">
@@ -624,14 +849,14 @@ export default function AdminVisitsPage() {
                       <select
                         onChange={e => { addPOSItem(e.target.value); e.target.value = ""; }}
                         value=""
-                        className="w-full px-4 py-3 bg-emerald-50 border-2 border-dashed border-emerald-300 rounded-xl text-emerald-700 font-semibold focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors appearance-none cursor-pointer"
+                        className="w-full px-4 py-3 bg-blue-50 border-2 border-dashed border-blue-300 rounded-xl text-blue-700 font-semibold focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none cursor-pointer hover:bg-blue-100"
                       >
                         <option value="">+ Tambah Layanan / Treatment</option>
-                        {["Terapi Bekam", "Pijat & Refleksi", "Paket Kombinasi", "Layanan Medis & Ekstra"].map(cat => {
-                          const catServices = services.filter(s => s.category === cat || (!s.category && cat === "Terapi Bekam" && s.name.toLowerCase().includes("bekam")));
+                        {["Paket Treatment", "Full Body Massages", "Refleksi", "Bekam", "Adds On"].map(cat => {
+                          const catServices = services.filter(s => s.category === cat || (!s.category && cat === "Paket Treatment"));
                           if (catServices.length === 0) return null;
                           return (
-                            <optgroup key={cat} label={cat === "Terapi Bekam" ? "Bekam" : cat}>
+                            <optgroup key={cat} label={cat}>
                               {catServices.map(s => <option key={s.id} value={s.id}>{s.name} - {formatRupiah(s.price || 0)}</option>)}
                             </optgroup>
                           );
@@ -662,18 +887,18 @@ export default function AdminVisitsPage() {
                             </div>
                             <div className="flex items-center gap-1">
                               <button type="button" onClick={() => updatePOSItemQty(item.serviceId, item.qty - 1)}
-                                className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:bg-red-50 hover:border-red-200 transition-colors">
+                                className="w-7 h-7 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center hover:bg-gray-200 transition-colors">
                                 <Minus className="w-3 h-3" />
                               </button>
                               <span className="w-8 text-center font-bold text-sm">{item.qty}</span>
                               <button type="button" onClick={() => updatePOSItemQty(item.serviceId, item.qty + 1)}
-                                className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center hover:bg-green-50 hover:border-green-200 transition-colors">
+                                className="w-7 h-7 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center hover:bg-gray-200 transition-colors">
                                 <Plus className="w-3 h-3" />
                               </button>
                             </div>
                             <p className="font-bold text-gray-900 text-sm w-24 text-right">{formatRupiah(item.subtotal)}</p>
                             <button type="button" onClick={() => removePOSItem(item.serviceId)}
-                              className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                              className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors rounded-lg">
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
@@ -723,75 +948,151 @@ export default function AdminVisitsPage() {
                     <div className="border-t border-gray-200 pt-4">
                       <div className="flex justify-between items-center">
                         <span className="text-lg font-extrabold text-gray-900">TOTAL</span>
-                        <span className="text-2xl font-extrabold text-emerald-600">{formatRupiah(posGrandTotal)}</span>
+                        <span className="text-2xl font-extrabold text-blue-600">{formatRupiah(posGrandTotal)}</span>
                       </div>
                     </div>
 
                     {/* Payment Method */}
                     <div className="space-y-1.5">
-                      <label className="text-sm font-semibold text-gray-700">Metode Pembayaran</label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {[
-                          { value: "CASH", label: "💵 Cash" },
-                          { value: "DEBIT", label: "💳 Debit" },
-                          { value: "QRIS", label: "📱 QRIS" },
-                        ].map(m => (
-                          <button
-                            key={m.value}
-                            type="button"
-                            onClick={() => setPosPaymentMethod(m.value)}
-                            className={`py-2.5 px-3 rounded-xl text-sm font-semibold border-2 transition-all ${
-                              posPaymentMethod === m.value
-                                ? "bg-emerald-50 border-emerald-400 text-emerald-700"
-                                : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
-                            }`}
-                          >
-                            {m.label}
-                          </button>
-                        ))}
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="text-sm font-semibold text-gray-700">Metode Pembayaran</label>
+                        <label className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 px-2 py-1 rounded-lg">
+                          <input 
+                            type="checkbox" 
+                            checked={posIsSplitPayment}
+                            onChange={(e) => setPosIsSplitPayment(e.target.checked)}
+                            className="w-4 h-4 text-blue-600 focus:ring-blue-500 rounded border-gray-300"
+                          />
+                          <span className="font-medium text-gray-600">Split Payment (Ganda)</span>
+                        </label>
                       </div>
+
+                      {!posIsSplitPayment ? (
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                          {[
+                            { value: "CASH", label: "💵 Cash" },
+                            { value: "DEBIT", label: "💳 Debit" },
+                            { value: "QRIS", label: "📱 QRIS" },
+                            { value: "TRANSFER BANK", label: "🏦 Transfer" },
+                          ].map(m => (
+                            <button
+                              key={m.value}
+                              type="button"
+                              onClick={() => setPosPaymentMethod(m.value)}
+                              className={`py-2.5 px-3 rounded-xl text-sm font-semibold border-2 transition-all ${
+                                posPaymentMethod === m.value
+                                  ? "bg-blue-50 border-blue-400 text-blue-700"
+                                  : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
+                              }`}
+                            >
+                              {m.label}
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="space-y-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                          {/* Split 1 */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <label className="text-xs font-semibold text-gray-600">Metode 1</label>
+                              <select 
+                                value={posSplitMethod1}
+                                onChange={e => setPosSplitMethod1(e.target.value)}
+                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                              >
+                                <option value="CASH">Cash</option>
+                                <option value="QRIS">QRIS</option>
+                                <option value="TRANSFER BANK">Transfer Bank</option>
+                                <option value="DEBIT">Debit</option>
+                              </select>
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs font-semibold text-gray-600">Nominal 1</label>
+                              <input 
+                                type="number" 
+                                min="0" 
+                                value={posSplitAmount1.toString()}
+                                onChange={e => {
+                                  const val = e.target.value === "" ? 0 : parseInt(e.target.value);
+                                  setPosSplitAmount1(val);
+                                  setPosSplitAmount2(Math.max(0, posGrandTotal - val));
+                                }}
+                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                              />
+                            </div>
+                          </div>
+                          {/* Split 2 */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1">
+                              <label className="text-xs font-semibold text-gray-600">Metode 2</label>
+                              <select 
+                                value={posSplitMethod2}
+                                onChange={e => setPosSplitMethod2(e.target.value)}
+                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                              >
+                                <option value="QRIS">QRIS</option>
+                                <option value="CASH">Cash</option>
+                                <option value="TRANSFER BANK">Transfer Bank</option>
+                                <option value="DEBIT">Debit</option>
+                              </select>
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-xs font-semibold text-gray-600">Nominal 2</label>
+                              <input 
+                                type="number" 
+                                min="0" 
+                                value={posSplitAmount2.toString()}
+                                onChange={e => setPosSplitAmount2(e.target.value === "" ? 0 : parseInt(e.target.value))}
+                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Amount Paid */}
-                    <div className="space-y-1.5">
-                      <label className="text-sm font-semibold text-gray-700">Uang Diterima (Rp)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        required
-                        value={posAmountPaid || ""}
-                        onChange={e => setPosAmountPaid(parseInt(e.target.value) || 0)}
-                        placeholder="Masukkan nominal..."
-                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-lg font-bold focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors"
-                      />
-                      {/* Quick amount buttons */}
-                      <div className="flex gap-2 flex-wrap">
-                        {[posGrandTotal, 50000, 100000, 150000, 200000].filter((v, i, a) => a.indexOf(v) === i && v > 0).map(amount => (
-                          <button
-                            key={amount}
-                            type="button"
-                            onClick={() => setPosAmountPaid(amount)}
-                            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-emerald-100 hover:text-emerald-700 transition-colors"
-                          >
-                            {formatRupiah(amount)}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Change */}
-                    {posAmountPaid >= posGrandTotal && posAmountPaid > 0 && (
-                      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-semibold text-emerald-700">Kembalian</span>
-                          <span className="text-xl font-extrabold text-emerald-700">{formatRupiah(posChangeAmount)}</span>
+                    {!posIsSplitPayment && (
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-semibold text-gray-700">Uang Diterima (Rp)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          required
+                          value={posAmountPaid.toString()}
+                          onChange={e => setPosAmountPaid(e.target.value === "" ? 0 : parseInt(e.target.value))}
+                          placeholder="Masukkan nominal..."
+                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-lg font-bold focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                        />
+                        {/* Quick amount buttons */}
+                        <div className="flex gap-2 flex-wrap">
+                          {[posGrandTotal, 50000, 100000, 150000, 200000].filter((v, i, a) => a.indexOf(v) === i && v > 0).map(amount => (
+                            <button
+                              key={amount}
+                              type="button"
+                              onClick={() => setPosAmountPaid(amount)}
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-blue-100 hover:text-blue-700 transition-colors"
+                            >
+                              {formatRupiah(amount)}
+                            </button>
+                          ))}
                         </div>
                       </div>
                     )}
 
-                    {posAmountPaid > 0 && posAmountPaid < posGrandTotal && (
+                    {/* Change */}
+                    {totalPosPaid >= posGrandTotal && totalPosPaid > 0 && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-semibold text-blue-700">Kembalian</span>
+                          <span className="text-xl font-extrabold text-blue-700">{formatRupiah(posChangeAmount)}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {totalPosPaid > 0 && totalPosPaid < posGrandTotal && (
                       <div className="bg-red-50 border border-red-200 rounded-xl p-3 flex items-center gap-2 text-red-700 text-sm">
-                        <AlertCircle className="w-4 h-4 shrink-0" /> Uang diterima kurang {formatRupiah(posGrandTotal - posAmountPaid)}
+                        <AlertCircle className="w-4 h-4 shrink-0" /> Uang diterima kurang {formatRupiah(posGrandTotal - totalPosPaid)}
                       </div>
                     )}
 
@@ -810,8 +1111,8 @@ export default function AdminVisitsPage() {
                     {/* Submit Button */}
                     <button
                       type="submit"
-                      disabled={posProcessing || posItems.length === 0 || posAmountPaid < posGrandTotal}
-                      className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-emerald-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] flex items-center justify-center gap-2"
+                      disabled={posProcessing || posItems.length === 0 || totalPosPaid < posGrandTotal}
+                      className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] flex items-center justify-center gap-2"
                     >
                       {posProcessing ? (
                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -829,15 +1130,15 @@ export default function AdminVisitsPage() {
       ) : (
 <div className="max-w-lg mx-auto animate-in fade-in duration-300">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-xl overflow-hidden text-center">
-              <div className="bg-gradient-to-br from-emerald-500 to-teal-600 px-8 py-10 text-white">
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 px-8 py-10 text-white">
                 <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
                   <Check className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-2xl font-extrabold">Pembayaran Berhasil!</h3>
-                <p className="text-emerald-100 mt-2 font-medium">{posCreatedInvoice.invoiceNumber}</p>
+                <p className="text-blue-100 mt-2 font-medium">{posCreatedInvoice.invoiceNumber}</p>
                 <p className="text-3xl font-extrabold mt-3">{formatRupiah(posCreatedInvoice.grandTotal)}</p>
                 {posCreatedInvoice.changeAmount > 0 && (
-                  <p className="text-emerald-100 mt-1">Kembalian: {formatRupiah(posCreatedInvoice.changeAmount)}</p>
+                  <p className="text-blue-100 mt-1">Kembalian: {formatRupiah(posCreatedInvoice.changeAmount)}</p>
                 )}
               </div>
 
@@ -853,7 +1154,7 @@ export default function AdminVisitsPage() {
                     const branch = branches.find(b => b.id === posBranchId);
                     handleSendWA(posCreatedInvoice.id);
                   }}
-                  className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold transition-colors"
+                  className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition-colors"
                 >
                   <MessageCircle className="w-5 h-5" /> Kirim via WhatsApp
                 </button>
@@ -876,30 +1177,105 @@ export default function AdminVisitsPage() {
     </>
   );
 
+  const filteredInvoiceHistory = invoiceHistory.filter(inv => {
+    if (historyPaymentFilter === "ALL") return true;
+    return inv.paymentMethod === historyPaymentFilter;
+  });
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 bg-gray-50/50 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        {/* Header Section */}
-        <PageHeader 
-          title="Buku Pasien"
-          description="Catat dan pantau seluruh riwayat kunjungan pasien klinik."
-          icon={CalendarCheck}
-          rightContent={
-            (activeTab === "list" || activeTab === "recap") ? (
-              <button
-                onClick={() => setIsFormOpen(true)}
-                className="group bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 shadow-lg shadow-indigo-200 transition-all active:scale-95"
-              >
-                <Plus className="h-5 w-5 group-hover:rotate-90 transition-transform" /> 
-                Catat Kunjungan
-              </button>
-            ) : undefined
-          }
-        />
+        {/* Mobile-only Seabank-style UI */}
+        <div className="md:hidden">
+          {/* Header */}
+          <div className="bg-blue-600 text-white px-4 pt-6 pb-20 relative -mx-4 -mt-8 sm:-mx-6 sm:-mt-8">
+            <div className="flex justify-between items-center mb-2">
+              <h1 className="text-xl font-bold tracking-tight">Kunjungan</h1>
+              <div className="relative p-2 bg-blue-500/50 rounded-full border border-blue-400">
+                <Bell className="w-5 h-5 text-white" />
+                <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-blue-500"></div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Overlapping Grid Card */}
+          <div className="px-1 -mt-14 relative z-10 mb-4">
+            <div className="bg-white rounded-[20px] p-4 shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-gray-100">
+              <div className="grid grid-cols-4 gap-y-5 gap-x-2">
+                {[
+                  { name: "Tambah", icon: Plus, action: () => setIsFormOpen(true), color: "text-blue-500", badge: "" },
+                  { name: "Hari Ini", icon: CalendarCheck, action: () => { setFilterDate(new Date().toISOString().split("T")[0]); handleTabChange("list"); }, color: "text-blue-500", badge: "New" },
+                  { name: "Selesai", icon: CheckCircle2, action: () => handleTabChange("list"), color: "text-blue-500", badge: "" },
+                  { name: "Batal", icon: Trash2, action: () => handleTabChange("list"), color: "text-red-500", badge: "" },
+                  { name: "Laporan", icon: FileText, action: () => handleTabChange("recap"), color: "text-orange-500", badge: "" },
+                  { name: "Pasien", icon: Users, action: () => handleTabChange("retention"), color: "text-purple-500", badge: "" },
+                  { name: "Struk", icon: Receipt, action: () => handleTabChange("invoices"), color: "text-blue-500", badge: "" },
+                  { name: "POS", icon: Store, action: () => handleTabChange("pos"), color: "text-rose-500", badge: "" },
+                ].map((item, idx) => (
+                  <button key={idx} onClick={item.action} className="flex flex-col items-center justify-start gap-1.5 relative group">
+                    <div className="w-[42px] h-[42px] rounded-[14px] bg-gray-50 border border-gray-100 flex items-center justify-center transition-transform active:scale-95">
+                      <item.icon className={`w-[20px] h-[20px] ${item.color} fill-${item.color.split('-')[1]}-100`} strokeWidth={2} />
+                    </div>
+                    {item.badge && (
+                      <span className="absolute -top-1.5 right-0 md:right-4 bg-orange-100 text-orange-600 text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm border border-orange-200 uppercase tracking-widest z-10">
+                        {item.badge}
+                      </span>
+                    )}
+                    <span className="font-semibold text-[10px] text-gray-700 text-center w-full leading-tight">{item.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
 
-        {/* Tab Selection */}
-        <div className="flex border-b border-gray-200 mb-8 bg-white p-1 rounded-xl shadow-sm w-max">
+          {/* Mobile Tabs */}
+          <div className="flex bg-white px-2 border-b border-gray-100 rounded-t-2xl">
+            <button 
+              onClick={() => { setActiveTab("list"); setFilterDate(new Date().toISOString().split("T")[0]); }}
+              className={`flex-1 py-3 text-[13px] font-bold text-center border-b-[3px] transition-colors ${filterDate === new Date().toISOString().split("T")[0] && activeTab === "list" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500"}`}
+            >
+              Hari Ini
+            </button>
+            <button 
+              onClick={() => { setActiveTab("list"); setFilterDate(""); }}
+              className={`flex-1 py-3 text-[13px] font-bold text-center border-b-[3px] transition-colors ${filterDate === "" && activeTab === "list" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500"}`}
+            >
+              Semua Data
+            </button>
+          </div>
+
+          {/* Mobile Search */}
+          <div className="p-4 bg-white shadow-[0_4px_10px_rgba(0,0,0,0.03)] relative z-10">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Cari pasien di sini"
+                className="w-full pl-10 pr-4 py-3 bg-gray-100 border border-transparent rounded-full text-[13px] font-semibold text-gray-700 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Header Section */}
+        <div className="hidden md:block">
+          <PageHeader 
+            title="Kunjungan"
+            description="Catat dan pantau seluruh riwayat kunjungan pasien."
+            icon={CalendarCheck}
+            rightContent={
+              <button onClick={() => setIsFormOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors">
+                <Plus className="h-5 w-5" /> Catat Kunjungan
+              </button>
+            }
+          />
+        </div>
+
+        {/* Desktop Tab Selection */}
+        <div className="hidden md:flex border-b border-gray-200 mb-8 bg-white p-1 rounded-xl shadow-sm w-max">
           <button
             onClick={() => handleTabChange("list")}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === "list" ? "bg-primary text-primary-foreground shadow-md" : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"}`}
@@ -946,9 +1322,9 @@ export default function AdminVisitsPage() {
         {isFormOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-white rounded-2xl border border-gray-100 shadow-2xl p-0 w-full max-w-5xl max-h-[90vh] overflow-y-auto relative transform transition-all animate-in zoom-in-95 duration-300">
-              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 to-blue-500 z-10"></div>
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-blue-500 z-10"></div>
               
-              <div className="flex justify-between items-center px-8 py-6 border-b border-gray-100 bg-gray-50/50 sticky top-0 z-10 backdrop-blur-md">
+              <div className="flex justify-between items-center px-8 py-6 border-b border-gray-100 bg-white sticky top-0 z-20">
               <div>
                 <h3 className="text-xl font-bold text-gray-800">Catat Kunjungan Baru</h3>
                 <p className="text-sm text-gray-500 mt-1">Lengkapi data pasien dan rincian layanan kunjungan.</p>
@@ -963,34 +1339,49 @@ export default function AdminVisitsPage() {
                 
                 {/* Kolom Kiri: Data Pasien */}
                 <div className="lg:col-span-5 space-y-5">
-                  <h4 className="text-sm font-bold text-indigo-600 uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <User className="w-4 h-4"/> Data Pasien
-                  </h4>
+                  <div className="flex justify-between items-center mb-4">
+                    <h4 className="text-sm font-bold text-blue-600 uppercase tracking-wider flex items-center gap-2">
+                      <User className="w-4 h-4"/> Data Pasien
+                    </h4>
+                    <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-md border border-gray-200">
+                      {formData.name && formData.phone ? "✓ Data Terisi" : "1/4 Terisi"}
+                    </span>
+                  </div>
                   
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700">Nomor Telepon/WA</label>
-                    <div className="relative">
-                      <Phone className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <input type="text" required value={formData.phone} onChange={handlePhoneChange} placeholder="Misal: 08123..." className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors" />
+                  <div className="space-y-1.5 relative">
+                    <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">
+                      Nomor Telepon/WA <span className="text-red-500 font-bold">*</span>
+                    </label>
+                    <div className="relative group">
+                      <Search className={`w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${formData.phone ? 'text-blue-500' : 'text-gray-400 group-focus-within:text-blue-500'}`} />
+                      <input type="text" required value={formData.phone} onChange={handlePhoneChange} placeholder="Cari Pasien (Ketik 08...)" className={`w-full pl-10 pr-10 py-3 bg-white border-2 rounded-xl focus:ring-4 focus:ring-blue-500/20 transition-all font-semibold ${patients.find(p => p.phone === formData.phone) ? 'border-blue-400 focus:border-blue-500 text-blue-900' : 'border-gray-300 focus:border-blue-500 text-gray-900'}`} />
+                      {patients.find(p => p.phone === formData.phone) && (
+                        <CheckCircle2 className="w-5 h-5 absolute right-3 top-1/2 -translate-y-1/2 text-blue-500" />
+                      )}
                     </div>
-                    {patients.find(p => p.phone === formData.phone) && (
-                      <p className="text-xs text-green-600 mt-1 flex items-center gap-1"><UserCheck className="w-3 h-3"/> Pasien terdaftar ditemukan.</p>
-                    )}
+                    {patients.find(p => p.phone === formData.phone) ? (
+                      <p className="text-[11px] font-bold text-blue-700 mt-1 flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-md w-max border border-blue-100 animate-in fade-in zoom-in duration-300"><UserCheck className="w-3.5 h-3.5"/> ✓ Pasien lama ditemukan (Otomatis terisi)</p>
+                    ) : formData.phone.length > 8 ? (
+                      <p className="text-[11px] font-bold text-blue-700 mt-1 flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-md w-max border border-blue-100 animate-in fade-in zoom-in duration-300"><Plus className="w-3.5 h-3.5"/> + Pasien baru</p>
+                    ) : null}
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700">Nama Lengkap</label>
-                    <input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors" placeholder="Nama Pasien" />
+                    <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">Nama Lengkap <span className="text-red-500 font-bold">*</span></label>
+                    <div className="relative">
+                      <input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full px-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium text-gray-900 placeholder:text-gray-400" placeholder="Ketik nama lengkap..." />
+                      {formData.name && <Check className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-blue-500" />}
+                    </div>
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700">Jenis Kelamin</label>
-                    <div className="flex gap-4">
-                      <label className={`flex-1 flex justify-center items-center gap-2 py-2.5 px-4 rounded-xl border cursor-pointer transition-all ${formData.gender === 'L' ? 'bg-blue-50 border-blue-200 text-blue-700 font-medium' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                    <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">Jenis Kelamin <span className="text-red-500 font-bold">*</span></label>
+                    <div className="flex gap-3">
+                      <label className={`flex-1 flex justify-center items-center gap-2 py-3 px-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${formData.gender === 'L' ? 'bg-blue-600 border-blue-600 text-white font-bold shadow-md shadow-blue-500/20 scale-[1.02]' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300'}`}>
                         <input type="radio" name="gender" value="L" checked={formData.gender === 'L'} onChange={e => setFormData({ ...formData, gender: e.target.value })} className="hidden" />
                         Laki-laki
                       </label>
-                      <label className={`flex-1 flex justify-center items-center gap-2 py-2.5 px-4 rounded-xl border cursor-pointer transition-all ${formData.gender === 'P' ? 'bg-pink-50 border-pink-200 text-pink-700 font-medium' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                      <label className={`flex-1 flex justify-center items-center gap-2 py-3 px-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${formData.gender === 'P' ? 'bg-pink-600 border-pink-600 text-white font-bold shadow-md shadow-pink-500/20 scale-[1.02]' : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300'}`}>
                         <input type="radio" name="gender" value="P" checked={formData.gender === 'P'} onChange={e => setFormData({ ...formData, gender: e.target.value })} className="hidden" />
                         Perempuan
                       </label>
@@ -998,10 +1389,10 @@ export default function AdminVisitsPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700">Alamat</label>
+                    <label className="text-sm font-medium text-gray-500 flex items-center gap-1">Alamat <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 text-gray-500">Opsional</span></label>
                     <div className="relative">
-                      <MapPin className="w-5 h-5 absolute left-3 top-3 text-gray-400" />
-                      <textarea value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} rows={2} className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors" placeholder="Detail alamat..."></textarea>
+                      <MapPin className="w-5 h-5 absolute left-3 top-3 text-gray-300" />
+                      <textarea value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} rows={2} className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-400 transition-all text-sm" placeholder="Detail alamat..."></textarea>
                     </div>
                   </div>
                 </div>
@@ -1012,7 +1403,7 @@ export default function AdminVisitsPage() {
 
                 {/* Kolom Kanan: Rincian Layanan */}
                 <div className="lg:col-span-6 space-y-5">
-                  <h4 className="text-sm font-bold text-teal-600 uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <h4 className="text-sm font-bold text-blue-600 uppercase tracking-wider mb-4 flex items-center gap-2">
                     <Activity className="w-4 h-4"/> Rincian Layanan
                   </h4>
 
@@ -1038,7 +1429,7 @@ export default function AdminVisitsPage() {
 
                           {isServiceDropdownOpen && (
                             <div className="absolute z-50 w-[150%] md:w-[200%] max-w-[300px] mt-2 bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.1)] border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-top-2">
-                              <div className="p-3 border-b border-gray-100 bg-slate-50/50 sticky top-0 z-10">
+                              <div className="p-3 border-b border-gray-100 bg-white sticky top-0 z-20">
                                 <div className="relative">
                                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                                   <input 
@@ -1046,23 +1437,23 @@ export default function AdminVisitsPage() {
                                     placeholder="Cari layanan..."
                                     value={serviceSearch}
                                     onChange={(e) => setServiceSearch(e.target.value)}
-                                    className="w-full pl-9 pr-4 py-2 bg-white rounded-lg border border-gray-200 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none text-sm transition-all"
+                                    className="w-full pl-9 pr-4 py-2 bg-white rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm transition-all"
                                     onClick={(e) => e.stopPropagation()}
                                   />
                                 </div>
                               </div>
                               
                               <div className="max-h-64 overflow-y-auto p-2 space-y-2">
-                                {["Terapi Bekam", "Pijat & Refleksi", "Paket Kombinasi", "Layanan Medis & Ekstra", "Lainnya"].map(cat => {
+                                {["Paket Treatment", "Full Body Massages", "Refleksi", "Bekam", "Adds On", "Lainnya"].map(cat => {
                                   const catServices = services.filter(s => {
-                                    if (cat === "Lainnya") return !s.category && !s.name.toLowerCase().includes("bekam");
-                                    return (s.category === cat || (!s.category && cat === "Terapi Bekam" && s.name.toLowerCase().includes("bekam"))) && s.name.toLowerCase().includes(serviceSearch.toLowerCase());
+                                    if (cat === "Lainnya") return !s.category;
+                                    return (s.category === cat || (!s.category && cat === "Paket Treatment")) && s.name.toLowerCase().includes(serviceSearch.toLowerCase());
                                   });
                                   if (catServices.length === 0) return null;
                                   return (
                                     <div key={cat} className="mb-1">
                                       <div className="px-3 py-1.5 text-[11px] font-bold text-gray-400 uppercase tracking-wider bg-gray-50/50 rounded-md mb-1">
-                                        {cat === "Terapi Bekam" ? "Bekam" : cat}
+                                        {cat}
                                       </div>
                                       {catServices.map(s => {
                                         const isSelected = selectedServices.includes(s.id);
@@ -1080,10 +1471,10 @@ export default function AdminVisitsPage() {
                                                 setSelectedServices([...selectedServices, s.id]);
                                               }
                                             }}
-                                            className={`px-3 py-2.5 rounded-lg cursor-pointer flex justify-between items-center transition-colors ${isSelected ? 'bg-teal-50 text-teal-700 font-bold' : 'text-gray-700 hover:bg-gray-50 hover:text-teal-600'}`}
+                                            className={`px-3 py-2.5 rounded-lg cursor-pointer flex justify-between items-center transition-colors ${isSelected ? 'bg-blue-50 text-blue-700 font-bold' : 'text-gray-700 hover:bg-gray-50 hover:text-blue-600'}`}
                                           >
                                             <div className="flex items-center gap-3">
-                                              <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'bg-teal-500 border-teal-500 text-white' : 'border-gray-300'}`}>
+                                              <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${isSelected ? 'bg-blue-500 border-blue-500 text-white' : 'border-gray-300'}`}>
                                                 {isSelected && <Check className="w-3 h-3" />}
                                               </div>
                                               <span className="text-sm font-medium">{s.name}</span>
@@ -1102,7 +1493,7 @@ export default function AdminVisitsPage() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="text-sm font-semibold text-gray-700">Cabang</label>
+                      <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">Cabang <span className="text-red-500 font-bold">*</span></label>
                       <div className="relative">
                         <Store className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                         <select 
@@ -1110,46 +1501,131 @@ export default function AdminVisitsPage() {
                           disabled={session?.role === "BRANCH_ADMIN"}
                           value={formData.branchId} 
                           onChange={e => setFormData({ ...formData, branchId: e.target.value })} 
-                          className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors appearance-none disabled:opacity-70"
+                          className="w-full pl-9 pr-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none disabled:opacity-70 font-medium"
                         >
                           <option value="">Pilih Cabang</option>
                           {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                         </select>
+                        {formData.branchId && <Check className="w-4 h-4 absolute right-8 top-1/2 -translate-y-1/2 text-blue-500" />}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Terapis Penanggung Jawab — Premium Card Picker */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">
+                      <UserCheck className="w-4 h-4 text-blue-600" />
+                      Terapis Penanggung Jawab
+                      <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 text-gray-500 font-medium">Opsional</span>
+                    </label>
+                    <TherapistPicker
+                      branchId={formData.branchId}
+                      selectedTherapistId={formData.therapistId}
+                      onSelect={(id) => setFormData({ ...formData, therapistId: id })}
+                      pollInterval={5000}
+                    />
+                  </div>
+
+                  {/* Tanggal + Jam Masuk + Jam Keluar */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">Tanggal <span className="text-red-500 font-bold">*</span></label>
+                      <div className="relative">
+                        <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                        <input type="date" required value={formData.visitDate} onChange={e => setFormData({ ...formData, visitDate: e.target.value })} className="w-full pl-9 pr-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium" />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">
+                        <Clock className="w-4 h-4 text-blue-600" />
+                        Jam Masuk <span className="text-red-500 font-bold">*</span>
+                      </label>
+                      <div className="relative">
+                        <input 
+                          type="time" 
+                          required
+                          value={formData.checkInTime} 
+                          onChange={e => setFormData({ ...formData, checkInTime: e.target.value })} 
+                          className="w-full px-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium" 
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">
+                        <Timer className="w-4 h-4 text-amber-600" />
+                        Jam Keluar
+                      </label>
+                      <div className="relative">
+                        <input 
+                          type="time" 
+                          value={formData.checkOutTime} 
+                          onChange={e => setFormData({ ...formData, checkOutTime: e.target.value })} 
+                          className="w-full px-4 py-3 bg-amber-50/50 border-2 border-amber-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 transition-all font-medium text-amber-900" 
+                        />
+                      </div>
+                      {formData.checkOutTime && formData.checkInTime && (
+                        <p className="text-[10px] text-blue-600 font-bold flex items-center gap-1">
+                          ⏱ Durasi: {(() => {
+                            const [h1, m1] = formData.checkInTime.split(":").map(Number);
+                            const [h2, m2] = formData.checkOutTime.split(":").map(Number);
+                            const diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+                            if (diff <= 0) return "Tidak valid";
+                            const hours = Math.floor(diff / 60);
+                            const mins = diff % 60;
+                            return hours > 0 ? `${hours} jam ${mins} menit` : `${mins} menit`;
+                          })()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-semibold text-gray-800 flex items-center gap-1">Tensi Darah <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 text-gray-500 font-medium">Opsional</span></label>
+                      <div className="relative">
+                        <Activity className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                        <input type="text" value={formData.bloodPressure} onChange={e => setFormData({ ...formData, bloodPressure: e.target.value })} placeholder="Misal: 120/80" className="w-full pl-9 pr-10 py-3 bg-white border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-400 transition-all font-medium" />
+                        {!formData.bloodPressure && <span title="Tensi belum diisi" className="absolute right-3 top-1/2 -translate-y-1/2"><AlertCircle className="w-4 h-4 text-amber-400" /></span>}
                       </div>
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700">Terapis Penanggung Jawab</label>
-                    <div className="relative">
-                      <UserCheck className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                      <select value={formData.therapistId} onChange={e => setFormData({ ...formData, therapistId: e.target.value })} className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors appearance-none">
-                        <option value="">Tanpa Terapis Khusus</option>
-                        {therapists.filter(t => !formData.branchId || !t.branchId || t.branchId === formData.branchId).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                      </select>
+                    <label className="text-sm font-medium text-gray-500 flex items-center gap-2"><FileText className="w-4 h-4 text-gray-400"/> Catatan Medis Singkat <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200 text-gray-500">Opsional</span></label>
+                    <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} rows={2} className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-400 transition-all text-sm" placeholder="Keluhan utama, hasil diagnosa, tindakan..." />
+                  </div>
+                  
+                  {/* Summary Ringkasan */}
+                  {selectedServices.length > 0 && (
+                    <div className="mt-6 bg-blue-50/50 border border-blue-100 rounded-xl p-4 animate-in fade-in zoom-in duration-300">
+                      <h5 className="text-xs font-bold text-blue-800 uppercase tracking-wider mb-3">Ringkasan Layanan</h5>
+                      <div className="space-y-2">
+                        {selectedServices.map(id => {
+                          const s = services.find(srv => srv.id === id);
+                          return (
+                            <div key={id} className="flex justify-between text-sm">
+                              <span className="text-gray-600">{s?.name} <span className="text-gray-400 text-xs">({s?.durationMinutes}m)</span></span>
+                              <span className="font-semibold text-gray-800">{formatRupiah(s?.price || 0)}</span>
+                            </div>
+                          );
+                        })}
+                        <div className="border-t border-blue-200/50 pt-2 mt-2 flex justify-between font-bold">
+                          <span className="text-blue-900">Estimasi Total</span>
+                          <span className="text-blue-700">
+                            {formatRupiah(selectedServices.reduce((sum, id) => sum + (services.find(s => s.id === id)?.price || 0), 0))}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700">Tanggal</label>
-                    <div className="relative">
-                      <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                      <input type="date" required value={formData.visitDate} onChange={e => setFormData({ ...formData, visitDate: e.target.value })} className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700 flex items-center gap-2"><FileText className="w-4 h-4 text-gray-400"/> Catatan Medis Singkat</label>
-                    <textarea value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} rows={2} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-colors" placeholder="Keluhan utama, hasil diagnosa, tindakan..." />
-                  </div>
                 </div>
-
               </div>
               
-              <div className="mt-8 flex gap-3 justify-end pt-5 border-t border-gray-100">
-                <button type="button" onClick={() => setIsFormOpen(false)} className="px-6 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-gray-100 transition-colors">Batalkan</button>
-                <button type="submit" disabled={saving} className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 text-white px-8 py-2.5 rounded-xl font-semibold shadow-md transition-colors flex items-center gap-2">
-                  {saving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Plus className="w-5 h-5"/>}
+              <div className="sticky bottom-0 bg-white z-20 pb-6 pt-4 border-t border-gray-100 mt-8 flex gap-3 justify-end shadow-[0_-10px_20px_rgba(255,255,255,1)]">
+                <button type="button" onClick={() => setIsFormOpen(false)} className="px-6 py-2.5 rounded-xl font-medium text-gray-600 hover:bg-gray-100 transition-colors border border-gray-200 bg-white shadow-sm">Batalkan</button>
+                <button type="submit" disabled={saving || !formData.phone || !formData.name || selectedServices.length === 0 || !formData.branchId || !formData.visitDate} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white px-8 py-2.5 rounded-xl font-semibold shadow-[0_4px_12px_rgba(13,148,136,0.3)] transition-all flex items-center gap-2 hover:-translate-y-0.5 active:translate-y-0 disabled:transform-none disabled:shadow-none">
+                  {saving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save className="w-5 h-5"/>}
                   {saving ? "Memproses..." : "Simpan Kunjungan"}
                 </button>
               </div>
@@ -1180,35 +1656,149 @@ export default function AdminVisitsPage() {
               </div>
             )}
 
+            {/* Insight Panel KPIs */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              {[
+                { label: "Kunjungan Hari Ini", value: kpiVisitsToday.toString(), icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
+                { label: "Pendapatan Hari Ini", value: kpiRevenueFormatted, icon: Wallet, color: "text-blue-600", bg: "bg-blue-50" },
+                { label: "Pasien Baru", value: kpiNewPatientsToday.toString(), icon: TrendingUp, color: "text-orange-600", bg: "bg-orange-50" },
+                { label: "Retensi", value: `${kpiRetention}%`, icon: Activity, color: "text-purple-600", bg: "bg-purple-50" },
+              ].map((kpi, idx) => (
+                <div key={idx} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${kpi.bg}`}>
+                    <kpi.icon className={`w-6 h-6 ${kpi.color}`} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 mb-0.5">{kpi.label}</p>
+                    <p className="text-lg font-bold text-gray-900">{kpi.value}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
             {/* Tabel Data Panel */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden relative">
               
               {/* Header Tabel */}
-              <div className="px-6 py-5 border-b border-gray-100 bg-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="hidden md:flex px-6 py-5 border-b border-gray-100 bg-white flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                   <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
                     Riwayat Kunjungan <span className="bg-gray-100 text-gray-600 text-xs py-1 px-2.5 rounded-full ml-2">{finalVisits.length}</span>
                   </h3>
                 </div>
                 
-                <div className="relative">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Cari pasien..." className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors w-full sm:w-64" />
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="relative">
+                    <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input 
+                      type="date" 
+                      value={filterDate} 
+                      onChange={(e) => setFilterDate(e.target.value)} 
+                      className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors w-full sm:w-auto text-gray-600" 
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="hidden lg:flex bg-gray-100 p-1 rounded-lg">
+                      <button onClick={() => setTableDensity("compact")} className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-colors ${tableDensity === "compact" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>Compact</button>
+                      <button onClick={() => setTableDensity("comfortable")} className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-colors ${tableDensity === "comfortable" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>Comfort</button>
+                      <button onClick={() => setTableDensity("large")} className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-colors ${tableDensity === "large" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>Large</button>
+                    </div>
+                    <div className="relative group">
+                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                      <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Cari pasien..." className="pl-9 pr-14 py-2 border border-gray-200 rounded-lg text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors w-full sm:w-64" />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none opacity-60 group-focus-within:opacity-0 transition-opacity">
+                        <kbd className="px-1.5 py-0.5 text-[10px] font-sans bg-white border border-gray-200 rounded shadow-sm text-gray-500 font-semibold">⌘</kbd>
+                        <kbd className="px-1.5 py-0.5 text-[10px] font-sans bg-white border border-gray-200 rounded shadow-sm text-gray-500 font-semibold">K</kbd>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
+              
+              {/* Mobile List View (Seabank Style) */}
+              <div className="md:hidden bg-white min-h-[50vh]">
+                {loading ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                    <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <span className="text-sm font-medium">Memuat data...</span>
+                  </div>
+                ) : finalVisits.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16">
+                    <div className="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mb-4 border border-gray-100">
+                      <CalendarCheck className="h-8 w-8 text-gray-300" />
+                    </div>
+                    <p className="text-gray-500 font-bold text-sm">Belum ada kunjungan</p>
+                    <p className="text-xs text-gray-400 mt-1">Gunakan tab atau pencarian lain.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-100">
+                    {paginatedVisits.map(v => {
+                      const patientName = getPatientName(v.patientId);
+                      const initial = patientName.charAt(0).toUpperCase();
+                      const isCompleted = v.status === "completed";
+                      const isPaid = v.paymentStatus === "PAID";
+                      
+                      return (
+                        <div key={v.id} className="p-4 flex items-center justify-between hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer" onClick={() => setSelectedPatientHistoryId(v.patientId)}>
+                          <div className="flex items-center gap-3">
+                            <div className="w-[42px] h-[42px] rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg shadow-sm border border-blue-600">
+                              {initial}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-bold text-[14px] text-gray-900 leading-tight mb-0.5">{patientName}</span>
+                              <span className="text-[11px] text-gray-500 font-medium mb-1">
+                                {v.visitDate.split('-').reverse().join('/')} &bull; {getServiceName(v.serviceId)}
+                              </span>
+                              <div>{renderTherapyStatus(v)}</div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-col items-end gap-1">
+                            {isPaid ? (
+                              <button onClick={(e) => { e.stopPropagation(); }} className="p-1.5 text-yellow-500">
+                                <CheckCircle2 className="w-5 h-5 fill-yellow-50" />
+                              </button>
+                            ) : (
+                              <button onClick={(e) => { e.stopPropagation(); handleOpenPOSForVisit(v.id, v.patientId, v.branchId, v.therapistId, v.serviceId); }} className="p-1.5 text-orange-500 hover:scale-110 transition-transform">
+                                <Wallet className="w-5 h-5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                
+                {/* Mobile Pagination */}
+                {totalPages > 1 && (
+                  <div className="p-4 border-t border-gray-100 flex justify-center">
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={setCurrentPage}
+                      totalItems={finalVisits.length}
+                      itemsPerPage={itemsPerPage}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block">
+                <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse whitespace-nowrap">
                   <thead>
-                    <tr className="bg-gray-50/50 text-xs uppercase tracking-wider text-gray-500 border-b border-gray-100">
-                      <th className="px-6 py-4 font-semibold">Waktu & Tgl</th>
+                    <tr className="bg-[#F8FAFC] text-[11px] font-extrabold uppercase tracking-widest text-gray-500 border-b border-gray-200 sticky top-0 z-10 shadow-sm">
+                      <th className="px-6 py-4">Waktu & Tgl</th>
                       <th className="px-6 py-4 font-semibold">Profil Pasien</th>
                       <th className="px-6 py-4 font-semibold">Info Layanan</th>
                       {selectedBranchId === "ALL" && (
                         <th className="px-6 py-4 font-semibold">Cabang</th>
                       )}
-                      <th className="px-6 py-4 font-semibold">Status Pembayaran</th>
-                      <th className="px-6 py-4 font-semibold w-1/4">Catatan Medis</th>
+                      <th className="px-6 py-4">Status Pembayaran</th>
+                      <th className="px-6 py-4 w-1/4">Catatan Medis</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -1220,29 +1810,43 @@ export default function AdminVisitsPage() {
                         </div>
                       </td></tr>
                     ) : finalVisits.length === 0 ? (
-                      <tr><td colSpan={6} className="px-6 py-16 text-center">
-                        <div className="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100">
-                          <CalendarCheck className="h-8 w-8 text-gray-300" />
+                      <tr><td colSpan={6} className="px-6 py-20 text-center">
+                        <div className="bg-[#F8FAFC] w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5 border border-gray-100 shadow-sm">
+                          <Calendar className="h-10 w-10 text-blue-500/70" />
                         </div>
-                        <p className="text-gray-500 font-medium">Buku pasien masih kosong</p>
-                        <p className="text-sm text-gray-400 mt-1">Belum ada riwayat kunjungan yang sesuai dengan filter.</p>
+                        <h3 className="text-lg font-bold text-gray-900 mb-1">Belum ada kunjungan hari ini</h3>
+                        <p className="text-sm text-gray-500 mb-6">Klik "Catat Kunjungan" untuk mulai mencatat pasien.</p>
+                        <button onClick={() => setIsFormOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-md shadow-blue-500/20 transition-all flex items-center gap-2 mx-auto">
+                          <Plus className="w-4 h-4" /> Catat Kunjungan
+                        </button>
                       </td></tr>
                     ) : (
                       paginatedVisits.map(v => {
                         const visitNumber = getVisitSequenceNumber(v.patientId, v.id);
                         const isNewPatient = visitNumber === 1;
                         
+                        const tdClass = `px-6 ${tableDensity === "compact" ? "py-2" : tableDensity === "large" ? "py-6" : "py-4"}`;
+                        
                         return (
-                          <tr key={v.id} className="hover:bg-indigo-50/30 transition-colors group">
-                            <td className="px-6 py-4">
+                          <tr key={v.id} className="hover:bg-[#F8FAFC] hover:shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] cursor-pointer transition-all duration-200 group relative">
+                            <td className={tdClass}>
                               <div className="font-semibold text-gray-900">{v.visitDate.split('-').reverse().join('/')}</div>
                               <div className="text-xs text-gray-500 flex items-center gap-1 mt-1"><Clock className="w-3 h-3"/> {v.visitTime}</div>
                             </td>
-                            <td className="px-6 py-4">
-                              <div className="font-bold text-gray-900">{getPatientName(v.patientId)}</div>
+                            <td className={tdClass}>
+                              <div className="font-bold text-gray-900 flex items-center gap-2">
+                                {getPatientName(v.patientId)}
+                                <button
+                                  onClick={() => setSelectedPatientHistoryId(v.patientId)}
+                                  className="text-[10px] bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-2 py-0.5 rounded-md border border-indigo-200 transition-colors flex items-center gap-1 font-bold shadow-sm"
+                                  title="Lihat Riwayat Kunjungan Pasien"
+                                >
+                                  <Calendar className="w-3 h-3" /> Riwayat
+                                </button>
+                              </div>
                               <div className="mt-1.5">
                                 {isNewPatient ? (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide uppercase bg-emerald-100 text-emerald-700 border border-emerald-200">
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wide uppercase bg-blue-100 text-blue-700 border border-blue-200">
                                     Pasien Baru
                                   </span>
                                 ) : (
@@ -1252,44 +1856,63 @@ export default function AdminVisitsPage() {
                                 )}
                               </div>
                             </td>
-                            <td className="px-6 py-4">
+                            <td className={tdClass}>
                               <div className="text-sm font-medium text-gray-800 flex items-center gap-1.5">
-                                <Activity className="w-3.5 h-3.5 text-teal-500"/> {getServiceName(v.serviceId)}
+                                <Activity className="w-3.5 h-3.5 text-blue-500"/> {getServiceName(v.serviceId)}
                               </div>
                               <div className="text-xs text-gray-500 flex items-center gap-1.5 mt-1">
                                 <User className="w-3.5 h-3.5"/> {getTherapistName(v.therapistId)}
                               </div>
+                              {renderTherapyStatus(v)}
                             </td>
                             {selectedBranchId === "ALL" && (
-                              <td className="px-6 py-4">
+                              <td className={tdClass}>
                                 <div className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded-md">
                                   <Store className="w-3.5 h-3.5"/> {getBranchName(v.branchId)}
                                 </div>
                               </td>
                             )}
-                            <td className="px-6 py-4">
+                            <td className={tdClass}>
                               {v.paymentStatus === "PAID" ? (
-                                <div className="flex flex-col items-start gap-1.5">
-                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 border border-emerald-200">
+                                <div className="flex flex-col items-start gap-1">
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-blue-100 text-blue-700 border border-blue-200 w-full justify-center group-hover:shadow-sm transition-shadow">
                                     <Check className="w-3 h-3" /> Lunas
                                   </span>
-                                  <button 
-                                    onClick={() => handleOpenPOSForVisit(v.id, v.patientId, v.branchId, v.therapistId, "")}
-                                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-md border border-indigo-200 transition-colors flex items-center gap-1"
-                                  >
-                                    <Plus className="w-3 h-3"/> Tambah Layanan
-                                  </button>
+                                  <div className="flex items-center gap-1 w-full">
+                                    <button 
+                                      onClick={() => handleOpenPOSForVisit(v.id, v.patientId, v.branchId, v.therapistId, "")}
+                                      className="text-[10px] flex-1 font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-md border border-indigo-200 transition-colors flex items-center justify-center gap-1"
+                                    >
+                                      <Plus className="w-3 h-3"/> Tambah Layanan
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteVisit(v.id)}
+                                      className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
+                                      title="Hapus Data Kunjungan"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
                                 </div>
                               ) : (
-                                <button 
-                                  onClick={() => handleOpenPOSForVisit(v.id, v.patientId, v.branchId, v.therapistId, v.serviceId)}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm"
-                                >
-                                  Ke Kasir
-                                </button>
+                                <div className="flex flex-col items-start gap-1">
+                                  <button 
+                                    onClick={() => handleOpenPOSForVisit(v.id, v.patientId, v.branchId, v.therapistId, v.serviceId)}
+                                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm"
+                                  >
+                                    Ke Kasir
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteVisit(v.id)}
+                                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-xs font-medium"
+                                    title="Hapus Data Kunjungan"
+                                  >
+                                    <Trash2 className="w-3 h-3" /> Hapus
+                                  </button>
+                                </div>
                               )}
                             </td>
-                            <td className="px-6 py-4">
+                            <td className={tdClass}>
                               <p className="text-sm text-gray-600 whitespace-normal line-clamp-2 max-w-sm" title={v.notes || ""}>
                                 {v.notes || <span className="text-gray-400 italic">Tidak ada catatan</span>}
                               </p>
@@ -1301,16 +1924,21 @@ export default function AdminVisitsPage() {
                   </tbody>
                 </table>
               </div>
+              </div>
+
               
-              {!loading && finalVisits.length > 0 && (
-                <Pagination 
-                  currentPage={currentPage} 
-                  totalPages={totalPages} 
-                  onPageChange={setCurrentPage} 
-                  totalItems={finalVisits.length} 
-                  itemsPerPage={itemsPerPage} 
-                />
-              )}
+              {/* Desktop Pagination */}
+              <div className="hidden md:block">
+                {!loading && finalVisits.length > 0 && (
+                  <Pagination 
+                    currentPage={currentPage} 
+                    totalPages={totalPages} 
+                    onPageChange={setCurrentPage} 
+                    totalItems={finalVisits.length} 
+                    itemsPerPage={itemsPerPage} 
+                  />
+                )}
+              </div>
             </div>
           </>
         )}
@@ -1374,16 +2002,19 @@ export default function AdminVisitsPage() {
                         <div>
                           <p className="text-gray-400 text-xs font-bold uppercase tracking-wider">Total Pasien</p>
                           <h4 className="text-2xl font-black text-gray-900 mt-1">{recapData.summary.totalVisits} Kunjungan</h4>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Laki-laki: <span className="font-bold">{recapData.summary.genderStats?.L || 0}</span> • Perempuan: <span className="font-bold">{recapData.summary.genderStats?.P || 0}</span>
+                          </p>
                         </div>
                       </div>
 
                       <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
-                        <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center text-green-600 shrink-0">
+                        <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
                           <TrendingUp className="w-6 h-6" />
                         </div>
                         <div>
                           <p className="text-gray-400 text-xs font-bold uppercase tracking-wider">Omset (Lunas)</p>
-                          <h4 className="text-2xl font-black text-green-600 mt-1">{formatRupiah(recapData.summary.totalRevenue)}</h4>
+                          <h4 className="text-2xl font-black text-blue-600 mt-1">{formatRupiah(recapData.summary.totalRevenue)}</h4>
                         </div>
                       </div>
 
@@ -1393,7 +2024,7 @@ export default function AdminVisitsPage() {
                         </div>
                         <div>
                           <p className="text-gray-400 text-xs font-bold uppercase tracking-wider">Pembayaran</p>
-                          <h4 className="text-sm font-bold text-gray-900 mt-1">Lunas: <span className="text-green-600 font-extrabold">{recapData.summary.totalPaid}</span></h4>
+                          <h4 className="text-sm font-bold text-gray-900 mt-1">Lunas: <span className="text-blue-600 font-extrabold">{recapData.summary.totalPaid}</span></h4>
                           <p className="text-xs text-gray-500">Belum: <span className="text-red-500 font-extrabold">{recapData.summary.totalUnpaid}</span></p>
                         </div>
                       </div>
@@ -1427,7 +2058,7 @@ export default function AdminVisitsPage() {
                                   <div className="font-bold text-gray-900">{getTherapistName(stat.therapistId)}</div>
                                 </td>
                                 <td className="px-6 py-4 text-gray-700">{stat.visitCount}</td>
-                                <td className="px-6 py-4 font-bold text-emerald-600">{formatRupiah(stat.revenue)}</td>
+                                <td className="px-6 py-4 font-bold text-blue-600">{formatRupiah(stat.revenue)}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -1437,9 +2068,49 @@ export default function AdminVisitsPage() {
                   </>
                 )}
               </div>
+            ) : monthlyData.length === 0 ? (
+              <div className="bg-white p-12 text-center rounded-2xl border border-gray-100 shadow-sm mt-6">
+                <p className="text-gray-500">Belum ada data kunjungan untuk bulan ini.</p>
+              </div>
             ) : (
-              <div className="bg-white p-12 text-center rounded-2xl border border-gray-100 shadow-sm">
-                <p className="text-gray-500">Fitur Tampilan Bulanan sedang dalam pemeliharaan.</p>
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mt-6 animate-in fade-in duration-300">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50/80 border-b border-gray-100">
+                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Tanggal</th>
+                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Total Kunjungan</th>
+                        <th className="px-6 py-4 text-xs font-bold text-blue-600 uppercase tracking-wider text-center">Lunas</th>
+                        <th className="px-6 py-4 text-xs font-bold text-red-500 uppercase tracking-wider text-center">Belum Lunas</th>
+                        <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Omset (Lunas)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {monthlyData.map((stat: any) => (
+                        <tr key={stat.date} className="hover:bg-indigo-50/30 transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="font-bold text-gray-900">
+                              {new Date(stat.date).toLocaleDateString("id-ID", { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-gray-700 font-medium text-center">{stat.totalVisits}</td>
+                          <td className="px-6 py-4 font-bold text-blue-600 text-center">{stat.totalPaid}</td>
+                          <td className="px-6 py-4 font-bold text-red-500 text-center">{stat.totalUnpaid}</td>
+                          <td className="px-6 py-4 font-bold text-blue-600 text-right">{formatRupiah(stat.totalRevenue)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot className="bg-gray-50/80 border-t border-gray-200">
+                      <tr>
+                        <td className="px-6 py-4 font-bold text-gray-900 text-right">TOTAL BULAN INI</td>
+                        <td className="px-6 py-4 font-black text-gray-900 text-center">{monthlyData.reduce((acc, curr) => acc + curr.totalVisits, 0)}</td>
+                        <td className="px-6 py-4 font-black text-blue-600 text-center">{monthlyData.reduce((acc, curr) => acc + curr.totalPaid, 0)}</td>
+                        <td className="px-6 py-4 font-black text-red-500 text-center">{monthlyData.reduce((acc, curr) => acc + curr.totalUnpaid, 0)}</td>
+                        <td className="px-6 py-4 font-black text-blue-600 text-right">{formatRupiah(monthlyData.reduce((acc, curr) => acc + curr.totalRevenue, 0))}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
               </div>
             )}
           </div>
@@ -1463,42 +2134,77 @@ export default function AdminVisitsPage() {
                     type="date"
                     value={historyDate}
                     onChange={e => setHistoryDate(e.target.value)}
-                    className="pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-colors font-medium cursor-pointer"
+                    className="pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors font-medium cursor-pointer"
                   />
                 </div>
-                <span className="text-sm text-gray-500 font-medium">{invoiceHistory.length} struk</span>
+                <select
+                  value={historyPaymentFilter}
+                  onChange={e => setHistoryPaymentFilter(e.target.value)}
+                  className="px-4 py-2.5 bg-white border border-gray-200 shadow-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-700 font-medium text-sm transition-all cursor-pointer"
+                >
+                  <option value="ALL">Semua Pembayaran</option>
+                  <option value="CASH">Cash</option>
+                  <option value="QRIS">QRIS</option>
+                  <option value="TRANSFER BANK">Transfer Bank</option>
+                  <option value="DEBIT">Debit</option>
+                </select>
+                <span className="text-sm text-gray-500 font-medium">{filteredInvoiceHistory.length} struk</span>
               </div>
               <button
                 onClick={handleExportCSV}
-                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-colors shadow-sm"
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition-colors shadow-sm"
               >
                 <Download className="w-4 h-4" /> Export CSV
               </button>
             </div>
 
             {/* Summary Cards */}
-            {invoiceHistory.length > 0 && (
+            {filteredInvoiceHistory.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
                   <p className="text-xs text-gray-500 font-semibold uppercase">Total Struk</p>
-                  <p className="text-2xl font-extrabold text-gray-900 mt-1">{invoiceHistory.length}</p>
+                  <p className="text-2xl font-extrabold text-gray-900 mt-1">{filteredInvoiceHistory.length}</p>
                 </div>
                 <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
                   <p className="text-xs text-gray-500 font-semibold uppercase">Total Pendapatan</p>
-                  <p className="text-2xl font-extrabold text-emerald-600 mt-1">
-                    {formatRupiah(invoiceHistory.reduce((sum, inv) => sum + inv.grandTotal, 0))}
+                  <p className="text-2xl font-extrabold text-blue-600 mt-1">
+                    {formatRupiah(filteredInvoiceHistory.reduce((sum, inv) => sum + inv.grandTotal, 0))}
                   </p>
                 </div>
                 <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
                   <p className="text-xs text-gray-500 font-semibold uppercase">Cash</p>
                   <p className="text-2xl font-extrabold text-gray-900 mt-1">
-                    {formatRupiah(invoiceHistory.filter(i => i.paymentMethod === "CASH").reduce((sum, inv) => sum + inv.grandTotal, 0))}
+                    {formatRupiah(filteredInvoiceHistory.reduce((sum, inv) => {
+                      if (inv.paymentMethod === "CASH") return sum + inv.grandTotal;
+                      if (inv.paymentMethod === "SPLIT" && inv.splitPayments) {
+                        try {
+                          const splits = JSON.parse(inv.splitPayments);
+                          const cashSplit = splits.find((s: any) => s.method === "CASH");
+                          if (cashSplit) {
+                            let cashAmt = cashSplit.amount;
+                            if (inv.changeAmount > 0) cashAmt -= inv.changeAmount;
+                            return sum + Math.max(0, cashAmt);
+                          }
+                        } catch (e) {}
+                      }
+                      return sum;
+                    }, 0))}
                   </p>
                 </div>
                 <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
                   <p className="text-xs text-gray-500 font-semibold uppercase">Non-Cash</p>
                   <p className="text-2xl font-extrabold text-gray-900 mt-1">
-                    {formatRupiah(invoiceHistory.filter(i => i.paymentMethod !== "CASH").reduce((sum, inv) => sum + inv.grandTotal, 0))}
+                    {formatRupiah(filteredInvoiceHistory.reduce((sum, inv) => {
+                      if (inv.paymentMethod === "SPLIT" && inv.splitPayments) {
+                        try {
+                          const splits = JSON.parse(inv.splitPayments);
+                          const nonCash = splits.filter((s: any) => s.method !== "CASH");
+                          return sum + nonCash.reduce((acc: number, s: any) => acc + s.amount, 0);
+                        } catch (e) {}
+                      }
+                      if (inv.paymentMethod !== "CASH" && inv.paymentMethod !== "SPLIT") return sum + inv.grandTotal;
+                      return sum;
+                    }, 0))}
                   </p>
                 </div>
               </div>
@@ -1507,9 +2213,9 @@ export default function AdminVisitsPage() {
             {/* Invoice List */}
             {historyLoading ? (
               <div className="flex justify-center py-12">
-                <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
               </div>
-            ) : invoiceHistory.length === 0 ? (
+            ) : filteredInvoiceHistory.length === 0 ? (
               <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 shadow-sm">
                 <Receipt className="w-16 h-16 mx-auto text-gray-200 mb-3" />
                 <p className="text-gray-400 font-medium">Belum ada struk untuk tanggal ini.</p>
@@ -1530,13 +2236,13 @@ export default function AdminVisitsPage() {
                         <th className="text-center px-4 py-3 font-bold text-gray-600">Aksi</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {invoiceHistory.map(inv => {
+                    <tbody className="divide-y divide-gray-50 bg-white">
+                      {filteredInvoiceHistory.map(inv => {
                         let parsedItems: any[] = [];
                         try { parsedItems = JSON.parse(inv.items); } catch {}
 
                         return (
-                          <tr key={inv.id} className="hover:bg-gray-50/50 transition-colors">
+                          <tr key={inv.id} className="hover:bg-slate-50/50 transition-colors">
                             <td className="px-4 py-3 font-mono text-xs font-semibold text-gray-800">{inv.invoiceNumber}</td>
                             <td className="px-4 py-3 text-gray-600">
                               {new Date(inv.createdAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" })}
@@ -1551,13 +2257,34 @@ export default function AdminVisitsPage() {
                             </td>
                             <td className="px-4 py-3 text-right font-bold text-gray-900">{formatRupiah(inv.grandTotal)}</td>
                             <td className="px-4 py-3 text-center">
-                              <span className={`text-xs font-bold px-2 py-1 rounded-full ${
-                                inv.paymentMethod === "CASH" ? "bg-green-50 text-green-700" :
-                                inv.paymentMethod === "DEBIT" ? "bg-blue-50 text-blue-700" :
-                                "bg-purple-50 text-purple-700"
-                              }`}>
-                                {inv.paymentMethod}
-                              </span>
+                              {inv.paymentMethod === "SPLIT" && inv.splitPayments ? (
+                                <div className="flex flex-col items-center gap-1">
+                                  {(() => {
+                                    try {
+                                      const splits = JSON.parse(inv.splitPayments);
+                                      return splits.map((sp: any, idx: number) => (
+                                        <span key={idx} className={`text-[10px] font-bold px-2 py-0.5 rounded border whitespace-nowrap ${
+                                          sp.method === "CASH" ? "border-blue-200 bg-blue-50 text-blue-700" :
+                                          sp.method === "DEBIT" ? "border-blue-200 bg-blue-50 text-blue-700" :
+                                          "border-purple-200 bg-purple-50 text-purple-700"
+                                        }`}>
+                                          {sp.method}: {formatRupiah(sp.amount)}
+                                        </span>
+                                      ));
+                                    } catch (e) {
+                                      return <span className="text-xs text-gray-500">SPLIT</span>;
+                                    }
+                                  })()}
+                                </div>
+                              ) : (
+                                <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                                  inv.paymentMethod === "CASH" ? "bg-blue-50 text-blue-700" :
+                                  inv.paymentMethod === "DEBIT" ? "bg-blue-50 text-blue-700" :
+                                  "bg-purple-50 text-purple-700"
+                                }`}>
+                                  {inv.paymentMethod}
+                                </span>
+                              )}
                             </td>
                             <td className="px-4 py-3">
                               <div className="flex items-center justify-center gap-1">
@@ -1571,7 +2298,7 @@ export default function AdminVisitsPage() {
                                 <button
                                   onClick={() => handleSendWA(inv.id)}
                                   title="Kirim WA"
-                                  className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                 >
                                   <MessageCircle className="w-4 h-4" />
                                 </button>
@@ -1625,7 +2352,7 @@ export default function AdminVisitsPage() {
                     <tr>
                       <td colSpan={4} className="px-6 py-12 text-center">
                         <div className="bg-gray-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100">
-                          <CheckCircle2 className="h-8 w-8 text-green-500" />
+                          <CheckCircle2 className="h-8 w-8 text-blue-500" />
                         </div>
                         <p className="text-gray-600 font-medium">Bagus Sekali!</p>
                         <p className="text-sm text-gray-400 mt-1">Tidak ada pasien yang absen lebih dari 14 hari.</p>
@@ -1656,7 +2383,7 @@ export default function AdminVisitsPage() {
                               const msg = encodeURIComponent(`Halo Kak ${rp.patient.name},\nApa kabar? Semoga selalu sehat ya.\n\nKami dari Radja Bekam menyadari sudah ${rp.daysSinceLastVisit} hari sejak kunjungan terakhir Kakak. Yuk jaga kesehatan dengan rutinitas terapi bersama kami lagi. Ada promo khusus menanti Kakak!\n\nSilakan balas pesan ini untuk reservasi.`);
                               window.open(`https://wa.me/${rp.patient.phone.replace(/^0/, '62')}?text=${msg}`, "_blank");
                             }}
-                            className="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors shadow-sm"
+                            className="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors shadow-sm"
                           >
                             <MessageCircle className="w-4 h-4" /> Kirim Pengingat
                           </button>
@@ -1687,6 +2414,117 @@ export default function AdminVisitsPage() {
           </div>
         </div>
       )}
+
+      {/* Patient History Modal */}
+      {selectedPatientHistoryId && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-2xl p-0 w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col relative transform transition-all animate-in zoom-in-95 duration-300">
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-indigo-500 to-blue-500 z-10"></div>
+            
+            <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+              <div>
+                <h3 className="text-xl font-bold text-gray-800">Riwayat Kunjungan Pasien</h3>
+                <p className="text-sm text-gray-500 font-medium mt-0.5 flex items-center gap-3">
+                  <span className="flex items-center">
+                    <User className="w-4 h-4 mr-1.5 text-gray-400" />
+                    {getPatientName(selectedPatientHistoryId)}
+                  </span>
+                  <span className="flex items-center text-gray-400 font-normal">
+                    <Phone className="w-3 h-3 mr-1.5" />
+                    {patients.find(p => p.id === selectedPatientHistoryId)?.phone || "-"}
+                  </span>
+                </p>
+              </div>
+              <button onClick={() => setSelectedPatientHistoryId(null)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto bg-gray-50/30 flex-1">
+              <div className="space-y-4">
+                {visits
+                  .filter(v => v.patientId === selectedPatientHistoryId)
+                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                  .map((visit, idx, arr) => (
+                    <div key={visit.id} className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm relative overflow-hidden group hover:border-indigo-200 transition-colors">
+                      <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-indigo-400 to-blue-500"></div>
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 pl-2">
+                        <div className="space-y-3 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-bold text-gray-900 text-lg">{visit.visitDate.split('-').reverse().join('/')}</span>
+                            <span className="text-sm font-medium bg-gray-100 text-gray-600 px-2.5 py-1 rounded-md flex items-center gap-1.5 border border-gray-200">
+                              <Clock className="w-3.5 h-3.5"/> {visit.visitTime}
+                            </span>
+                            <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200 uppercase tracking-wide">
+                              Kunjungan #{arr.length - idx}
+                            </span>
+                            {visit.paymentStatus === "PAID" && (
+                              <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200 uppercase tracking-wide flex items-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5"/> Lunas
+                              </span>
+                            )}
+                          </div>
+                          
+                          <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 text-sm">
+                            <div className="space-y-1">
+                              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Layanan</span>
+                              <div className="flex items-center gap-2 text-gray-800 font-medium">
+                                <Activity className="w-4 h-4 text-blue-500"/> {getServiceName(visit.serviceId)}
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Terapis</span>
+                              <div className="flex items-center gap-2 text-gray-800 font-medium">
+                                <User className="w-4 h-4 text-indigo-400"/> {getTherapistName(visit.therapistId)}
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Cabang</span>
+                              <div className="flex items-center gap-2 text-gray-800 font-medium">
+                                <Store className="w-4 h-4 text-amber-500"/> {getBranchName(visit.branchId)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="sm:max-w-xs w-full bg-gray-50 rounded-xl p-3 border border-gray-100">
+                          <div className="flex items-center gap-1.5 font-bold text-gray-700 mb-1.5 text-xs uppercase tracking-wider">
+                            <FileText className="w-3.5 h-3.5" /> Catatan Medis
+                          </div>
+                          <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
+                            {visit.notes || <span className="italic text-gray-400">Tidak ada catatan medis untuk kunjungan ini.</span>}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                ))}
+              </div>
+            </div>
+            
+            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex justify-end">
+              <button 
+                onClick={() => setSelectedPatientHistoryId(null)}
+                className="px-6 py-2.5 rounded-xl font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 transition-colors shadow-sm"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        title="Hapus Kunjungan?"
+        message="Apakah Anda yakin ingin menghapus data kunjungan ini? Tindakan ini tidak dapat dibatalkan dan semua data terkait akan hilang permanen."
+        onConfirm={confirmDeleteVisit}
+        onCancel={() => {
+          setDeleteModalOpen(false);
+          setVisitToDelete(null);
+        }}
+        isLoading={isDeleting}
+      />
+
       </div>
     </div>
   );

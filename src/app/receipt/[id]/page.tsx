@@ -25,6 +25,7 @@ type InvoiceData = {
   tax: number;
   grandTotal: number;
   paymentMethod: string;
+  splitPayments: string | null;
   amountPaid: number;
   changeAmount: number;
   notes: string | null;
@@ -85,14 +86,16 @@ export default function PublicReceiptPage() {
                 URL.revokeObjectURL(url);
                 
                 // WA Text
-                const landingPageUrl = "https://radjabekam.com";
+                const landingPageUrl = "https://radja-bekam-7gk3ni66x-rizaldmoch30-3888s-projects.vercel.app/";
                 const dateFormatted = new Date(invoice.createdAt).toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric", timeZone: "Asia/Jakarta" });
                 let itemsText = "";
                 invoice.items.forEach(item => {
-                  itemsText += `- ${item.name} (${item.qty}x)\n`;
+                  const qtyText = item.qty > 1 ? ` (${item.qty}x)` : "";
+                  itemsText += `- ${item.name}${qtyText}\n${formatRupiah(item.subtotal)}\n\n`;
                 });
+                itemsText = itemsText.trimEnd();
                 
-                const msg = `Assalamualaikum ${invoice.patientName},\nTerima kasih telah mempercayakan ikhtiar sehatnya di *Radja Bekam cabang ${invoice.branchName}* 🙏\n\nBerikut adalah detail layanan yang Anda terima:\n${itemsText}\nTotal Pembayaran: *${formatRupiah(invoice.grandTotal)}*\nTanggal: ${dateFormatted}\n\nUntuk informasi lebih lanjut, kunjungi website kami:\n${landingPageUrl}\n\n_Semoga lekas sehat dan senantiasa diberi keberkahan. Kami tunggu kunjungan berikutnya!_\n\n— Tim Radja Bekam`;
+                const msg = `Assalamualaikum ${invoice.patientName} \n\nTerima kasih telah mempercayakan ikhtiar sehatnya di Radja Bekam Cabang ${invoice.branchName} ✨\n\n📅 Tanggal: ${dateFormatted} \n\n==========================\nDETAIL LAYANAN\n==========================\n${itemsText}\n\nTotal Pembayaran: ${formatRupiah(invoice.grandTotal)}\n==========================\n\n🎁 Nikmati sesi Full Body Massage selama 60' dengan mendaftar sebagai member di Radja Bekam! \n(S&K berlaku)\n\nUntuk informasi lebih lanjut, silahkan kunjungi website kami di : ${landingPageUrl}\n\nSemoga lekas sehat dan senantiasa diberi keberkahan. Kami tunggu kunjungan berikutnya! 🙏\n\nSalam sehat,\nTim Radja Bekam`;
                 
                 const cleanPhone = invoice.patientPhone.replace(/^0/, "62").replace(/\D/g, "");
                 
@@ -141,7 +144,7 @@ export default function PublicReceiptPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -214,10 +217,10 @@ export default function PublicReceiptPage() {
         {/* Screen Header - hidden in print */}
         <div className="no-print text-center mb-6 max-w-md w-full">
           <h1 className="text-2xl font-extrabold text-white tracking-tight">
-            <span className="text-white">Radja</span>{" "}
-            <span className="text-emerald-300">Bekam</span>
+            <span className="text-white">Radja Bekam</span>{" "}
+            <span className="text-blue-300">Reflexology</span>
           </h1>
-          <p className="text-emerald-300/70 text-sm mt-1">Struk Digital</p>
+          <p className="text-blue-300/70 text-sm mt-1">Struk Digital</p>
         </div>
 
         {/* Receipt Card */}
@@ -227,7 +230,7 @@ export default function PublicReceiptPage() {
             <h1 className="receipt-brand text-2xl font-extrabold text-gray-900 tracking-tight">
               RADJA BEKAM
             </h1>
-            <p className="text-emerald-600 font-semibold text-sm mt-1">Solusi Teman Sehatku</p>
+            <p className="text-blue-600 font-semibold text-sm mt-1">Solusi Teman Sehatku</p>
             <div className="mt-3 text-xs text-gray-500 space-y-0.5">
               <p className="font-semibold text-gray-700">{invoice.branchName}</p>
               {invoice.branchAddress && <p>{invoice.branchAddress}</p>}
@@ -252,7 +255,7 @@ export default function PublicReceiptPage() {
               </div>
               <div className="text-right">
                 <span className="text-gray-400">Pembayaran</span>
-                <p className="font-semibold text-gray-700">{invoice.paymentMethod}</p>
+                <p className="font-semibold text-gray-700">{invoice.paymentMethod === "SPLIT" ? "Ganda (Split)" : invoice.paymentMethod}</p>
               </div>
             </div>
           </div>
@@ -315,12 +318,21 @@ export default function PublicReceiptPage() {
             )}
             <div className="flex justify-between pt-2 border-t border-gray-200">
               <span className="text-sm font-extrabold text-gray-900">TOTAL</span>
-              <span className="receipt-total text-lg font-extrabold text-emerald-600">{formatRupiah(invoice.grandTotal)}</span>
+              <span className="receipt-total text-lg font-extrabold text-blue-600">{formatRupiah(invoice.grandTotal)}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Bayar ({invoice.paymentMethod})</span>
-              <span className="font-semibold text-gray-800">{formatRupiah(invoice.amountPaid)}</span>
-            </div>
+            {invoice.paymentMethod === "SPLIT" && invoice.splitPayments ? (
+              JSON.parse(invoice.splitPayments).map((sp: any, idx: number) => (
+                <div key={idx} className="flex justify-between">
+                  <span className="text-gray-500">Bayar ({sp.method})</span>
+                  <span className="font-semibold text-gray-800">{formatRupiah(sp.amount)}</span>
+                </div>
+              ))
+            ) : (
+              <div className="flex justify-between">
+                <span className="text-gray-500">Bayar ({invoice.paymentMethod})</span>
+                <span className="font-semibold text-gray-800">{formatRupiah(invoice.amountPaid)}</span>
+              </div>
+            )}
             {invoice.changeAmount > 0 && (
               <div className="flex justify-between">
                 <span className="text-gray-500">Kembalian</span>
@@ -364,7 +376,7 @@ export default function PublicReceiptPage() {
           <div className="text-center">
             <a
               href="/"
-              className="text-emerald-300/70 hover:text-emerald-200 text-sm font-medium transition-colors"
+              className="text-blue-300/70 hover:text-blue-200 text-sm font-medium transition-colors"
             >
               ← Kembali ke Beranda
             </a>

@@ -60,7 +60,7 @@ export default function DiabetesRiskPage() {
     if (totalScore <= 3) {
       return {
         level: "Risiko Rendah",
-        color: "text-green-500",
+        color: "text-blue-500",
         message: "Kabar baik! Gaya hidup Anda cukup sehat. Tetap jaga pola makan gizi seimbang dan rutinkan olahraga.",
       };
     } else if (totalScore <= 7) {

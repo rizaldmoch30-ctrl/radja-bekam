@@ -227,7 +227,7 @@ export default function AdminUsersPage() {
   const roleColors: Record<string, string> = {
     SUPER_ADMIN: "bg-purple-100 text-purple-800",
     BRANCH_ADMIN: "bg-blue-100 text-blue-800",
-    THERAPIST: "bg-teal-100 text-teal-800",
+    THERAPIST: "bg-blue-100 text-blue-800",
     CASHIER: "bg-amber-100 text-amber-800",
     INVESTOR: "bg-slate-100 text-slate-800",
   };
@@ -250,18 +250,18 @@ export default function AdminUsersPage() {
           rightContent={
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
               <div className="relative w-full sm:w-auto">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/60" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input 
                   type="text" 
                   placeholder="Cari nama/username..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 placeholder-gray-400 text-sm transition-all"
+                  className="w-full pl-9 pr-3 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-gray-900 placeholder-gray-400 text-sm backdrop-blur-md transition-all"
                 />
               </div>
               <button 
                 onClick={handleAddNew}
-                className="w-full sm:w-auto bg-white text-indigo-900 hover:bg-gray-50 px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-black/10 active:scale-95 whitespace-nowrap"
+                className="w-full sm:w-auto bg-white text-blue-900 hover:bg-gray-50 px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-black/10 active:scale-95 whitespace-nowrap"
               >
                 <Plus className="h-5 w-5" /> Tambah Pengguna
               </button>
@@ -275,7 +275,7 @@ export default function AdminUsersPage() {
             <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6">
               <div className="flex justify-between items-center mb-6 border-b pb-4">
                 <h3 className="text-xl font-bold flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-indigo-600" />
+                  <Shield className="w-5 h-5 text-blue-600" />
                   {isEditMode ? "Edit Pengguna" : "Tambah Pengguna Baru"}
                 </h3>
                 <button onClick={() => setIsFormOpen(false)} className="text-gray-500 hover:text-gray-700 bg-gray-100 p-2 rounded-full">
@@ -286,18 +286,18 @@ export default function AdminUsersPage() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-gray-700">Nama Lengkap</label>
-                  <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+                  <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary" />
                 </div>
                 
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-gray-700">Username Login</label>
-                  <input type="text" value={formData.username} onChange={e => setFormData({...formData, username: e.target.value})} required disabled={isEditMode} className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 disabled:bg-gray-100 disabled:text-gray-500" />
+                  <input type="text" value={formData.username} onChange={e => setFormData({...formData, username: e.target.value})} required disabled={isEditMode} className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:bg-gray-100 disabled:text-gray-500" />
                 </div>
                 
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-gray-700">Password {isEditMode && <span className="text-gray-400 font-normal">(Kosongkan jika tidak ingin mengubah)</span>}</label>
                   <div className="relative">
-                    <input type={showPassword ? "text" : "password"} value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} required={!isEditMode} minLength={6} className="w-full px-3 py-2 pr-10 border rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500" />
+                    <input type={showPassword ? "text" : "password"} value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} required={!isEditMode} minLength={6} className="w-full px-3 py-2 pr-10 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary" />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
@@ -320,7 +320,7 @@ export default function AdminUsersPage() {
                         permissions: getDefaultPermissions(newRole) as any
                       });
                     }} 
-                    className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary"
                   >
                     <option value="SUPER_ADMIN">Super Admin (Akses Penuh)</option>
                     <option value="BRANCH_ADMIN">Admin Cabang (Manajer)</option>
@@ -358,7 +358,7 @@ export default function AdminUsersPage() {
                                   setFormData({...formData, permissions: newPerms as any});
                                 }
                               }}
-                              className="w-4 h-4 mt-0.5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                              className="w-4 h-4 mt-0.5 text-blue-600 border-gray-300 rounded focus:ring-primary"
                             />
                             <div className="flex flex-col">
                               <span className={`text-sm select-none ${(isParentChecked || isIndeterminate) ? 'text-gray-900 font-bold' : 'text-gray-600 font-medium'}`}>
@@ -382,7 +382,7 @@ export default function AdminUsersPage() {
                                         setFormData({...formData, permissions: currentPerms.filter(p => p !== sub.id) as any});
                                       }
                                     }}
-                                    className="w-3.5 h-3.5 text-indigo-500 border-gray-300 rounded focus:ring-indigo-500"
+                                    className="w-3.5 h-3.5 text-primary border-gray-300 rounded focus:ring-primary"
                                   />
                                   <span className={`text-xs select-none ${isSubChecked ? 'text-gray-800 font-semibold' : 'text-gray-500'}`}>
                                     {sub.label}
@@ -400,7 +400,7 @@ export default function AdminUsersPage() {
                 {(formData.role !== "SUPER_ADMIN" && formData.role !== "INVESTOR") && (
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-gray-700">Cabang Penempatan</label>
-                    <select value={formData.branchId || ""} onChange={e => setFormData({...formData, branchId: e.target.value})} required className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                    <select value={formData.branchId || ""} onChange={e => setFormData({...formData, branchId: e.target.value})} required className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary">
                       <option value="">-- Pilih Cabang --</option>
                       {branches.map(b => (
                         <option key={b.id} value={b.id}>{b.name}</option>
@@ -411,7 +411,7 @@ export default function AdminUsersPage() {
 
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-gray-700">Status Akun</label>
-                  <select value={formData.isActive ? "true" : "false"} onChange={e => setFormData({...formData, isActive: e.target.value === "true"})} className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+                  <select value={formData.isActive ? "true" : "false"} onChange={e => setFormData({...formData, isActive: e.target.value === "true"})} className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary">
                     <option value="true">Aktif (Bisa Login)</option>
                     <option value="false">Dinonaktifkan</option>
                   </select>
@@ -419,7 +419,7 @@ export default function AdminUsersPage() {
 
                 <div className="flex gap-3 justify-end pt-6 mt-4 border-t">
                   <button type="button" onClick={() => setIsFormOpen(false)} className="px-5 py-2.5 rounded-xl text-gray-600 hover:bg-gray-100 font-semibold transition-colors">Batal</button>
-                  <button type="submit" disabled={saving} className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all disabled:opacity-50 shadow-lg shadow-indigo-200">
+                  <button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all disabled:opacity-50 shadow-lg shadow-primary/20">
                     {saving ? "Menyimpan..." : "Simpan Pengguna"}
                   </button>
                 </div>
@@ -482,8 +482,8 @@ export default function AdminUsersPage() {
                       </td>
                       <td className="p-4">
                         {user.isActive ? (
-                          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div> Aktif
+                          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100">
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div> Aktif
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-700 bg-red-50 px-2.5 py-1 rounded-lg border border-red-100">

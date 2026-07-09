@@ -8,9 +8,9 @@ import { FloatingWhatsApp } from "@/components/ui/FloatingWhatsApp";
 import { db } from "@/lib/db";
 import { settings, branches } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { PWAInstall } from "@/components/ui/PWAInstall";
 
 export const revalidate = 0;
-export const dynamic = 'force-dynamic';
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -28,12 +28,13 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: "Radja Bekam - Solusi Teman Sehatku",
-  description: "Klinik bekam dan refleksi profesional, bersih, dan bersertifikat.",
+  description: "Klinik refleksi profesional, bersih, dan bersertifikat.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: "Radja Bekam",
   },
+  manifest: "/manifest.json",
   formatDetection: {
     telephone: false,
   },
@@ -52,6 +53,7 @@ export default async function RootLayout({
   return (
     <html lang="id" className={`${poppins.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-sans">
+        <PWAInstall />
         <PublicLayoutWrapper 
           navbar={<Navbar key="navbar" settings={companyInfo} branches={activeBranches} />}
           footer={<Footer key="footer" />}

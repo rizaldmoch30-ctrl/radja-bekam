@@ -1,7 +1,6 @@
 import { db } from "@/lib/db";
-import { patientVisits, financeTransactions, therapists, therapistCommissions, patients, therapistServiceCommissions, invoices, branches } from "@/lib/db/schema";
+import { patientVisits, financeTransactions, therapists, therapistCommissions, patients, therapistServiceCommissions, invoices, branches, therapistMonthlyReports, services } from "@/lib/db/schema";
 import { eq, and, like, desc } from "drizzle-orm";
-import { getServicePrice, SERVICES_LIST } from "@/lib/pricing";
 import { createJournalEntry, COA } from "@/lib/accounting";
 import { checkBranchAccess, getSession } from "@/lib/auth";
 import crypto from "crypto";
@@ -45,15 +44,22 @@ export async function POST(
     const patientRecords = await db.select().from(patients).where(eq(patients.id, visit.patientId)).limit(1);
     const patientName = patientRecords.length > 0 ? patientRecords[0].name : "Unknown";
 
-    // 3. Dapatkan harga layanan berdasarkan cabang
-    const basePrice = getServicePrice(visit.branchId, visit.serviceId);
-    const serviceDetail = SERVICES_LIST.find(s => s.id === visit.serviceId);
-    const serviceName = serviceDetail ? serviceDetail.name : visit.serviceId;
+    // 3. ISS-004: Dapatkan harga & nama layanan dari database (bukan hardcoded)
+    const serviceRecord = await db
+      .select({ price: services.price, name: services.name })
+      .from(services)
+      .where(eq(services.id, visit.serviceId))
+      .limit(1);
+    const basePrice = serviceRecord.length > 0 ? serviceRecord[0].price : 0;
+    const serviceName = serviceRecord.length > 0 ? serviceRecord[0].name : visit.serviceId;
+
+    const currentIso = new Date().toISOString();
+    // Gunakan tanggal kedatangan pasien (visitDate) untuk catatan keuangan
+    const trxDate = `${visit.visitDate}T${currentIso.split("T")[1]}`;
 
     if (basePrice > 0) {
       // A. Catat Pemasukan (Income)
       const newTrxId = crypto.randomUUID();
-      const trxDate = new Date().toISOString();
 
       await db.insert(financeTransactions).values({
         id: newTrxId,
@@ -77,7 +83,7 @@ export async function POST(
         amount: basePrice
       });
 
-      // B. Catat Komisi Terapis (PENDING)
+      // B. Catat Komisi Terapis (langsung PAID - bagi hasil otomatis)
       if (visit.therapistId) {
         const therapistRecords = await db.select().from(therapists).where(eq(therapists.id, visit.therapistId)).limit(1);
         if (therapistRecords.length > 0) {
@@ -101,37 +107,96 @@ export async function POST(
           }
 
           if (commissionAmount > 0) {
+            // C. Sinkronisasi ke Laporan Bulanan Terapis — ambil data SEBELUM INSERT
+            // agar query DB tidak menyertakan komisi yang baru saja di-INSERT (cegah double-count)
+            const visitMonth = visit.visitDate.substring(0, 7); // YYYY-MM
+            let savedReport: (typeof therapistMonthlyReports.$inferSelect)[] = [];
+            let prevTotalCommissions = 0;
+            try {
+              savedReport = await db
+                .select()
+                .from(therapistMonthlyReports)
+                .where(
+                  and(
+                    eq(therapistMonthlyReports.therapistId, visit.therapistId!),
+                    eq(therapistMonthlyReports.month, visitMonth)
+                  )
+                )
+                .limit(1);
+
+              if (savedReport.length > 0) {
+                // Query existing commissions BEFORE inserting the new one
+                const existingCommissions = await db
+                  .select({ amount: therapistCommissions.amount })
+                  .from(therapistCommissions)
+                  .innerJoin(patientVisits, eq(therapistCommissions.visitId, patientVisits.id))
+                  .where(
+                    and(
+                      eq(therapistCommissions.therapistId, visit.therapistId!),
+                      like(patientVisits.visitDate, `${visitMonth}%`)
+                    )
+                  );
+                prevTotalCommissions = existingCommissions.reduce((s, c) => s + c.amount, 0);
+              }
+            } catch (syncErr) {
+              console.error("Pre-fetch therapist monthly report error (non-fatal):", syncErr);
+            }
+
+            // Komisi langsung berstatus PAID (sudah disisihkan otomatis)
             await db.insert(therapistCommissions).values({
               id: crypto.randomUUID(),
               therapistId: visit.therapistId,
               visitId: visitId,
               amount: commissionAmount,
-              status: "PENDING",
+              status: "PAID",
+              paidAt: trxDate,
             });
 
-            // Langsung catat komisi sebagai pengeluaran / beban di sistem keuangan
+            // Langsung catat bagi hasil sebagai pengeluaran klinik
             const commTrxId = crypto.randomUUID();
             await db.insert(financeTransactions).values({
               id: commTrxId,
               type: "EXPENSE",
               category: "Bagi Hasil Terapis",
               amount: commissionAmount,
-              description: `Bagi Hasil Terapis (${therapist.name}) untuk layanan ${serviceName} pasien ${patientName}`,
+              description: `Bagi Hasil Terapis (${therapist.name}) - ${serviceName} - ${patientName}`,
               referenceId: visitId,
               branchId: visit.branchId,
-              paymentMethod: "CASH", // Asumsi disisihkan via kas
+              paymentMethod: paymentMethod,
               date: trxDate
             });
 
             // Otomatisasi Jurnal (Debet: Beban Komisi, Kredit: Kas)
             await createJournalEntry({
               date: trxDate,
-              description: `[Auto] Beban Bagi Hasil Terapis: ${therapist.name} - ${serviceName}`,
+              description: `[Auto] Bagi Hasil Terapis: ${therapist.name} - ${serviceName}`,
               referenceId: commTrxId,
               debitAccountId: COA.BEBAN_KOMISI,
               creditAccountId: COA.KAS,
               amount: commissionAmount
             });
+
+            // Update laporan bulanan dengan total yang dihitung sebelum INSERT + commissionAmount
+            if (savedReport.length > 0) {
+              try {
+                const report = savedReport[0];
+                // ISS-003: prevTotalCommissions diambil sebelum INSERT, tambahkan commissionAmount
+                // secara eksplisit — tidak ada double-count
+                const newTotalCommissions = prevTotalCommissions + commissionAmount;
+                const newTakeHomePay = report.baseSalary + newTotalCommissions + report.allowances + report.bonuses - report.deductions;
+
+                await db
+                  .update(therapistMonthlyReports)
+                  .set({
+                    commissions: newTotalCommissions,
+                    takeHomePay: newTakeHomePay,
+                    updatedAt: trxDate,
+                  })
+                  .where(eq(therapistMonthlyReports.id, report.id));
+              } catch (syncErr) {
+                console.error("Sync therapist monthly report error (non-fatal):", syncErr);
+              }
+            }
           }
         }
       }
@@ -184,7 +249,7 @@ export async function POST(
           paymentMethod,
           amountPaid: basePrice,
           changeAmount: 0,
-          createdAt: payDate,
+          createdAt: trxDate,
         });
       }
     } catch (invoiceErr) {

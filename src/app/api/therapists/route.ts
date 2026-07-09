@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { therapists, patientVisits, financeTransactions } from "@/lib/db/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { therapists, patientVisits, therapistCommissions } from "@/lib/db/schema";
+import { eq, desc, and, like } from "drizzle-orm";
 import { getSession, getActiveBranchFilter } from "@/lib/auth";
 
 export async function GET() {
@@ -13,14 +13,9 @@ export async function GET() {
 
     const branchFilter = await getActiveBranchFilter();
 
-    const therapistsConditions = [];
-    let visitsConditions = [eq(patientVisits.status, "completed")];
-    let financesConditions = [eq(financeTransactions.category, "Gaji Terapis")];
-
+    const therapistsConditions: any[] = [];
     if (branchFilter) {
       therapistsConditions.push(eq(therapists.branchId, branchFilter));
-      visitsConditions.push(eq(patientVisits.branchId, branchFilter));
-      financesConditions.push(eq(financeTransactions.branchId, branchFilter));
     }
 
     const allTherapists = await db
@@ -28,16 +23,43 @@ export async function GET() {
       .from(therapists)
       .where(therapistsConditions.length > 0 ? and(...therapistsConditions) : undefined)
       .orderBy(desc(therapists.joinedAt));
-    
-    // Kalkulasi KPI scoped to branch
-    const allVisits = await db.select().from(patientVisits).where(and(...visitsConditions));
-    const allFinances = await db.select().from(financeTransactions).where(and(...financesConditions));
+
+    // Bulan ini: format YYYY-MM
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+    // Ambil semua kunjungan bulan ini (untuk patientsHandled)
+    const visitsConditions: any[] = [
+      eq(patientVisits.status, "completed"),
+      like(patientVisits.visitDate, `${currentMonth}%`),
+    ];
+    if (branchFilter) {
+      visitsConditions.push(eq(patientVisits.branchId, branchFilter));
+    }
+    const thisMonthVisits = await db
+      .select()
+      .from(patientVisits)
+      .where(and(...visitsConditions));
+
+    // Ambil semua komisi bulan ini dari tabel therapistCommissions (join ke patientVisits untuk filter tanggal)
+    const thisMonthCommissions = await db
+      .select({
+        therapistId: therapistCommissions.therapistId,
+        amount: therapistCommissions.amount,
+        visitDate: patientVisits.visitDate,
+      })
+      .from(therapistCommissions)
+      .innerJoin(patientVisits, eq(therapistCommissions.visitId, patientVisits.id))
+      .where(like(patientVisits.visitDate, `${currentMonth}%`));
 
     const enriched = allTherapists.map(t => {
-      const handled = allVisits.filter(v => v.therapistId === t.id).length;
-      // Filter transaksi komisi berdasarkan nama terapis di deskripsi
-      const commission = allFinances.filter(f => f.description.includes(t.name)).reduce((sum, f) => sum + f.amount, 0);
-      return { ...t, patientsHandled: handled, totalCommission: commission };
+      // Pasien ditangani bulan ini
+      const patientsHandled = thisMonthVisits.filter(v => v.therapistId === t.id).length;
+      // Total komisi bulan ini
+      const totalCommission = thisMonthCommissions
+        .filter(c => c.therapistId === t.id)
+        .reduce((sum, c) => sum + c.amount, 0);
+      return { ...t, patientsHandled, totalCommission };
     });
 
     return NextResponse.json(enriched);
@@ -55,7 +77,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, specialization, phone, gender, baseSalary, commissionRate, isActive, branchId, photoUrl, birthDate, pinCode } = body;
+    const { name, specialization, phone, gender, baseSalary, commissionRate, isActive, branchId, photoUrl, birthDate, pinCode, contractStartDate, contractEndDate } = body;
 
     if (!name || !specialization || !phone || !gender) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -76,6 +98,8 @@ export async function POST(request: Request) {
       photoUrl: photoUrl || null,
       birthDate: birthDate || null,
       pinCode: pinCode || null,
+      contractStartDate: contractStartDate || null,
+      contractEndDate: contractEndDate || null,
       isActive: isActive !== undefined ? isActive : true,
       joinedAt: new Date().toISOString(),
     };

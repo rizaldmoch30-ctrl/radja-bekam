@@ -304,7 +304,7 @@ export default function BukuBesarPage() {
                       <FileIcon className="w-4 h-4" /> Export PDF
                     </button>
                     <button onClick={handleExportExcel}
-                      className="w-full text-left px-4 py-3 hover:bg-emerald-50 text-emerald-600 font-medium flex items-center gap-2 transition-colors text-sm">
+                      className="w-full text-left px-4 py-3 hover:bg-blue-50 text-blue-600 font-medium flex items-center gap-2 transition-colors text-sm">
                       <FileSpreadsheet className="w-4 h-4" /> Export Excel
                     </button>
                   </div>

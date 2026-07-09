@@ -21,22 +21,22 @@ export default async function ContactPage() {
   return (
     <div className="flex flex-col w-full bg-[#f8fafc]">
       {/* Premium Hero Header */}
-      <section className="relative bg-[#0a192f] text-white pt-32 pb-40 overflow-hidden">
+      <section className="relative bg-primary text-white pt-32 pb-40 overflow-hidden">
         {/* Background Effects */}
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
-          <div className="absolute top-[30%] left-[20%] w-[30%] h-[50%] rounded-full bg-[#d4af37]/20 blur-[120px]"></div>
+          <div className="absolute top-[30%] left-[20%] w-[30%] h-[50%] rounded-full bg-accent/20 blur-[120px]"></div>
           <div className="absolute top-[20%] right-[10%] w-[40%] h-[60%] rounded-full bg-blue-500/10 blur-[150px]"></div>
           <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-[#f8fafc] to-transparent z-10"></div>
         </div>
 
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-20 text-center max-w-4xl">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-md mb-8">
-            <Navigation2 className="h-4 w-4 text-[#d4af37] fill-[#d4af37]" />
-            <span className="text-[#d4af37] font-bold text-xs tracking-widest uppercase">Pusat Layanan</span>
+            <Navigation2 className="h-4 w-4 text-accent fill-accent" />
+            <span className="text-accent font-bold text-xs tracking-widest uppercase">Pusat Layanan</span>
           </div>
           <h1 className="text-5xl md:text-7xl font-black mb-6 tracking-tight leading-tight">
-            Kontak & <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#d4af37] to-amber-300">Lokasi Kami</span>
+            Kontak & <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-amber-300">Lokasi Kami</span>
           </h1>
           <p className="text-xl text-gray-300 max-w-2xl mx-auto font-medium leading-relaxed">
             Temukan cabang eksklusif Radja Bekam terdekat dari domisili Anda dan rasakan kemewahan relaksasi sesungguhnya.
@@ -85,7 +85,16 @@ export default async function ContactPage() {
                         </div>
                         <div className="pt-1">
                           <h4 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1">Jam Operasional</h4>
-                          <p className="text-slate-700 font-medium">{branch.operatingHours}</p>
+                          <div className="text-slate-700 font-medium grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 mt-2">
+                            <div>
+                              <span className="text-slate-400 text-xs uppercase font-bold tracking-wider block">Senin - Jumat</span>
+                              {branch.operatingHours}
+                            </div>
+                            <div>
+                              <span className="text-slate-400 text-xs uppercase font-bold tracking-wider block">Sabtu - Minggu</span>
+                              {branch.operatingHoursWeekend}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -95,7 +104,7 @@ export default async function ContactPage() {
                         href={`https://wa.me/${formatWa(branch.whatsappNumber)}?text=${encodeURIComponent(`Halo Admin Radja Bekam cabang ${branch.name}, saya ingin bertanya seputar layanan dan reservasi terapi.`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-center w-full bg-gradient-to-r from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-white py-4 rounded-2xl font-bold transition-all shadow-[0_8px_20px_rgba(34,197,94,0.3)] hover:shadow-[0_12px_25px_rgba(34,197,94,0.4)] hover:-translate-y-1 gap-3"
+                        className="flex items-center justify-center w-full bg-gradient-to-r from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700 text-white py-4 rounded-2xl font-bold transition-all shadow-[0_8px_20px_rgba(34,197,94,0.3)] hover:shadow-[0_12px_25px_rgba(34,197,94,0.4)] hover:-translate-y-1 gap-3"
                       >
                         <MessageCircle className="h-6 w-6" /> 
                         <span>Hubungi via WhatsApp</span>

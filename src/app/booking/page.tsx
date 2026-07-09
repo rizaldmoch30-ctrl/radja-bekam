@@ -3,7 +3,6 @@ import { branches, services, settings } from "@/lib/db/schema";
 import { BookingForm } from "@/components/sections/BookingForm";
 
 export const revalidate = 0;
-export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: "Reservasi Layanan - Radja Bekam",
@@ -13,8 +12,10 @@ export const metadata = {
 export default async function BookingPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined }
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
+  const params = await searchParams;
+
   const branchList = await db.select().from(branches);
   const serviceList = await db.select().from(services);
   const companySettings = await db.select().from(settings);
@@ -36,11 +37,12 @@ export default async function BookingPage({
               branches={activeBranches} 
               services={activeServices} 
               adminWa={whatsappInfo}
-              initialBranch={searchParams.branch as string || ""}
-              initialService={searchParams.service as string || ""}
+              initialBranch={params.branch as string || ""}
+              initialService={params.service as string || ""}
            />
         </div>
       </div>
     </div>
   );
 }
+

@@ -1,17 +1,16 @@
 "use client";
-
-import { useState, useEffect, useMemo } from "react";
-import { Download, FileText, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import {
+  Download, FileText, TrendingUp, DollarSign,
+  FileSpreadsheet, File as FileIcon, ChevronDown, TrendingDown,
+} from "lucide-react";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import PageHeader from "@/components/layout/PageHeader";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, Legend, ResponsiveContainer,
 } from "recharts";
 
 type FinanceTransaction = {
@@ -29,6 +28,19 @@ export default function AdminLabaRugiPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>("ALL");
   const [investorPercentage, setInvestorPercentage] = useState<number>(0);
   const [managementPercentage, setManagementPercentage] = useState<number>(0);
+  const [penyusutanModalInvestor, setPenyusutanModalInvestor] = useState<number>(0);
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsExportMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const fetchTransactions = async () => {
     setLoading(true);
@@ -46,9 +58,8 @@ export default function AdminLabaRugiPage() {
     fetchTransactions();
   }, [selectedYear]);
 
-  const formatRupiah = (val: number) => {
-    return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(val);
-  };
+  const formatRupiah = (val: number) =>
+    new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(val);
 
   const filteredTransactions = useMemo(() => {
     if (selectedMonth === "ALL") return transactions;
@@ -58,112 +69,114 @@ export default function AdminLabaRugiPage() {
     });
   }, [transactions, selectedMonth]);
 
+  // ──────────────────────────────────────────────────────────────────────────
+  // LOGIKA SESUAI FOTO:
+  //   PENDAPATAN USAHA
+  //   ─ item pemasukan
+  //   TOTAL PENDAPATAN
+  //
+  //   BIAYA USAHA  ← SEMUA pengeluaran masuk sini, flat, tanpa sub-kategori
+  //   ─ item pengeluaran (per kategori)
+  //   TOTAL BIAYA USAHA
+  //
+  //   LABA RUGI = TOTAL PENDAPATAN − TOTAL BIAYA USAHA
+  //
+  //   Penyusutan Modal Investor  (input manual)
+  //   Infaq (2.5%)               = LABA RUGI × 2.5%
+  //   Bagi Hasil Investor (x%)   = LABA RUGI × x%
+  //   Bagi Hasil Manajemen (x%)  = LABA RUGI × x%
+  // ──────────────────────────────────────────────────────────────────────────
   const reportData = useMemo(() => {
     let incomeCategories: Record<string, number> = {};
     let expenseCategories: Record<string, number> = {};
-    let totalIncome = 0;
-    let totalExpense = 0;
+    let totalPendapatan = 0;
+    let totalBiayaUsaha = 0;
 
     filteredTransactions.forEach(t => {
       if (t.type === "INCOME") {
-        totalIncome += t.amount;
+        totalPendapatan += t.amount;
         incomeCategories[t.category] = (incomeCategories[t.category] || 0) + t.amount;
       } else {
-        totalExpense += t.amount;
+        totalBiayaUsaha += t.amount;
         expenseCategories[t.category] = (expenseCategories[t.category] || 0) + t.amount;
       }
     });
 
-    const hppCategories = ["Komisi Terapis", "Bahan Baku", "Gaji Terapis"];
-    let hppTotal = 0;
-    let operasionalTotal = 0;
-    let otherExpensesTotal = 0;
+    // Semua pengeluaran jadi satu list flat (BIAYA USAHA)
+    const biayaUsahaItems: { name: string; amount: number }[] = Object.entries(expenseCategories)
+      .map(([name, amount]) => ({ name, amount }))
+      .sort((a, b) => b.amount - a.amount); // urutkan terbesar dulu
 
-    const hppItems: {name: string, amount: number}[] = [];
-    const operasionalItems: {name: string, amount: number}[] = [];
+    const labaRugi = totalPendapatan - totalBiayaUsaha;
 
-    Object.entries(expenseCategories).forEach(([cat, amount]) => {
-      if (hppCategories.includes(cat) || cat.toLowerCase().includes("terapis") || cat.toLowerCase().includes("bahan")) {
-        hppTotal += amount;
-        hppItems.push({name: cat, amount});
-      } else {
-        operasionalTotal += amount;
-        operasionalItems.push({name: cat, amount});
-      }
-    });
-
-    const labaKotor = totalIncome - hppTotal;
-    const labaBersih = labaKotor - operasionalTotal;
-    
-    const investorShare = labaBersih > 0 ? labaBersih * (investorPercentage / 100) : 0;
-    const managementShare = labaBersih > 0 ? labaBersih * (managementPercentage / 100) : 0;
-    const labaDitahan = labaBersih - investorShare - managementShare;
+    // Distribusi dari Laba Rugi (bisa negatif → tidak dibagi)
+    const infaqShare = labaRugi > 0 ? labaRugi * 0.025 : 0;
+    const investorShare = labaRugi > 0 ? labaRugi * (investorPercentage / 100) : 0;
+    const managementShare = labaRugi > 0 ? labaRugi * (managementPercentage / 100) : 0;
 
     return {
-      incomeItems: Object.entries(incomeCategories).map(([name, amount]) => ({name, amount})),
-      totalIncome,
-      hppItems,
-      hppTotal,
-      labaKotor,
-      operasionalItems,
-      operasionalTotal,
-      labaBersih,
+      incomeItems: Object.entries(incomeCategories)
+        .map(([name, amount]) => ({ name, amount }))
+        .sort((a, b) => b.amount - a.amount),
+      totalPendapatan,
+      biayaUsahaItems,
+      totalBiayaUsaha,
+      labaRugi,
+      // distribusi
+      penyusutanModalInvestor,
+      infaqShare,
       investorShare,
       managementShare,
-      labaDitahan,
       investorPercentage,
-      managementPercentage
+      managementPercentage,
     };
-  }, [filteredTransactions, investorPercentage, managementPercentage]);
+  }, [filteredTransactions, investorPercentage, managementPercentage, penyusutanModalInvestor]);
 
+  // ── Chart data ────────────────────────────────────────────────────────────
   const monthlyChartData = useMemo(() => {
     const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"];
-    const data = months.map(m => ({ name: m, Pemasukan: 0, Pengeluaran: 0, LabaBersih: 0 }));
+    const data = months.map(m => ({ name: m, Pendapatan: 0, BiayaUsaha: 0, LabaRugi: 0 }));
 
     transactions.forEach(t => {
       const mIdx = new Date(t.date).getMonth();
       if (t.type === "INCOME") {
-        data[mIdx].Pemasukan += t.amount;
+        data[mIdx].Pendapatan += t.amount;
       } else {
-        data[mIdx].Pengeluaran += t.amount;
+        data[mIdx].BiayaUsaha += t.amount;
       }
     });
 
     data.forEach(d => {
-      d.LabaBersih = d.Pemasukan - d.Pengeluaran;
+      d.LabaRugi = d.Pendapatan - d.BiayaUsaha;
     });
 
     return data;
   }, [transactions]);
 
-  const handleExportCSV = () => {
-    const csvRows = [
-      ["Laporan Laba Rugi"],
-      [`Tahun: ${selectedYear}`, `Bulan: ${selectedMonth === "ALL" ? "Semua Bulan" : selectedMonth}`],
-      [""],
-      ["Keterangan", "Nominal"],
-      ["PENDAPATAN"],
-      ...reportData.incomeItems.map(i => [`  ${i.name}`, i.amount]),
-      ["TOTAL PENDAPATAN", reportData.totalIncome],
-      [""],
-      ["HARGA POKOK PENJUALAN (HPP) / BIAYA LANGSUNG"],
-      ...reportData.hppItems.map(i => [`  ${i.name}`, i.amount]),
-      ["TOTAL HPP", reportData.hppTotal],
-      [""],
-      ["LABA KOTOR", reportData.labaKotor],
-      [""],
-      ["BIAYA OPERASIONAL"],
-      ...reportData.operasionalItems.map(i => [`  ${i.name}`, i.amount]),
-      ["TOTAL BIAYA OPERASIONAL", reportData.operasionalTotal],
-      [""],
-      ["LABA BERSIH SEBELUM BAGI HASIL", reportData.labaBersih],
-      [`BAGI HASIL INVESTOR (${reportData.investorPercentage}%)`, reportData.investorShare],
-      [`BAGI HASIL MANAJEMEN (${reportData.managementPercentage}%)`, reportData.managementShare],
-      [""],
-      ["LABA BERSIH AKHIR (LABA DITAHAN)", reportData.labaDitahan]
-    ];
+  // ── Export ────────────────────────────────────────────────────────────────
+  const getExportData = () => [
+    ["Laporan Laba Rugi"],
+    [`Tahun: ${selectedYear}`, `Bulan: ${selectedMonth === "ALL" ? "Semua Bulan" : selectedMonth}`],
+    [""],
+    ["Keterangan", "Nominal"],
+    ["PENDAPATAN USAHA", ""],
+    ...reportData.incomeItems.map(i => [`  ${i.name}`, i.amount]),
+    ["TOTAL PENDAPATAN", reportData.totalPendapatan],
+    [""],
+    ["BIAYA USAHA", ""],
+    ...reportData.biayaUsahaItems.map(i => [`  ${i.name}`, i.amount]),
+    ["TOTAL BIAYA USAHA", reportData.totalBiayaUsaha],
+    [""],
+    ["LABA RUGI", reportData.labaRugi],
+    [""],
+    ["Penyusutan Modal Investor", reportData.penyusutanModalInvestor],
+    [`Infaq (2.5%)`, reportData.infaqShare],
+    [`Bagi Hasil Investor (${reportData.investorPercentage}%)`, reportData.investorShare],
+    [`Bagi Hasil Manajemen (${reportData.managementPercentage}%)`, reportData.managementShare],
+  ];
 
-    const csvData = csvRows.map(row => row.join(",")).join("\n");
+  const handleExportCSV = () => {
+    const csvData = getExportData().map(row => row.join(",")).join("\n");
     const blob = new Blob([csvData], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -172,240 +185,354 @@ export default function AdminLabaRugiPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    setIsExportMenuOpen(false);
   };
 
+  const handleExportExcel = () => {
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(getExportData());
+    XLSX.utils.book_append_sheet(wb, ws, "Laba Rugi");
+    XLSX.writeFile(wb, `Laba_Rugi_${selectedYear}_${selectedMonth}.xlsx`);
+    setIsExportMenuOpen(false);
+  };
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("Laporan Laba Rugi", 14, 20);
+    doc.setFontSize(11);
+    doc.text(`Tahun: ${selectedYear} | Bulan: ${selectedMonth === "ALL" ? "Semua Bulan" : selectedMonth}`, 14, 28);
+
+    const rows = getExportData().slice(4);
+    const tableBody = rows
+      .map(row => {
+        if (row.length === 1 || row[0] === "") return null;
+        const isHeaderRow = !(row[0] as string).startsWith("  ") && row[1] === "";
+        return [
+          { content: (row[0] as string).trim(), styles: { fontStyle: isHeaderRow ? "bold" : "normal", halign: "left" } },
+          { content: row[1] !== "" ? formatRupiah(row[1] as number) : "", styles: { fontStyle: isHeaderRow ? "bold" : "normal", halign: "right" } },
+        ];
+      })
+      .filter(Boolean);
+
+    autoTable(doc, {
+      startY: 35,
+      head: [["Keterangan", "Nominal"]],
+      body: tableBody as any,
+      theme: "grid",
+      styles: { fontSize: 10 },
+      headStyles: { fillColor: [4, 120, 87] },
+      columnStyles: { 0: { cellWidth: 120 }, 1: { cellWidth: 60, halign: "right" } },
+    });
+
+    doc.save(`Laba_Rugi_${selectedYear}_${selectedMonth}.pdf`);
+    setIsExportMenuOpen(false);
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <PageHeader 
+    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-50/50 via-white to-blue-50/30 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <PageHeader
           title="Laporan Laba Rugi"
-          description="Laporan akuntansi standar untuk menganalisis keuntungan klinik."
+          description="Laporan akuntansi modern untuk menganalisis keuntungan klinik secara komprehensif."
           icon={FileText}
           rightContent={
-            <div className="flex gap-3 items-center">
-              <select 
-                value={selectedYear} 
-                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                className="px-4 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 text-sm appearance-none transition-all cursor-pointer [&>option]:text-gray-900"
-              >
-                {[...Array(5)].map((_, i) => {
-                  const y = new Date().getFullYear() - i;
-                  return <option key={y} value={y}>{y}</option>;
-                })}
-              </select>
-              <select 
-                value={selectedMonth} 
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="px-4 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 text-sm appearance-none transition-all cursor-pointer [&>option]:text-gray-900"
-              >
-                <option value="ALL">Semua Bulan</option>
-                <option value="1">Januari</option>
-                <option value="2">Februari</option>
-                <option value="3">Maret</option>
-                <option value="4">April</option>
-                <option value="5">Mei</option>
-                <option value="6">Juni</option>
-                <option value="7">Juli</option>
-                <option value="8">Agustus</option>
-                <option value="9">September</option>
-                <option value="10">Oktober</option>
-                <option value="11">November</option>
-                <option value="12">Desember</option>
-              </select>
-              <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2 ">
-                <span className="text-white text-sm font-medium">Bagi Hasil Investor:</span>
-                <input 
-                  type="number" 
-                  min="0" 
-                  max="100" 
-                  value={investorPercentage} 
-                  onChange={(e) => setInvestorPercentage(Number(e.target.value))}
-                  className="w-12 bg-transparent border-b border-white/30 focus:border-white focus:outline-none text-white text-center text-sm font-bold"
-                />
-                <span className="text-white text-sm">%</span>
+            <div className="flex gap-3 flex-wrap items-center justify-end">
+              {/* Filter Tahun */}
+              <div className="relative group">
+                <select
+                  value={selectedYear}
+                  onChange={e => setSelectedYear(parseInt(e.target.value))}
+                  className="pl-4 pr-10 py-2.5 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-700 font-bold text-sm transition-all cursor-pointer appearance-none hover:border-blue-300"
+                >
+                  {[...Array(5)].map((_, i) => {
+                    const y = new Date().getFullYear() - i;
+                    return <option key={y} value={y}>{y}</option>;
+                  })}
+                </select>
+                <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-blue-500 transition-colors" />
               </div>
-              <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2 ">
-                <span className="text-white text-sm font-medium">Bagi Hasil Manajemen:</span>
-                <input 
-                  type="number" 
-                  min="0" 
-                  max="100" 
-                  value={managementPercentage} 
-                  onChange={(e) => setManagementPercentage(Number(e.target.value))}
-                  className="w-12 bg-transparent border-b border-white/30 focus:border-white focus:outline-none text-white text-center text-sm font-bold"
-                />
-                <span className="text-white text-sm">%</span>
+
+              {/* Filter Bulan */}
+              <div className="relative group">
+                <select
+                  value={selectedMonth}
+                  onChange={e => setSelectedMonth(e.target.value)}
+                  className="pl-4 pr-10 py-2.5 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-700 font-bold text-sm transition-all cursor-pointer appearance-none hover:border-blue-300"
+                >
+                  <option value="ALL">Semua Bulan</option>
+                  {["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"].map((m, i) => (
+                    <option key={i + 1} value={String(i + 1)}>{m}</option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-blue-500 transition-colors" />
               </div>
-              <button
-                onClick={handleExportCSV}
-                className="bg-white text-indigo-900 hover:bg-gray-50 px-4 py-2 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-black/10"
-              >
-                <Download className="w-4 h-4" /> Export CSV
-              </button>
+
+              {/* Bagi Hasil Investor */}
+              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl px-4 py-2 hover:border-blue-200 transition-colors">
+                <span className="text-gray-500 text-xs font-bold uppercase tracking-wider">Bagi Hasil Inv:</span>
+                <input
+                  type="number" min="0" max="100"
+                  value={investorPercentage}
+                  onChange={e => setInvestorPercentage(Number(e.target.value))}
+                  className="w-10 bg-transparent border-b-2 border-transparent focus:border-blue-500 focus:outline-none text-blue-700 text-center text-sm font-black transition-colors"
+                />
+                <span className="text-blue-600 text-sm font-black">%</span>
+              </div>
+
+              {/* Bagi Hasil Manajemen */}
+              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl px-4 py-2 hover:border-blue-200 transition-colors">
+                <span className="text-gray-500 text-xs font-bold uppercase tracking-wider">Bagi Hasil Mgt:</span>
+                <input
+                  type="number" min="0" max="100"
+                  value={managementPercentage}
+                  onChange={e => setManagementPercentage(Number(e.target.value))}
+                  className="w-10 bg-transparent border-b-2 border-transparent focus:border-blue-500 focus:outline-none text-blue-700 text-center text-sm font-black transition-colors"
+                />
+                <span className="text-blue-600 text-sm font-black">%</span>
+              </div>
+
+              {/* Penyusutan Modal Investor */}
+              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl px-4 py-2 hover:border-blue-200 transition-colors">
+                <span className="text-gray-500 text-xs font-bold uppercase tracking-wider">Penyusutan Modal:</span>
+                <span className="text-gray-400 text-sm font-bold">Rp</span>
+                <input
+                  type="number" min="0"
+                  value={penyusutanModalInvestor || ""}
+                  onChange={e => setPenyusutanModalInvestor(Number(e.target.value))}
+                  className="w-24 bg-transparent border-b-2 border-transparent focus:border-blue-500 focus:outline-none text-gray-800 text-sm font-black transition-colors placeholder:text-gray-300"
+                  placeholder="0"
+                />
+              </div>
+
+              {/* Export */}
+              <div className="relative ml-auto" ref={dropdownRef}>
+                <button
+                  onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg shadow-blue-500/30 px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95"
+                >
+                  <Download className="w-4 h-4" /> Export Laporan <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${isExportMenuOpen ? "rotate-180" : ""}`} />
+                </button>
+                {isExportMenuOpen && (
+                  <div className="absolute right-0 mt-3 w-56 bg-white/95 backdrop-blur-xl rounded-2xl shadow-[0_20px_60px_rgb(0,0,0,0.15)] border border-gray-100/50 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
+                    <div className="p-2 space-y-1">
+                      <button onClick={handleExportPDF} className="w-full text-left px-4 py-3 rounded-xl hover:bg-red-50 hover:text-red-600 text-gray-600 font-semibold flex items-center gap-3 transition-colors">
+                        <div className="bg-red-100 p-1.5 rounded-lg"><FileIcon className="w-4 h-4 text-red-500" /></div> Export PDF
+                      </button>
+                      <button onClick={handleExportExcel} className="w-full text-left px-4 py-3 rounded-xl hover:bg-blue-50 hover:text-blue-600 text-gray-600 font-semibold flex items-center gap-3 transition-colors">
+                        <div className="bg-blue-100 p-1.5 rounded-lg"><FileSpreadsheet className="w-4 h-4 text-blue-500" /></div> Export Excel
+                      </button>
+                      <button onClick={handleExportCSV} className="w-full text-left px-4 py-3 rounded-xl hover:bg-gray-100 hover:text-gray-800 text-gray-600 font-semibold flex items-center gap-3 transition-colors">
+                        <div className="bg-gray-200 p-1.5 rounded-lg"><FileText className="w-4 h-4 text-gray-600" /></div> Export CSV
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           }
         />
 
         {loading ? (
-          <div className="text-center py-12 text-gray-500 bg-white rounded-2xl mt-8">Memuat laporan...</div>
+          <div className="flex flex-col items-center justify-center py-32 bg-white/40 backdrop-blur-md rounded-3xl mt-8 border border-white/50">
+            <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin shadow-lg"></div>
+            <p className="mt-4 font-semibold text-blue-800">Menyiapkan Laporan...</p>
+          </div>
         ) : (
           <div className="space-y-8 mt-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-5">
-                <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center border border-blue-100 shrink-0">
-                  <TrendingUp className="w-8 h-8 text-blue-600" />
+
+            {/* ── Summary Cards ── */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgb(20,184,166,0.12)] transition-all duration-300 flex items-center gap-5 group relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-500/10 to-blue-500/5 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-500"></div>
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shrink-0 relative z-10">
+                  <TrendingUp className="w-7 h-7 text-white" />
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1">Total Pendapatan</p>
-                  <p className="text-2xl font-black text-gray-900">{formatRupiah(reportData.totalIncome)}</p>
-                </div>
-              </div>
-              <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-5">
-                <div className="w-16 h-16 rounded-2xl bg-amber-50 flex items-center justify-center border border-amber-100 shrink-0">
-                  <DollarSign className="w-8 h-8 text-amber-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1">Laba Kotor</p>
-                  <p className="text-2xl font-black text-gray-900">{formatRupiah(reportData.labaKotor)}</p>
+                <div className="relative z-10">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">Total Pendapatan</p>
+                  <p className="text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-600 tracking-tight">{formatRupiah(reportData.totalPendapatan)}</p>
                 </div>
               </div>
-              <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-5">
-                <div className="w-16 h-16 rounded-2xl bg-emerald-50 flex items-center justify-center border border-emerald-100 shrink-0">
-                  <TrendingUp className="w-8 h-8 text-emerald-600" />
+              <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgb(244,63,94,0.12)] transition-all duration-300 flex items-center gap-5 group relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-rose-500/10 to-red-500/5 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-500"></div>
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-400 to-red-500 flex items-center justify-center shadow-lg shadow-rose-500/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shrink-0 relative z-10">
+                  <DollarSign className="w-7 h-7 text-white" />
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-1">Laba Bersih</p>
-                  <p className="text-2xl font-black text-gray-900">{formatRupiah(reportData.labaBersih)}</p>
+                <div className="relative z-10">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">Total Biaya Usaha</p>
+                  <p className="text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-600 to-red-600 tracking-tight">{formatRupiah(reportData.totalBiayaUsaha)}</p>
+                </div>
+              </div>
+              <div className={`bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 hover:-translate-y-1.5 transition-all duration-300 flex items-center gap-5 group relative overflow-hidden ${reportData.labaRugi >= 0 ? "hover:shadow-[0_20px_40px_rgb(16,185,129,0.15)]" : "hover:shadow-[0_20px_40px_rgb(244,63,94,0.15)]"}`}>
+                <div className={`absolute top-0 right-0 w-32 h-32 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-500 ${reportData.labaRugi >= 0 ? "bg-gradient-to-br from-blue-500/10 to-blue-500/5" : "bg-gradient-to-br from-rose-500/10 to-red-500/5"}`}></div>
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shrink-0 relative z-10 ${reportData.labaRugi >= 0 ? "bg-gradient-to-br from-blue-400 to-blue-500 shadow-blue-500/30" : "bg-gradient-to-br from-rose-400 to-red-500 shadow-rose-500/30"}`}>
+                  {reportData.labaRugi >= 0
+                    ? <TrendingUp className="w-7 h-7 text-white" />
+                    : <TrendingDown className="w-7 h-7 text-white" />}
+                </div>
+                <div className="relative z-10">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">Laba Rugi</p>
+                  <p className={`text-3xl lg:text-4xl font-black text-transparent bg-clip-text tracking-tight ${reportData.labaRugi >= 0 ? "bg-gradient-to-r from-blue-600 to-blue-600" : "bg-gradient-to-r from-rose-600 to-red-600"}`}>
+                    {formatRupiah(reportData.labaRugi)}
+                  </p>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Laporan Laba Rugi Table */}
-              <div className="bg-white border border-gray-100 rounded-3xl shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-gray-100 bg-gray-50/50">
-                  <h3 className="font-bold text-lg text-gray-800">Laporan Laba Rugi</h3>
+
+              {/* ── Laporan Laba Rugi Table ── */}
+              <div className="bg-white/80 backdrop-blur-2xl border border-white/60 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden flex flex-col transition-all hover:shadow-[0_8px_40px_rgb(0,0,0,0.08)]">
+                <div className="p-6 lg:p-8 border-b border-gray-100/50 bg-gradient-to-r from-blue-50/30 to-transparent">
+                  <h3 className="font-black text-xl text-gray-800 flex items-center gap-3">
+                    <div className="bg-blue-100 p-2 rounded-xl"><FileText className="w-5 h-5 text-blue-600" /></div>
+                    Rincian Laba Rugi
+                  </h3>
                 </div>
-                <div className="p-6 overflow-x-auto">
+                <div className="p-6 lg:p-8 overflow-x-auto flex-1">
                   <table className="w-full text-sm">
                     <tbody>
-                      {/* PENDAPATAN */}
+                      {/* ── PENDAPATAN USAHA ── */}
                       <tr>
-                        <td colSpan={2} className="font-bold text-gray-900 pb-2 text-base">PENDAPATAN</td>
+                        <td colSpan={2} className="font-black text-blue-800 pb-4 text-sm uppercase tracking-widest flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-blue-500"></div> Pendapatan Usaha
+                        </td>
                       </tr>
                       {reportData.incomeItems.map(item => (
-                        <tr key={item.name}>
-                          <td className="py-2 pl-4 text-gray-600">{item.name}</td>
-                          <td className="py-2 text-right font-medium">{formatRupiah(item.amount)}</td>
+                        <tr key={item.name} className="group">
+                          <td className="py-3 px-4 text-gray-600 font-medium group-hover:bg-blue-50/50 rounded-l-xl transition-colors">{item.name}</td>
+                          <td className="py-3 px-4 text-right font-bold text-gray-800 group-hover:bg-blue-50/50 rounded-r-xl transition-colors">{formatRupiah(item.amount)}</td>
                         </tr>
                       ))}
-                      <tr className="border-t border-gray-200">
-                        <td className="py-3 font-bold text-gray-800">TOTAL PENDAPATAN</td>
-                        <td className="py-3 text-right font-bold text-blue-600">{formatRupiah(reportData.totalIncome)}</td>
-                      </tr>
-
-                      {/* HPP */}
-                      <tr>
-                        <td colSpan={2} className="font-bold text-gray-900 pt-6 pb-2 text-base">HARGA POKOK PENJUALAN (HPP)</td>
-                      </tr>
-                      {reportData.hppItems.map(item => (
-                        <tr key={item.name}>
-                          <td className="py-2 pl-4 text-gray-600">{item.name}</td>
-                          <td className="py-2 text-right font-medium">{formatRupiah(item.amount)}</td>
-                        </tr>
-                      ))}
-                      <tr className="border-t border-gray-200">
-                        <td className="py-3 font-bold text-gray-800">TOTAL HPP</td>
-                        <td className="py-3 text-right font-bold text-red-500">({formatRupiah(reportData.hppTotal)})</td>
-                      </tr>
-
-                      {/* LABA KOTOR */}
-                      <tr className="bg-amber-50">
-                        <td className="py-3 px-4 font-bold text-gray-900 rounded-l-lg">LABA KOTOR</td>
-                        <td className="py-3 px-4 text-right font-bold text-amber-700 rounded-r-lg">{formatRupiah(reportData.labaKotor)}</td>
-                      </tr>
-
-                      {/* OPERASIONAL */}
-                      <tr>
-                        <td colSpan={2} className="font-bold text-gray-900 pt-6 pb-2 text-base">BIAYA OPERASIONAL</td>
-                      </tr>
-                      {reportData.operasionalItems.map(item => (
-                        <tr key={item.name}>
-                          <td className="py-2 pl-4 text-gray-600">{item.name}</td>
-                          <td className="py-2 text-right font-medium">{formatRupiah(item.amount)}</td>
-                        </tr>
-                      ))}
-                      <tr className="border-t border-gray-200">
-                        <td className="py-3 font-bold text-gray-800">TOTAL BIAYA OPERASIONAL</td>
-                        <td className="py-3 text-right font-bold text-red-500">({formatRupiah(reportData.operasionalTotal)})</td>
-                      </tr>
-
-                      {/* LABA BERSIH SEBELUM BAGI HASIL */}
-                      <tr className="bg-emerald-50">
-                        <td className="py-4 px-4 font-bold text-gray-900 text-base rounded-l-lg">LABA BERSIH SEBELUM BAGI HASIL</td>
-                        <td className="py-4 px-4 text-right font-bold text-emerald-700 text-base rounded-r-lg">{formatRupiah(reportData.labaBersih)}</td>
-                      </tr>
-
-                      {/* BAGI HASIL INVESTOR */}
-                      {reportData.investorPercentage > 0 && (
-                        <tr className="border-t border-gray-200">
-                          <td className="py-3 px-4 font-bold text-gray-800">
-                            DIKURANGI: BAGI HASIL INVESTOR ({reportData.investorPercentage}%)
-                          </td>
-                          <td className="py-3 px-4 text-right font-bold text-red-500">
-                            ({formatRupiah(reportData.investorShare)})
-                          </td>
+                      {reportData.incomeItems.length === 0 && (
+                        <tr>
+                          <td className="py-3 px-4 text-gray-400 italic text-sm">Tidak ada data pendapatan</td>
+                          <td className="py-3 px-4 text-right text-gray-400">{formatRupiah(0)}</td>
                         </tr>
                       )}
+                      {/* TOTAL PENDAPATAN */}
+                      <tr><td colSpan={2} className="py-1"></td></tr>
+                      <tr className="bg-blue-50/80 rounded-2xl">
+                        <td className="py-4 px-5 font-black text-blue-900 text-sm uppercase tracking-wider rounded-l-2xl border-l-4 border-blue-500">TOTAL PENDAPATAN</td>
+                        <td className="py-4 px-5 text-right font-black text-blue-700 text-lg rounded-r-2xl">{formatRupiah(reportData.totalPendapatan)}</td>
+                      </tr>
 
-                      {/* BAGI HASIL MANAJEMEN */}
-                      {reportData.managementPercentage > 0 && (
-                        <tr className="border-t border-gray-200">
-                          <td className="py-3 px-4 font-bold text-gray-800">
-                            DIKURANGI: BAGI HASIL MANAJEMEN ({reportData.managementPercentage}%)
-                          </td>
-                          <td className="py-3 px-4 text-right font-bold text-red-500">
-                            ({formatRupiah(reportData.managementShare)})
-                          </td>
-                        </tr>
-                      )}
-
-                      {/* LABA BERSIH AKHIR (LABA DITAHAN) */}
-                      <tr className="bg-indigo-50 border-t-2 border-indigo-100">
-                        <td className="py-4 px-4 font-black text-gray-900 text-lg rounded-l-lg">
-                          LABA BERSIH AKHIR <span className="text-sm font-normal text-gray-600 block sm:inline sm:ml-2">(Laba Ditahan Klinik)</span>
-                        </td>
-                        <td className="py-4 px-4 text-right font-black text-indigo-700 text-lg rounded-r-lg">
-                          {formatRupiah(reportData.labaDitahan)}
+                      {/* ── BIAYA USAHA ── */}
+                      <tr>
+                        <td colSpan={2} className="font-black text-rose-800 pt-8 pb-4 text-sm uppercase tracking-widest flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-rose-500"></div> Biaya Usaha
                         </td>
                       </tr>
+                      {reportData.biayaUsahaItems.map(item => (
+                        <tr key={item.name} className="group">
+                          <td className="py-3 px-4 text-gray-600 font-medium group-hover:bg-rose-50/50 rounded-l-xl transition-colors">{item.name}</td>
+                          <td className="py-3 px-4 text-right font-bold text-gray-800 group-hover:bg-rose-50/50 rounded-r-xl transition-colors">{formatRupiah(item.amount)}</td>
+                        </tr>
+                      ))}
+                      {reportData.biayaUsahaItems.length === 0 && (
+                        <tr>
+                          <td className="py-3 px-4 text-gray-400 italic text-sm">Tidak ada data biaya</td>
+                          <td className="py-3 px-4 text-right text-gray-400">{formatRupiah(0)}</td>
+                        </tr>
+                      )}
+                      {/* TOTAL BIAYA USAHA */}
+                      <tr><td colSpan={2} className="py-1"></td></tr>
+                      <tr className="bg-rose-50/80 rounded-2xl">
+                        <td className="py-4 px-5 font-black text-rose-900 text-sm uppercase tracking-wider rounded-l-2xl border-l-4 border-rose-500">TOTAL BIAYA USAHA</td>
+                        <td className="py-4 px-5 text-right font-black text-rose-700 text-lg rounded-r-2xl">{formatRupiah(reportData.totalBiayaUsaha)}</td>
+                      </tr>
+
+                      {/* ── LABA RUGI BERSIN ── */}
+                      <tr><td colSpan={2} className="pt-8"></td></tr>
+                      <tr>
+                        <td colSpan={2}>
+                          <div className={`p-6 sm:p-8 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 border ${reportData.labaRugi >= 0 ? "bg-gradient-to-r from-blue-500 to-blue-600 border-blue-400 shadow-xl shadow-blue-500/20" : "bg-gradient-to-r from-rose-500 to-red-600 border-rose-400 shadow-xl shadow-rose-500/20"}`}>
+                            <span className="font-black text-white/90 text-sm tracking-widest uppercase flex items-center gap-2">
+                              {reportData.labaRugi >= 0 ? <TrendingUp className="w-5 h-5 text-white" /> : <TrendingDown className="w-5 h-5 text-white" />}
+                              Laba Rugi Bersih
+                            </span>
+                            <span className="font-black text-white text-3xl sm:text-4xl tracking-tight">{formatRupiah(reportData.labaRugi)}</span>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* ── Distribusi ── */}
+                      <tr>
+                        <td colSpan={2} className="pt-6">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="bg-gradient-to-br from-amber-50 to-orange-50/50 p-5 rounded-2xl border border-amber-100 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+                               <p className="text-xs font-extrabold text-amber-700/80 uppercase tracking-widest mb-1.5">Penyusutan Modal</p>
+                               <p className="text-xl font-black text-amber-900">{formatRupiah(reportData.penyusutanModalInvestor)}</p>
+                            </div>
+                            <div className="bg-gradient-to-br from-blue-50 to-blue-50/50 p-5 rounded-2xl border border-blue-100 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+                               <p className="text-xs font-extrabold text-blue-700/80 uppercase tracking-widest mb-1.5">Infaq (2.5%)</p>
+                               <p className="text-xl font-black text-blue-900">{formatRupiah(reportData.infaqShare)}</p>
+                            </div>
+                            <div className="bg-gradient-to-br from-blue-50 to-indigo-50/50 p-5 rounded-2xl border border-blue-100 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+                               <p className="text-xs font-extrabold text-blue-700/80 uppercase tracking-widest mb-1.5">Bagi Hasil Inv ({reportData.investorPercentage}%)</p>
+                               <p className="text-xl font-black text-blue-900">{formatRupiah(reportData.investorShare)}</p>
+                            </div>
+                            <div className="bg-gradient-to-br from-purple-50 to-fuchsia-50/50 p-5 rounded-2xl border border-purple-100 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+                               <p className="text-xs font-extrabold text-purple-700/80 uppercase tracking-widest mb-1.5">Bagi Hasil Mgt ({reportData.managementPercentage}%)</p>
+                               <p className="text-xl font-black text-purple-900">{formatRupiah(reportData.managementShare)}</p>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+
                     </tbody>
                   </table>
                 </div>
               </div>
 
-              {/* Grafik Analitik Bulanan */}
-              <div className="bg-white border border-gray-100 rounded-3xl shadow-sm overflow-hidden flex flex-col">
-                <div className="p-6 border-b border-gray-100 bg-gray-50/50">
-                  <h3 className="font-bold text-lg text-gray-800">Analitik Laba Rugi {selectedYear}</h3>
+              {/* ── Grafik Analitik Bulanan ── */}
+              <div className="bg-white/80 backdrop-blur-2xl border border-white/60 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden flex flex-col transition-all hover:shadow-[0_8px_40px_rgb(0,0,0,0.08)]">
+                <div className="p-6 lg:p-8 border-b border-gray-100/50 bg-gradient-to-r from-indigo-50/30 to-transparent">
+                  <h3 className="font-black text-xl text-gray-800 flex items-center gap-3">
+                    <div className="bg-indigo-100 p-2 rounded-xl"><TrendingUp className="w-5 h-5 text-indigo-600" /></div>
+                    Analitik Laba Rugi {selectedYear}
+                  </h3>
                 </div>
-                <div className="p-6 flex-1 min-h-[400px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={monthlyChartData}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                      <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                      <YAxis tickFormatter={(val) => `Rp${(val/1000000).toFixed(0)}M`} axisLine={false} tickLine={false} />
-                      <Tooltip 
-                        formatter={(value: any) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(Number(value))}
-                        cursor={{fill: '#f8fafc'}}
+                <div className="p-6 lg:p-8 flex-1 min-h-[400px]">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                    <BarChart data={monthlyChartData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" strokeOpacity={0.5} />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12, fontWeight: 600}} dy={10} />
+                      <YAxis
+                        tickFormatter={val => `Rp${(val / 1000000).toFixed(0)}M`}
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{fill: '#64748b', fontSize: 12, fontWeight: 600}}
+                        dx={-10}
                       />
-                      <Legend />
-                      <Bar dataKey="Pemasukan" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="Pengeluaran" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="LabaBersih" name="Laba Bersih" fill="#10b981" radius={[4, 4, 0, 0]} />
+                      <Tooltip
+                        formatter={(value: any) =>
+                          new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR" }).format(Number(value))
+                        }
+                        cursor={{ fill: "#f1f5f9", opacity: 0.5 }}
+                        contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)', padding: '12px' }}
+                      />
+                      <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="circle" />
+                      <Bar dataKey="Pendapatan" fill="url(#colorPendapatan)" radius={[6, 6, 0, 0]} />
+                      <Bar dataKey="BiayaUsaha" name="Biaya Usaha" fill="url(#colorBiaya)" radius={[6, 6, 0, 0]} />
+                      <Bar dataKey="LabaRugi" name="Laba Rugi" fill="url(#colorLaba)" radius={[6, 6, 0, 0]} />
+                      
+                      {/* Define Gradients for Bars */}
+                      <defs>
+                        <linearGradient id="colorPendapatan" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#0d9488" stopOpacity={1}/>
+                          <stop offset="100%" stopColor="#14b8a6" stopOpacity={0.8}/>
+                        </linearGradient>
+                        <linearGradient id="colorBiaya" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#e11d48" stopOpacity={1}/>
+                          <stop offset="100%" stopColor="#f43f5e" stopOpacity={0.8}/>
+                        </linearGradient>
+                        <linearGradient id="colorLaba" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#059669" stopOpacity={1}/>
+                          <stop offset="100%" stopColor="#10b981" stopOpacity={0.8}/>
+                        </linearGradient>
+                      </defs>
                     </BarChart>
                   </ResponsiveContainer>
                 </div>

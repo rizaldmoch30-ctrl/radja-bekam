@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+export const dynamic = "force-dynamic";
 import { db } from "@/lib/db";
 import { therapistServiceCommissions, therapists } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";

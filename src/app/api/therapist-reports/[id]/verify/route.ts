@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
-import { therapistMonthlyReports, therapists, branches } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { therapistMonthlyReports, therapists, branches, therapistCommissions, patientVisits } from "@/lib/db/schema";
+import { eq, and, like } from "drizzle-orm";
 
 export async function POST(
   request: Request,
@@ -78,10 +78,45 @@ export async function POST(
       return Response.json({ error: "PIN keamanan salah. Silakan coba lagi atau hubungi HR." }, { status: 401 });
     }
 
-    // Strip sensitive verify fields before sending response
+    // Hitung ulang komisi & treatment aktual dari DB (real-time, bukan stale)
+    const commissionLogs = await db
+      .select({ amount: therapistCommissions.amount })
+      .from(therapistCommissions)
+      .innerJoin(patientVisits, eq(therapistCommissions.visitId, patientVisits.id))
+      .where(
+        and(
+          eq(therapistCommissions.therapistId, report.therapistId),
+          like(patientVisits.visitDate, `${report.month}%`)
+        )
+      );
+    const actualCommissions = commissionLogs.reduce((sum, c) => sum + c.amount, 0);
+
+    const treatmentLogs = await db
+      .select({ id: patientVisits.id })
+      .from(patientVisits)
+      .where(
+        and(
+          eq(patientVisits.therapistId, report.therapistId),
+          eq(patientVisits.status, "completed"),
+          like(patientVisits.visitDate, `${report.month}%`)
+        )
+      );
+    const actualTreatments = treatmentLogs.length;
+
+    const actualTakeHomePay = report.baseSalary + actualCommissions + report.allowances + report.bonuses - report.deductions;
+
+    // Strip sensitive fields before sending response
     const { pinCode, birthDate, ...safePayload } = report;
 
-    return Response.json({ success: true, data: safePayload });
+    return Response.json({
+      success: true,
+      data: {
+        ...safePayload,
+        commissions: actualCommissions,
+        totalTreatments: actualTreatments,
+        takeHomePay: actualTakeHomePay,
+      },
+    });
   } catch (error) {
     console.error("POST /api/therapist-reports/[id]/verify error:", error);
     return Response.json({ error: "Gagal memverifikasi PIN" }, { status: 500 });

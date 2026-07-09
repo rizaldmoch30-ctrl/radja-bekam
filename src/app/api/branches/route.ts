@@ -2,8 +2,6 @@ import { db } from "@/lib/db";
 import { branches } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
-export const dynamic = "force-dynamic";
-
 // GET /api/branches — List branches
 export async function GET(request: Request) {
   try {
@@ -31,7 +29,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { id, name, address, phone, whatsappNumber, operatingHours, mapUrl, isActive } = body;
+    const { id, name, address, phone, whatsappNumber, operatingHours, operatingHoursWeekend, mapUrl, isActive } = body;
 
     if (!id || !name || !address || !phone || !whatsappNumber) {
       return Response.json({ error: "Missing required fields" }, { status: 400 });
@@ -44,6 +42,7 @@ export async function POST(request: Request) {
       phone,
       whatsappNumber,
       operatingHours: operatingHours || "09:00 - 21:00 WIB",
+      operatingHoursWeekend: operatingHoursWeekend || "09:00 - 21:00 WIB",
       mapUrl: mapUrl || null,
       isActive: isActive !== undefined ? isActive : true,
     }).returning();

@@ -161,8 +161,8 @@ export default function AdminStaffPayrollPage() {
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <PageHeader 
-          title="Penggajian Staff"
-          description="Kelola dan cetak slip gaji untuk Staff Non-Terapis."
+          title="Slip Gaji Manajemen"
+          description="Kelola dan cetak slip gaji untuk Staff Non-Terapis / Manajemen."
           icon={Receipt}
           rightContent={
             <div className="flex items-center gap-3">
@@ -170,7 +170,7 @@ export default function AdminStaffPayrollPage() {
                 type="month" 
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="px-4 py-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 text-sm transition-all"
+                className="px-4 py-2 bg-gray-50/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-gray-900 text-sm backdrop-blur-md transition-all"
               />
             </div>
           }
@@ -205,7 +205,7 @@ export default function AdminStaffPayrollPage() {
                         </td>
                         <td className="px-6 py-4 text-center">
                           {reportData ? (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
                               <CheckCircle className="w-3.5 h-3.5" /> Sudah Dibuat
                             </span>
                           ) : (

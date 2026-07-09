@@ -13,6 +13,7 @@ export default function AttendanceKiosk() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string; details?: any } | null>(null);
   const [hasCamera, setHasCamera] = useState<boolean | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
 
   // Fallback branch if not provided from context
   const branchId = "karawaci"; // Should ideally be selected by admin before turning on kiosk
@@ -43,32 +44,32 @@ export default function AttendanceKiosk() {
   }, []);
 
   const handlePinClick = (num: string) => {
-    if (loading) return;
+    if (loading || countdown !== null) return;
     if (message?.type === "success") setMessage(null); // Clear success message on new input
 
     if (pin.length < 6) {
       const newPin = pin + num;
       setPin(newPin);
       if (newPin.length === 6) {
-        submitAttendance(newPin);
+        setCountdown(3);
       }
     }
   };
 
   const handleClear = () => {
-    if (loading) return;
+    if (loading || countdown !== null) return;
     setPin("");
     setMessage(null);
   };
 
   const handleDelete = () => {
-    if (loading) return;
+    if (loading || countdown !== null) return;
     setPin(prev => prev.slice(0, -1));
   };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (loading) return;
+      if (loading || countdown !== null) return;
       
       if (e.key >= "0" && e.key <= "9") {
         handlePinClick(e.key);
@@ -81,7 +82,19 @@ export default function AttendanceKiosk() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [loading, pin]); // Need pin here because handlePinClick uses pin state
+  }, [loading, pin, countdown]); 
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (countdown === 0) {
+      submitAttendance(pin);
+      setCountdown(null);
+    }
+  }, [countdown, pin]);
 
 
   const capturePhoto = (): string | null => {
@@ -141,7 +154,7 @@ export default function AttendanceKiosk() {
           }
         });
       } else {
-        setMessage({ type: "error", text: data.error || "Gagal memproses absensi" });
+        setMessage({ type: "error", text: data.error || "Gagal memproses absensi", details: data.details });
       }
     } catch (err: any) {
       setMessage({ type: "error", text: err.message || "Terjadi kesalahan sistem" });
@@ -200,6 +213,15 @@ export default function AttendanceKiosk() {
             
             {/* Guide markers */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-64 border-2 border-dashed border-white/30 rounded-full pointer-events-none z-10 hidden md:block" />
+
+            {/* Countdown Overlay */}
+            {countdown !== null && countdown > 0 && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-20 backdrop-blur-sm rounded-3xl">
+                <div className="text-8xl md:text-9xl font-black text-white animate-ping drop-shadow-2xl">
+                  {countdown}
+                </div>
+              </div>
+            )}
           </div>
           <p className="text-center text-slate-400 mt-4 text-sm flex items-center justify-center gap-2">
             <Camera className="w-4 h-4" /> Pastikan wajah Anda terlihat jelas di kamera
@@ -215,14 +237,14 @@ export default function AttendanceKiosk() {
         
         <div className="max-w-sm mx-auto w-full">
           {message ? (
-             <div className={`p-6 rounded-3xl mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500 shadow-xl ${message.type === "success" ? "bg-gradient-to-br from-green-400 to-emerald-600 text-white" : "bg-red-50 text-red-800 border border-red-200"}`}>
+             <div className={`p-6 rounded-3xl mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500 shadow-xl ${message.type === "success" ? "bg-gradient-to-br from-blue-400 to-blue-600 text-white" : "bg-red-50 text-red-800 border border-red-200"}`}>
                {message.type === "success" ? (
                  <div className="text-center">
                    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
                      {message.details?.action === "Clock In" ? <LogIn className="w-8 h-8" /> : <LogOut className="w-8 h-8" />}
                    </div>
                    <h3 className="text-2xl font-black mb-1">{message.details?.action}</h3>
-                   <p className="text-green-50 text-lg mb-4">{message.details?.name}</p>
+                   <p className="text-blue-50 text-lg mb-4">{message.details?.name}</p>
                    <div className="inline-block bg-black/20 px-4 py-2 rounded-xl text-xl font-bold font-mono">
                      {message.details?.time}
                    </div>
@@ -231,6 +253,7 @@ export default function AttendanceKiosk() {
                  <div className="flex flex-col items-center text-center">
                    <AlertCircle className="w-12 h-12 mb-3 text-red-500" />
                    <p className="font-bold">{message.text}</p>
+                   {message.details && <p className="text-xs mt-2 opacity-80 font-mono break-all max-w-full">{typeof message.details === 'string' ? message.details : JSON.stringify(message.details)}</p>}
                  </div>
                )}
              </div>

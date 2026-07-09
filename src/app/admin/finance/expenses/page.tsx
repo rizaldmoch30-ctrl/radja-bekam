@@ -49,6 +49,7 @@ export default function AdminExpensesPage() {
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [branches, setBranches] = useState<any[]>([]);
   
   // Filters
   const [filterBranch, setFilterBranch] = useState("");
@@ -70,18 +71,9 @@ export default function AdminExpensesPage() {
     attachmentUrl: "",
   });
 
-  const branchNames: Record<string, string> = {
-    karawaci: "Karawaci",
-    "duren-sawit": "Duren Sawit",
-    "mustika-jaya": "Mustika Jaya",
-    karangsatria: "Karangsatria",
-    jatibening: "Jatibening",
-    "harapan-indah": "Harapan Indah",
-  };
+  const paymentMethods = ["CASH", "DEBIT", "TRANSFER BANK"];
 
-  const paymentMethods = ["CASH", "DEBIT", "QRIS"];
-
-  const expenseCategories = useMemo(() => categories.filter(c => c.type === "EXPENSE").map(c => c.name), [categories]);
+  const expenseCategories = useMemo(() => Array.from(new Set(categories.filter(c => c.type === "EXPENSE").map(c => c.name))), [categories]);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -100,7 +92,19 @@ export default function AdminExpensesPage() {
         console.error("Failed to fetch categories", err);
       }
     };
+
+    const fetchBranches = async () => {
+      try {
+        const res = await fetch("/api/branches");
+        const json = await res.json();
+        if (res.ok) setBranches(json.data || []);
+      } catch (err) {
+        console.error("Failed to fetch branches", err);
+      }
+    };
+    
     fetchCategories();
+    fetchBranches();
   }, []);
 
   const getDateRange = () => {
@@ -219,7 +223,7 @@ export default function AdminExpensesPage() {
         `"${t.category}"`,
         `"${t.paymentMethod}"`,
         `"${t.description.replace(/"/g, '""')}"`,
-        `"${t.branchId ? branchNames[t.branchId] || t.branchId : "Pusat"}"`,
+        `"${t.branchId ? branches.find(b => b.id === t.branchId)?.name || t.branchId : "Pusat"}"`,
         t.amount,
         `"${t.referenceId || ""}"`,
         `"${t.attachmentUrl || ""}"`
@@ -260,18 +264,18 @@ export default function AdminExpensesPage() {
               <select
                 value={filterBranch}
                 onChange={(e) => setFilterBranch(e.target.value)}
-                className="bg-white border border-gray-200 text-gray-900 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/50 outline-none appearance-none transition-all cursor-pointer [&>option]:text-gray-900"
+                className="bg-white border border-gray-200 text-gray-700 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none appearance-none transition-all cursor-pointer shadow-sm hover:bg-gray-50 font-medium"
               >
                 <option value="">Semua Cabang</option>
-                {Object.entries(branchNames).map(([id, name]) => (
-                  <option key={id} value={id}>{name}</option>
+                {branches.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
                 ))}
               </select>
               
               <select
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="bg-white border border-gray-200 text-gray-900 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/50 outline-none appearance-none transition-all cursor-pointer [&>option]:text-gray-900"
+                className="bg-white border border-gray-200 text-gray-700 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none appearance-none transition-all cursor-pointer shadow-sm hover:bg-gray-50 font-medium"
               >
                 <option value="today">Hari Ini</option>
                 <option value="thisWeek">Minggu Ini</option>
@@ -286,21 +290,21 @@ export default function AdminExpensesPage() {
                     type="date" 
                     value={customStartDate} 
                     onChange={e => setCustomStartDate(e.target.value)} 
-                    className="bg-white border border-gray-200 text-gray-900 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/50 outline-none "
+                    className="bg-white border border-gray-200 text-gray-700 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none shadow-sm transition-all hover:bg-gray-50"
                   />
-                  <span className="text-white/50">-</span>
+                  <span className="text-gray-400 font-bold">-</span>
                   <input 
                     type="date" 
                     value={customEndDate} 
                     onChange={e => setCustomEndDate(e.target.value)} 
-                    className="bg-white border border-gray-200 text-gray-900 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/50 outline-none "
+                    className="bg-white border border-gray-200 text-gray-700 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none shadow-sm transition-all hover:bg-gray-50"
                   />
                 </div>
               )}
 
               <button 
                 onClick={handleExportCSV}
-                className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+                className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-blue-500/20 transition-all active:scale-95"
               >
                 <Download className="h-5 w-5" /> Export CSV
               </button>
@@ -310,7 +314,7 @@ export default function AdminExpensesPage() {
                   setFormData({ type: "EXPENSE", category: expenseCategories[0], amount: 0, description: "", branchId: filterBranch, paymentMethod: "CASH", attachmentUrl: "" });
                   setIsFormOpen(true);
                 }}
-                className="bg-white text-indigo-900 hover:bg-gray-50 px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-black/10 transition-all active:scale-95"
+                className="bg-white text-blue-900 hover:bg-gray-50 px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-black/10 transition-all active:scale-95"
               >
                 <Plus className="h-5 w-5" /> Catat Transaksi
               </button>
@@ -374,8 +378,8 @@ export default function AdminExpensesPage() {
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
                   >
                     <option value="">Pusat / Tidak Spesifik</option>
-                    {Object.entries(branchNames).map(([id, name]) => (
-                      <option key={id} value={id}>{name}</option>
+                    {branches.map((b) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
                     ))}
                   </select>
                 </div>

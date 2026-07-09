@@ -2,8 +2,6 @@ import { db } from "@/lib/db";
 import { services } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
-export const dynamic = "force-dynamic";
-
 // GET /api/services — List all active services (or all if ?all=true)
 export async function GET(request: Request) {
   try {
@@ -41,7 +39,7 @@ export async function POST(request: Request) {
       description,
       price: Number(price),
       durationMinutes: Number(durationMinutes),
-      category: category || "Terapi Bekam",
+      category: category || "Paket Treatment",
       isActive: isActive !== undefined ? isActive : true,
     }).returning();
 

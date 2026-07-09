@@ -35,7 +35,31 @@ export default function AdminSettingsPage() {
     heroTitle: "",
     heroDescription: "",
     operatingHours: "",
+    operatingHoursWeekend: "",
     mapUrl: "",
+    aboutPageContent: {
+      heroBadge: "Mengenal Kami",
+      heroTitle: "Tentang Radja Bekam",
+      heroDesc: "Menelusuri rekam jejak, visi besar, dan dedikasi kami dalam menghadirkan solusi kesehatan sunnah terbaik untuk Anda.",
+      storyBadge: "5+ Tahun Pengalaman",
+      storyTitle: "Solusi Teman Sehatku",
+      storyP1: "Radja Bekam didirikan dengan satu tujuan mulia: mempopulerkan pengobatan sunnah dengan mengawinkannya bersama standar medis modern dan profesionalisme tinggi.",
+      storyP2: "Sejak cabang pertama kami melayani, kami terus meracik inovasi dalam terapi bekam dan pijat refleksi.",
+      visiTitle: "Visi & Misi Kami",
+      visiDesc: "Fondasi kokoh yang menggerakkan setiap langkah kami dalam memberikan layanan kesehatan.",
+      visiText: "Menjadi jaringan klinik terapi bekam dan refleksi paling terpercaya di Indonesia...",
+      misi1: "Memberikan pelayanan terapi level atas oleh barisan terapis bersertifikat profesional.",
+      misi2: "Menjamin sterilisasi 100% tanpa kompromi pada setiap peralatan yang digunakan.",
+      misi3: "Berperan aktif mengedukasi masyarakat tentang pentingnya menjaga gaya hidup sehat dan preventif.",
+      stat1Value: "10k+",
+      stat1Label: "Pasien Terbantu",
+      stat2Value: "100%",
+      stat2Label: "Higienis & Steril",
+      stat3Value: "20+",
+      stat3Label: "Terapis Ahli",
+      stat4Value: "4",
+      stat4Label: "Cabang Premium"
+    }
   });
 
   // Admin User Form State
@@ -92,7 +116,33 @@ export default function AdminSettingsPage() {
             heroTitle: data.heroTitle || "Solusi Teman Sehatku",
             heroDescription: data.heroDescription || "Menghadirkan layanan pengobatan sunnah berkualitas tinggi dengan standar medis modern.",
             operatingHours: data.operatingHours || "09:00 - 21:00 WIB",
+            operatingHoursWeekend: data.operatingHoursWeekend || "09:00 - 21:00 WIB",
             mapUrl: data.mapUrl || "",
+            aboutPageContent: typeof data.aboutPageContent === 'string' 
+                ? JSON.parse(data.aboutPageContent) 
+                : (data.aboutPageContent || {
+                  heroBadge: "Mengenal Kami",
+                  heroTitle: "Tentang Radja Bekam",
+                  heroDesc: "Menelusuri rekam jejak, visi besar, dan dedikasi kami dalam menghadirkan solusi kesehatan sunnah terbaik untuk Anda.",
+                  storyBadge: "5+ Tahun Pengalaman",
+                  storyTitle: "Solusi Teman Sehatku",
+                  storyP1: "Radja Bekam didirikan dengan satu tujuan mulia: mempopulerkan pengobatan sunnah dengan mengawinkannya bersama standar medis modern dan profesionalisme tinggi.",
+                  storyP2: "Sejak cabang pertama kami melayani, kami terus meracik inovasi dalam terapi bekam dan pijat refleksi.",
+                  visiTitle: "Visi & Misi Kami",
+                  visiDesc: "Fondasi kokoh yang menggerakkan setiap langkah kami dalam memberikan layanan kesehatan.",
+                  visiText: "Menjadi jaringan klinik terapi bekam dan refleksi paling terpercaya di Indonesia...",
+                  misi1: "Memberikan pelayanan terapi level atas oleh barisan terapis bersertifikat profesional.",
+                  misi2: "Menjamin sterilisasi 100% tanpa kompromi pada setiap peralatan yang digunakan.",
+                  misi3: "Berperan aktif mengedukasi masyarakat tentang pentingnya menjaga gaya hidup sehat dan preventif.",
+                  stat1Value: "10k+",
+                  stat1Label: "Pasien Terbantu",
+                  stat2Value: "100%",
+                  stat2Label: "Higienis & Steril",
+                  stat3Value: "20+",
+                  stat3Label: "Terapis Ahli",
+                  stat4Value: "4",
+                  stat4Label: "Cabang Premium"
+                })
           });
         }
       } catch (err) {
@@ -118,6 +168,16 @@ export default function AdminSettingsPage() {
 
   const handleCompanyChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleAboutChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData({
+      ...formData,
+      aboutPageContent: {
+        ...formData.aboutPageContent,
+        [e.target.name]: e.target.value
+      }
+    });
   };
 
   const handleCompanySubmit = async (e: React.FormEvent) => {
@@ -286,17 +346,24 @@ export default function AdminSettingsPage() {
           icon={Settings}
           rightContent={
             session?.role === "SUPER_ADMIN" ? (
-              <div className="flex border border-gray-200 bg-white p-1 rounded-xl shadow-sm w-max mt-4 md:mt-0 ">
+              <div className="flex border border-white/20 bg-white/10 p-1 rounded-xl shadow-sm w-max mt-4 md:mt-0 backdrop-blur-md">
                 <button
                   onClick={() => setActiveTab("company")}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === "company" ? "bg-white text-indigo-900 shadow-md" : "text-white/80 hover:text-white hover:bg-white/10"}`}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === "company" ? "bg-white text-blue-900 shadow-md" : "text-white/80 hover:text-white hover:bg-white/10"}`}
                 >
                   <Settings className="w-4 h-4" />
                   Info Perusahaan
                 </button>
                 <button
+                  onClick={() => setActiveTab("about")}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === "about" ? "bg-white text-blue-900 shadow-md" : "text-white/80 hover:text-white hover:bg-white/10"}`}
+                >
+                  <Store className="w-4 h-4" />
+                  Halaman About
+                </button>
+                <button
                   onClick={() => setActiveTab("admins")}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === "admins" ? "bg-white text-indigo-900 shadow-md" : "text-white/80 hover:text-white hover:bg-white/10"}`}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === "admins" ? "bg-white text-blue-900 shadow-md" : "text-white/80 hover:text-white hover:bg-white/10"}`}
                 >
                   <Users className="w-4 h-4" />
                   Sesi Admin
@@ -308,7 +375,7 @@ export default function AdminSettingsPage() {
 
         {/* Feedback Alert */}
         {message.text && (
-          <div className={`mb-6 p-4 rounded-xl font-semibold text-sm border ${message.type === "success" ? "bg-green-50 text-green-800 border-green-200" : "bg-red-50 text-red-800 border-red-200"}`}>
+          <div className={`mb-6 p-4 rounded-xl font-semibold text-sm border ${message.type === "success" ? "bg-blue-50 text-blue-800 border-blue-200" : "bg-red-50 text-red-800 border-red-200"}`}>
             {message.text}
           </div>
         )}
@@ -320,7 +387,7 @@ export default function AdminSettingsPage() {
               
               {/* Profile Umum */}
               <div className="space-y-4">
-                <h3 className="text-lg font-bold border-b pb-2 text-gray-800 flex items-center gap-2"><Store className="w-5 h-5 text-indigo-500" /> Profil Utama</h3>
+                <h3 className="text-lg font-bold border-b pb-2 text-gray-800 flex items-center gap-2"><Store className="w-5 h-5 text-blue-600" /> Profil Utama</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5 md:col-span-2">
                     <label className="text-sm font-semibold text-gray-700">Nama Perusahaan</label>
@@ -339,7 +406,7 @@ export default function AdminSettingsPage() {
 
               {/* Landing Page Content */}
               <div className="space-y-4">
-                <h3 className="text-lg font-bold border-b pb-2 text-gray-800 flex items-center gap-2"><Settings className="w-5 h-5 text-teal-500" /> Konten Landing Page (Hero)</h3>
+                <h3 className="text-lg font-bold border-b pb-2 text-gray-800 flex items-center gap-2"><Settings className="w-5 h-5 text-blue-500" /> Konten Landing Page (Hero)</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-sm font-semibold text-gray-700">Teks Label Badge (Kecil)</label>
@@ -358,7 +425,7 @@ export default function AdminSettingsPage() {
 
               {/* Kontak */}
               <div className="space-y-4">
-                <h3 className="text-lg font-bold border-b pb-2 text-gray-800 flex items-center gap-2"><Store className="w-5 h-5 text-blue-500" /> Kontak & Jam Operasional</h3>
+                <h3 className="text-lg font-bold border-b pb-2 text-gray-800 flex items-center gap-2"><Store className="w-5 h-5 text-blue-600" /> Kontak & Jam Operasional</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-sm font-semibold text-gray-700">No. Telepon</label>
@@ -373,13 +440,46 @@ export default function AdminSettingsPage() {
                     <input type="email" name="email" value={formData.email} onChange={handleCompanyChange} required className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-gray-700">Jam Operasional</label>
+                    <label className="text-sm font-semibold text-gray-700">Jam Operasional (Senin - Jumat)</label>
                     <input type="text" name="operatingHours" value={formData.operatingHours} onChange={handleCompanyChange} required className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-gray-700">Jam Operasional (Sabtu - Minggu)</label>
+                    <input type="text" name="operatingHoursWeekend" value={formData.operatingHoursWeekend} onChange={handleCompanyChange} required className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
                   </div>
                   <div className="space-y-1.5 md:col-span-2">
                     <label className="text-sm font-semibold text-gray-700">Sematkan URL GMaps Peta</label>
-                    <input type="url" name="mapUrl" value={formData.mapUrl} onChange={handleCompanyChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
-                    <p className="text-xs text-red-500 font-semibold mt-1">Gunakan link "Sematkan Peta (Embed a map)".</p>
+                    <input 
+                      type="url" 
+                      name="mapUrl" 
+                      value={formData.mapUrl} 
+                      onChange={e => {
+                        let val = e.target.value;
+                        if (val.includes("<iframe") && val.includes("src=")) {
+                          const match = val.match(/src="([^"]+)"/);
+                          if (match && match[1]) {
+                            val = match[1];
+                          }
+                        }
+                        setFormData({...formData, mapUrl: val});
+                      }}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" 
+                    />
+                    <p className="text-xs text-gray-500 font-medium mt-1">Gunakan link "Sematkan Peta (Embed a map)" dari Google Maps.</p>
+                    {formData.mapUrl && (
+                      <div className="mt-3">
+                        <div className="text-xs text-gray-400 font-semibold uppercase mb-2">Pratinjau Peta Google Maps</div>
+                        <div className="h-48 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 relative">
+                           {formData.mapUrl.includes("embed") || formData.mapUrl.includes("output=embed") ? (
+                             <iframe src={formData.mapUrl} className="absolute inset-0 w-full h-full border-0" loading="lazy"></iframe>
+                           ) : (
+                             <div className="w-full h-full text-red-500 flex items-center justify-center text-xs text-center p-4 font-semibold">
+                               Link bukan format Embed. Peta tidak dapat ditampilkan.<br/>Harap gunakan fitur "Sematkan Peta".
+                             </div>
+                           )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -411,6 +511,125 @@ export default function AdminSettingsPage() {
                 >
                   <Save className="w-5 h-5" />
                   {saving ? "Menyimpan..." : "Simpan Pengaturan"}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* TAB 1.5: About Page Settings */}
+        {activeTab === "about" && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <form onSubmit={handleCompanySubmit} className="p-6 md:p-8 space-y-8">
+              
+              {/* Hero Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold border-b pb-2 text-gray-800 flex items-center gap-2"><Store className="w-5 h-5 text-indigo-500" /> Teks Hero Header</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-gray-700">Hero Badge (Mengenal Kami)</label>
+                    <input type="text" name="heroBadge" value={formData.aboutPageContent.heroBadge || ""} onChange={handleAboutChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 outline-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-gray-700">Hero Title (Tentang Radja Bekam...)</label>
+                    <input type="text" name="heroTitle" value={formData.aboutPageContent.heroTitle || ""} onChange={handleAboutChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 outline-none" />
+                  </div>
+                  <div className="space-y-1.5 md:col-span-2">
+                    <label className="text-sm font-semibold text-gray-700">Hero Description</label>
+                    <textarea name="heroDesc" value={formData.aboutPageContent.heroDesc || ""} onChange={handleAboutChange} rows={2} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 outline-none" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Story Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold border-b pb-2 text-gray-800 flex items-center gap-2"><Settings className="w-5 h-5 text-blue-500" /> Cerita Singkat (Story)</h3>
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-gray-700">Teks Badge (Cth: 5+ Tahun Pengalaman)</label>
+                    <input type="text" name="storyBadge" value={formData.aboutPageContent.storyBadge || ""} onChange={handleAboutChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 outline-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-gray-700">Judul Cerita (Solusi Teman Sehatku)</label>
+                    <input type="text" name="storyTitle" value={formData.aboutPageContent.storyTitle || ""} onChange={handleAboutChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 outline-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-gray-700">Paragraf 1</label>
+                    <textarea name="storyP1" value={formData.aboutPageContent.storyP1 || ""} onChange={handleAboutChange} rows={3} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 outline-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-gray-700">Paragraf 2</label>
+                    <textarea name="storyP2" value={formData.aboutPageContent.storyP2 || ""} onChange={handleAboutChange} rows={3} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 outline-none" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Visi Misi Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold border-b pb-2 text-gray-800 flex items-center gap-2"><Store className="w-5 h-5 text-blue-500" /> Visi & Misi</h3>
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-gray-700">Judul Bagian Visi Misi</label>
+                    <input type="text" name="visiTitle" value={formData.aboutPageContent.visiTitle || ""} onChange={handleAboutChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 outline-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-gray-700">Deskripsi Singkat Visi Misi</label>
+                    <input type="text" name="visiDesc" value={formData.aboutPageContent.visiDesc || ""} onChange={handleAboutChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 outline-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-gray-700">Teks Lengkap Visi</label>
+                    <textarea name="visiText" value={formData.aboutPageContent.visiText || ""} onChange={handleAboutChange} rows={3} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 outline-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-gray-700">Misi Poin 1</label>
+                    <input type="text" name="misi1" value={formData.aboutPageContent.misi1 || ""} onChange={handleAboutChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 outline-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-gray-700">Misi Poin 2</label>
+                    <input type="text" name="misi2" value={formData.aboutPageContent.misi2 || ""} onChange={handleAboutChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 outline-none" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-gray-700">Misi Poin 3</label>
+                    <input type="text" name="misi3" value={formData.aboutPageContent.misi3 || ""} onChange={handleAboutChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 outline-none" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats Section */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold border-b pb-2 text-gray-800 flex items-center gap-2"><Users className="w-5 h-5 text-pink-500" /> Statistik</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-gray-700">Statistik 1 (Nilai)</label>
+                    <input type="text" name="stat1Value" value={formData.aboutPageContent.stat1Value || ""} onChange={handleAboutChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 outline-none" />
+                    <input type="text" name="stat1Label" value={formData.aboutPageContent.stat1Label || ""} onChange={handleAboutChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 outline-none mt-2" placeholder="Label" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-gray-700">Statistik 2 (Nilai)</label>
+                    <input type="text" name="stat2Value" value={formData.aboutPageContent.stat2Value || ""} onChange={handleAboutChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 outline-none" />
+                    <input type="text" name="stat2Label" value={formData.aboutPageContent.stat2Label || ""} onChange={handleAboutChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 outline-none mt-2" placeholder="Label" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-gray-700">Statistik 3 (Nilai)</label>
+                    <input type="text" name="stat3Value" value={formData.aboutPageContent.stat3Value || ""} onChange={handleAboutChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 outline-none" />
+                    <input type="text" name="stat3Label" value={formData.aboutPageContent.stat3Label || ""} onChange={handleAboutChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 outline-none mt-2" placeholder="Label" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-semibold text-gray-700">Statistik 4 (Nilai)</label>
+                    <input type="text" name="stat4Value" value={formData.aboutPageContent.stat4Value || ""} onChange={handleAboutChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 outline-none" />
+                    <input type="text" name="stat4Label" value={formData.aboutPageContent.stat4Label || ""} onChange={handleAboutChange} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary/20 outline-none mt-2" placeholder="Label" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-4 border-t border-gray-100">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold px-6 py-3 rounded-xl flex items-center gap-2 shadow-md transition-all disabled:opacity-50"
+                >
+                  <Save className="w-5 h-5" />
+                  {saving ? "Menyimpan..." : "Simpan Teks About Us"}
                 </button>
               </div>
             </form>
@@ -581,7 +800,7 @@ export default function AdminSettingsPage() {
                           <button
                             onClick={() => handleToggleAdminStatus(admin)}
                             disabled={admin.id === session.id}
-                            className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border transition-colors disabled:opacity-50 ${admin.isActive ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100" : "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"}`}
+                            className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border transition-colors disabled:opacity-50 ${admin.isActive ? "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100" : "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"}`}
                           >
                             {admin.isActive ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
                             {admin.isActive ? "Aktif" : "Nonaktif"}

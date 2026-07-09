@@ -47,6 +47,7 @@ export default function AdminFinancePage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [branches, setBranches] = useState<any[]>([]);
   
   // Filters
   const [filterBranch, setFilterBranch] = useState("");
@@ -72,19 +73,10 @@ export default function AdminFinancePage() {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryType, setNewCategoryType] = useState<"INCOME" | "EXPENSE">("EXPENSE");
 
-  const branchNames: Record<string, string> = {
-    karawaci: "Karawaci",
-    "duren-sawit": "Duren Sawit",
-    "mustika-jaya": "Mustika Jaya",
-    karangsatria: "Karangsatria",
-    jatibening: "Jatibening",
-    "harapan-indah": "Harapan Indah",
-  };
+  const paymentMethods = ["CASH", "DEBIT", "TRANSFER BANK"];
 
-  const paymentMethods = ["CASH", "DEBIT", "QRIS"];
-
-  const incomeCategories = useMemo(() => categories.filter(c => c.type === "INCOME").map(c => c.name), [categories]);
-  const expenseCategories = useMemo(() => categories.filter(c => c.type === "EXPENSE").map(c => c.name), [categories]);
+  const incomeCategories = useMemo(() => Array.from(new Set(categories.filter(c => c.type === "INCOME").map(c => c.name))), [categories]);
+  const expenseCategories = useMemo(() => Array.from(new Set(categories.filter(c => c.type === "EXPENSE").map(c => c.name))), [categories]);
 
   // Set default category when type changes
   useEffect(() => {
@@ -194,8 +186,19 @@ export default function AdminFinancePage() {
     }
   };
 
+  const fetchBranches = async () => {
+    try {
+      const res = await fetch("/api/branches");
+      const json = await res.json();
+      if (res.ok) setBranches(json.data || []);
+    } catch (err) {
+      console.error("Failed to fetch branches", err);
+    }
+  };
+
   useEffect(() => {
     fetchCategories();
+    fetchBranches();
   }, []);
 
   useEffect(() => {
@@ -276,7 +279,7 @@ export default function AdminFinancePage() {
         `"${t.category}"`,
         `"${t.paymentMethod}"`,
         `"${t.description.replace(/"/g, '""')}"`,
-        `"${t.branchId ? branchNames[t.branchId] || t.branchId : "Pusat"}"`,
+        `"${t.branchId ? branches.find(b => b.id === t.branchId)?.name || t.branchId : "Pusat"}"`,
         t.amount,
         `"${t.referenceId || ""}"`,
         `"${t.attachmentUrl || ""}"`
@@ -343,7 +346,7 @@ export default function AdminFinancePage() {
           <div className="flex flex-wrap items-center gap-3">
             <Link 
               href="/admin/finance/accounting"
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors mr-2"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors mr-2"
             >
               <BookOpen className="h-5 w-5" /> Buku Besar & Laporan Akuntansi
             </Link>
@@ -354,8 +357,8 @@ export default function AdminFinancePage() {
               className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:ring-primary focus:border-primary"
             >
               <option value="">Semua Cabang</option>
-              {Object.entries(branchNames).map(([id, name]) => (
-                <option key={id} value={id}>{name}</option>
+              {branches.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
               ))}
             </select>
             
@@ -399,7 +402,7 @@ export default function AdminFinancePage() {
 
             <button 
               onClick={handleExportCSV}
-              className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors"
             >
               <Download className="h-5 w-5" /> Export CSV
             </button>
@@ -420,7 +423,7 @@ export default function AdminFinancePage() {
               <TrendingUp className="h-24 w-24" />
             </div>
             <div className="flex items-center gap-2 text-gray-500 font-medium mb-2 relative z-10">
-              <div className="p-2 bg-green-100 rounded-lg text-green-600"><TrendingUp className="h-5 w-5" /></div>
+              <div className="p-2 bg-blue-100 rounded-lg text-blue-600"><TrendingUp className="h-5 w-5" /></div>
               Pemasukan
             </div>
             <div className="text-3xl font-bold text-gray-900 relative z-10">{formatRupiah(totalIncome)}</div>
@@ -455,7 +458,7 @@ export default function AdminFinancePage() {
             <h3 className="text-lg font-semibold mb-6 flex items-center gap-2"><TrendingUp className="w-5 h-5 text-gray-400" /> Tren Keuangan</h3>
             <div className="h-72 w-full">
               {chartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                   <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="colorPemasukan" x1="0" y1="0" x2="0" y2="1">
@@ -503,7 +506,7 @@ export default function AdminFinancePage() {
             <h3 className="text-lg font-semibold mb-6 flex items-center gap-2"><PieChart className="w-5 h-5 text-gray-400" /> Proporsi Pemasukan</h3>
             <div className="h-64 w-full">
               {pieData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                   <PieChart>
                     <Pie
                       data={pieData}
@@ -655,7 +658,7 @@ export default function AdminFinancePage() {
                         </td>
                         <td className="px-4 sm:px-6 py-4 text-right font-bold">
                           {t.type === "INCOME" ? (
-                            <span className="text-green-600">+{formatRupiah(t.amount)}</span>
+                            <span className="text-blue-600">+{formatRupiah(t.amount)}</span>
                           ) : (
                             <span className="text-red-500">-{formatRupiah(t.amount)}</span>
                           )}

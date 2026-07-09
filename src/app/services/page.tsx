@@ -5,7 +5,6 @@ import { services } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
 export const revalidate = 0;
-export const dynamic = 'force-dynamic';
 
 export default async function ServicesPage() {
   const activeServices = await db.select().from(services).where(eq(services.isActive, true));
@@ -47,7 +46,7 @@ export default async function ServicesPage() {
                   </p>
                   <h4 className="font-semibold text-foreground mb-3">Kategori:</h4>
                   <div className="flex items-start gap-2 text-foreground/80">
-                    <Check className="h-5 w-5 text-green-500 shrink-0" />
+                    <Check className="h-5 w-5 text-blue-500 shrink-0" />
                     <span className="text-sm font-medium">{service.category}</span>
                   </div>
                 </div>

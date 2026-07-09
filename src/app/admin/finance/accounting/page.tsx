@@ -37,7 +37,7 @@ export default function AccountingDashboard() {
   if (loading && !data) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -51,10 +51,10 @@ export default function AccountingDashboard() {
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-gray-100">
           <div className="flex items-center gap-4">
-            <Link href="/admin/finance" className="bg-gray-100 p-2 rounded-xl text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors">
+            <Link href="/admin/finance" className="bg-gray-100 p-2 rounded-xl text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors">
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <div className="bg-indigo-100 p-3 rounded-2xl text-indigo-600">
+            <div className="bg-blue-100 p-3 rounded-2xl text-blue-600">
               <BookOpen className="w-8 h-8" />
             </div>
             <div>
@@ -69,7 +69,7 @@ export default function AccountingDashboard() {
               type="month" 
               value={month} 
               onChange={e => setMonth(e.target.value)}
-              className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none"
+              className="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
             />
             {month && (
               <button onClick={() => setMonth("")} className="text-xs text-red-500 hover:underline">Reset</button>
@@ -91,8 +91,8 @@ export default function AccountingDashboard() {
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
                 activeTab === tab.id 
-                  ? "bg-indigo-600 text-white shadow-md" 
-                  : "bg-white text-gray-600 hover:bg-indigo-50 hover:text-indigo-600 border border-gray-200"
+                  ? "bg-blue-600 text-white shadow-md" 
+                  : "bg-white text-gray-600 hover:bg-blue-50 hover:text-blue-600 border border-gray-200"
               }`}
             >
               <tab.icon className="w-4 h-4" /> {tab.label}
@@ -107,10 +107,10 @@ export default function AccountingDashboard() {
           {activeTab === "ringkasan" && (
             <div className="space-y-8 animate-in fade-in duration-500">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5">
-                  <p className="text-emerald-700 text-xs font-bold uppercase tracking-wider mb-1">Laba Kotor</p>
-                  <h3 className="text-2xl font-black text-emerald-900">{formatRupiah(m.grossProfit)}</h3>
-                  <p className="text-emerald-600/70 text-xs mt-2">Pendapatan - HPP</p>
+                <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5">
+                  <p className="text-blue-700 text-xs font-bold uppercase tracking-wider mb-1">Laba Kotor</p>
+                  <h3 className="text-2xl font-black text-blue-900">{formatRupiah(m.grossProfit)}</h3>
+                  <p className="text-blue-600/70 text-xs mt-2">Pendapatan - HPP</p>
                 </div>
                 <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5">
                   <p className="text-blue-700 text-xs font-bold uppercase tracking-wider mb-1">Laba Bersih</p>
@@ -194,7 +194,7 @@ export default function AccountingDashboard() {
                 </div>
 
                 {/* Laba Kotor */}
-                <div className="flex justify-between py-4 px-4 bg-emerald-50 text-emerald-900 rounded-xl font-black text-lg">
+                <div className="flex justify-between py-4 px-4 bg-blue-50 text-blue-900 rounded-xl font-black text-lg">
                   <span>LABA KOTOR</span>
                   <span>{formatRupiah(m.grossProfit)}</span>
                 </div>
@@ -235,7 +235,7 @@ export default function AccountingDashboard() {
                 {/* KIRI: ASET */}
                 <div className="space-y-6">
                   <div>
-                    <h3 className="font-black text-lg text-indigo-900 border-b-2 border-indigo-200 pb-2 mb-4 bg-indigo-50/50 px-2 pt-2 rounded-t-lg">ASET (AKTIVA)</h3>
+                    <h3 className="font-black text-lg text-blue-900 border-b-2 border-blue-200 pb-2 mb-4 bg-blue-50/50 px-2 pt-2 rounded-t-lg">ASET (AKTIVA)</h3>
                     {Object.values(data.balances).filter((a:any) => a.type === "ASSET" && a.balance !== 0).map((a:any, i) => (
                       <div key={i} className="flex justify-between py-2 px-2 border-b border-gray-100 hover:bg-gray-50">
                         <span className="text-gray-700">{a.name}</span>
@@ -243,7 +243,7 @@ export default function AccountingDashboard() {
                       </div>
                     ))}
                   </div>
-                  <div className="flex justify-between py-4 px-4 bg-indigo-600 text-white rounded-xl font-black text-lg shadow-md">
+                  <div className="flex justify-between py-4 px-4 bg-blue-600 text-white rounded-xl font-black text-lg shadow-md">
                     <span>TOTAL ASET</span>
                     <span>{formatRupiah(m.totalAssets)}</span>
                   </div>
@@ -266,7 +266,7 @@ export default function AccountingDashboard() {
                   </div>
 
                   <div>
-                    <h3 className="font-black text-lg text-emerald-900 border-b-2 border-emerald-200 pb-2 mb-4 bg-emerald-50/50 px-2 pt-2 rounded-t-lg">MODAL (EKUITAS)</h3>
+                    <h3 className="font-black text-lg text-blue-900 border-b-2 border-blue-200 pb-2 mb-4 bg-blue-50/50 px-2 pt-2 rounded-t-lg">MODAL (EKUITAS)</h3>
                     {Object.values(data.balances).filter((a:any) => a.type === "EQUITY" && a.balance !== 0).map((a:any, i) => (
                       <div key={i} className="flex justify-between py-2 px-2 border-b border-gray-100 hover:bg-gray-50">
                         <span className="text-gray-700">{a.name}</span>
@@ -274,7 +274,7 @@ export default function AccountingDashboard() {
                       </div>
                     ))}
                     {/* Add Net Income to Equity for Balance Sheet */}
-                    <div className="flex justify-between py-2 px-2 border-b border-gray-100 hover:bg-gray-50 text-emerald-700">
+                    <div className="flex justify-between py-2 px-2 border-b border-gray-100 hover:bg-gray-50 text-blue-700">
                       <span className="font-medium">Laba Tahun Berjalan</span>
                       <span className="font-semibold">{formatRupiah(m.netIncome)}</span>
                     </div>
@@ -303,13 +303,13 @@ export default function AccountingDashboard() {
               </div>
 
               <div className="space-y-6 text-sm sm:text-base">
-                <div className="bg-green-50 rounded-2xl p-6 border border-green-100">
+                <div className="bg-blue-50 rounded-2xl p-6 border border-blue-100">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="bg-green-200 p-2 rounded-full text-green-700"><TrendingUp className="w-5 h-5"/></div>
-                    <h3 className="font-bold text-green-900 text-lg">Kas Masuk (Inflow)</h3>
+                    <div className="bg-blue-200 p-2 rounded-full text-blue-700"><TrendingUp className="w-5 h-5"/></div>
+                    <h3 className="font-bold text-blue-900 text-lg">Kas Masuk (Inflow)</h3>
                   </div>
-                  <h2 className="text-3xl font-black text-green-700">{formatRupiah(m.cashFlowIn)}</h2>
-                  <p className="text-green-600/70 text-sm mt-2">Seluruh debet pada akun Kas & Bank.</p>
+                  <h2 className="text-3xl font-black text-blue-700">{formatRupiah(m.cashFlowIn)}</h2>
+                  <p className="text-blue-600/70 text-sm mt-2">Seluruh debet pada akun Kas & Bank.</p>
                 </div>
 
                 <div className="bg-rose-50 rounded-2xl p-6 border border-rose-100">
@@ -321,7 +321,7 @@ export default function AccountingDashboard() {
                   <p className="text-rose-600/70 text-sm mt-2">Seluruh kredit pada akun Kas & Bank.</p>
                 </div>
 
-                <div className={`p-6 rounded-2xl border ${m.netCashFlow >= 0 ? "bg-indigo-600 border-indigo-700 text-white" : "bg-red-600 border-red-700 text-white"} shadow-xl`}>
+                <div className={`p-6 rounded-2xl border ${m.netCashFlow >= 0 ? "bg-blue-600 border-blue-700 text-white" : "bg-red-600 border-red-700 text-white"} shadow-xl`}>
                   <h3 className="font-bold text-white/80 text-lg mb-2">Kenaikan (Penurunan) Kas Bersih</h3>
                   <h2 className="text-4xl font-black">{formatRupiah(m.netCashFlow)}</h2>
                 </div>
@@ -369,7 +369,7 @@ export default function AccountingDashboard() {
                           <tr key={l.id} className="bg-white hover:bg-gray-50">
                             <td></td>
                             <td className="px-4 py-2 text-gray-800">{l.accountName}</td>
-                            <td className="px-4 py-2 text-right font-medium text-emerald-600">{l.debit.toLocaleString('id-ID')}</td>
+                            <td className="px-4 py-2 text-right font-medium text-blue-600">{l.debit.toLocaleString('id-ID')}</td>
                             <td className="px-4 py-2 text-right text-gray-400">-</td>
                           </tr>
                         ))}

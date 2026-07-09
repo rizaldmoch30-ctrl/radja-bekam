@@ -281,7 +281,7 @@ export default function AdminInventoryPage() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center justify-center gap-2">
-                            <button onClick={() => openTransactionForm(item, "IN")} className="bg-green-100 text-green-700 hover:bg-green-200 p-1.5 rounded-md" title="Stok Masuk" disabled={isTransactionFormOpen}>
+                            <button onClick={() => openTransactionForm(item, "IN")} className="bg-blue-100 text-blue-700 hover:bg-blue-200 p-1.5 rounded-md" title="Stok Masuk" disabled={isTransactionFormOpen}>
                               <ArrowUpRight className="h-4 w-4" />
                             </button>
                             <button onClick={() => openTransactionForm(item, "OUT")} className="bg-orange-100 text-orange-700 hover:bg-orange-200 p-1.5 rounded-md" title="Stok Keluar" disabled={isTransactionFormOpen}>

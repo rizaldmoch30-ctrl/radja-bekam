@@ -113,7 +113,7 @@ export default function CashMutationsPage() {
               <button
                 id="btn-tambah-kas"
                 onClick={() => handleOpenModal("INCOME")}
-                className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all active:scale-95 cursor-pointer text-sm"
+                className="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-blue-500/20 transition-all active:scale-95 cursor-pointer text-sm"
               >
                 <PlusCircle className="w-4 h-4" />
                 Tambah Kas (In)
@@ -133,7 +133,7 @@ export default function CashMutationsPage() {
         {/* Dashboard Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+            <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
               <ArrowUpRight className="w-6 h-6" />
             </div>
             <div>
@@ -153,12 +153,12 @@ export default function CashMutationsPage() {
           </div>
 
           <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${netCash >= 0 ? "bg-teal-50 text-teal-600" : "bg-red-50 text-red-600"}`}>
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${netCash >= 0 ? "bg-blue-50 text-blue-600" : "bg-red-50 text-red-600"}`}>
               <Wallet className="w-6 h-6" />
             </div>
             <div>
               <p className="text-gray-400 text-xs font-bold uppercase tracking-wider">Saldo Bersih Mutasi</p>
-              <h4 className={`text-xl font-black mt-1 ${netCash >= 0 ? "text-teal-600" : "text-red-600"}`}>{formatRupiah(netCash)}</h4>
+              <h4 className={`text-xl font-black mt-1 ${netCash >= 0 ? "text-blue-600" : "text-red-600"}`}>{formatRupiah(netCash)}</h4>
             </div>
           </div>
         </div>
@@ -186,7 +186,7 @@ export default function CashMutationsPage() {
                   <tr>
                     <td colSpan={4} className="px-6 py-16 text-center text-gray-400">
                       <div className="flex flex-col items-center">
-                        <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
                         Sedang memuat data mutasi...
                       </div>
                     </td>
@@ -203,14 +203,14 @@ export default function CashMutationsPage() {
                   </tr>
                 ) : (
                   mutations.map((m) => (
-                    <tr key={m.id} className="hover:bg-emerald-50/10 transition-colors">
+                    <tr key={m.id} className="hover:bg-blue-50/10 transition-colors">
                       <td className="px-6 py-4">
                         <div className="font-semibold text-gray-900">{new Date(m.date).toLocaleDateString("id-ID", { dateStyle: "medium" })}</div>
                         <div className="text-xs text-gray-500 mt-0.5">{new Date(m.date).toLocaleTimeString("id-ID", { timeStyle: "short" })}</div>
                       </td>
                       <td className="px-6 py-4 text-center">
                         {m.type === "INCOME" ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-green-100 text-green-700 border border-green-200">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200">
                             Kas Masuk
                           </span>
                         ) : (
@@ -219,7 +219,7 @@ export default function CashMutationsPage() {
                           </span>
                         )}
                       </td>
-                      <td className={`px-6 py-4 text-right font-extrabold ${m.type === "INCOME" ? "text-green-600" : "text-red-600"}`}>
+                      <td className={`px-6 py-4 text-right font-extrabold ${m.type === "INCOME" ? "text-blue-600" : "text-red-600"}`}>
                         {m.type === "INCOME" ? "+" : "-"}{formatRupiah(m.amount)}
                       </td>
                       <td className="px-6 py-4 text-gray-600 whitespace-normal line-clamp-2 max-w-lg" title={m.description}>
@@ -253,8 +253,8 @@ export default function CashMutationsPage() {
                 <div className="p-6 space-y-4">
                   
                   {message && (
-                    <div className={`p-4 rounded-xl border flex items-center gap-3 ${message.type === "success" ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}`}>
-                      {message.type === "success" ? <CheckCircle className="w-5 h-5 text-green-600" /> : <AlertCircle className="w-5 h-5 text-red-600" />}
+                    <div className={`p-4 rounded-xl border flex items-center gap-3 ${message.type === "success" ? "bg-blue-50 border-blue-200 text-blue-800" : "bg-red-50 border-red-200 text-red-800"}`}>
+                      {message.type === "success" ? <CheckCircle className="w-5 h-5 text-blue-600" /> : <AlertCircle className="w-5 h-5 text-red-600" />}
                       <span className="text-sm font-semibold">{message.text}</span>
                     </div>
                   )}
@@ -269,7 +269,7 @@ export default function CashMutationsPage() {
                       value={formData.amount}
                       onChange={e => setFormData({ ...formData, amount: e.target.value })}
                       placeholder="Misal: 50000"
-                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-semibold outline-none"
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-semibold outline-none"
                     />
                   </div>
 
@@ -282,7 +282,7 @@ export default function CashMutationsPage() {
                       value={formData.description}
                       onChange={e => setFormData({ ...formData, description: e.target.value })}
                       placeholder="Uraikan perihal kas masuk/keluar ini secara detail..."
-                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none"
                     ></textarea>
                   </div>
                 </div>
@@ -299,7 +299,7 @@ export default function CashMutationsPage() {
                     id="submit-mutation-btn"
                     type="submit"
                     disabled={saving}
-                    className={`px-5 py-2.5 text-sm font-semibold text-white rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm ${modalType === "INCOME" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700"}`}
+                    className={`px-5 py-2.5 text-sm font-semibold text-white rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm ${modalType === "INCOME" ? "bg-blue-600 hover:bg-blue-700" : "bg-red-600 hover:bg-red-700"}`}
                   >
                     {saving ? "Menyimpan..." : "Simpan Mutasi"}
                   </button>

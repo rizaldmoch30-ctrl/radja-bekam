@@ -9,18 +9,18 @@ export async function GET() {
     
     for (const s of allServices) {
       const name = s.name.toLowerCase();
-      let newCategory: "Terapi Bekam" | "Pijat & Refleksi" | "Paket Kombinasi" | "Layanan Medis & Ekstra" = "Terapi Bekam";
+      let newCategory: "Paket Treatment" | "Full Body Massages" | "Refleksi" | "Bekam" | "Adds On" = "Paket Treatment";
       
       if (name.includes("refleksi") && name.includes("bekam")) {
-        newCategory = "Paket Kombinasi";
+        newCategory = "Paket Treatment";
       } else if (name.includes("paket") || name.includes("bundling")) {
-        newCategory = "Paket Kombinasi";
+        newCategory = "Paket Treatment";
       } else if (name.includes("refleksi") || name.includes("pijat") || name.includes("totok")) {
-        newCategory = "Pijat & Refleksi";
+        newCategory = "Refleksi";
       } else if (name.includes("cek") || name.includes("mcu") || name.includes("infrared")) {
-        newCategory = "Layanan Medis & Ekstra";
+        newCategory = "Adds On";
       } else {
-        newCategory = "Terapi Bekam";
+        newCategory = "Bekam";
       }
 
       await db.update(services).set({ category: newCategory }).where(eq(services.id, s.id));

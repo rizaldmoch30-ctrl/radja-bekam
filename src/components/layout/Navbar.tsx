@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { Menu, X, ChevronDown, MapPin, Phone, Clock, Activity, Droplets, Stethoscope, PlusCircle, ArrowRight } from "lucide-react";
+import { Menu, X, ChevronDown, MapPin, Phone, Clock, Activity, Droplets, Stethoscope, PlusCircle, ArrowRight, Package, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function Navbar({ settings, branches = [] }: { settings?: any, branches?: any[] }) {
@@ -24,9 +24,10 @@ export function Navbar({ settings, branches = [] }: { settings?: any, branches?:
       name: "Services", 
       href: "/services",
       subItems: [
+        { name: "Paket Treatment", href: "/services/paket-treatment", description: "Pilihan paket lengkap", icon: Package },
+        { name: "Full Body Massages", href: "/services/full-body-massages", description: "Pijat relaksasi seluruh tubuh", icon: Heart },
+        { name: "Refleksi", href: "/services/refleksi", description: "Relaksasi titik saraf", icon: Activity },
         { name: "Bekam", href: "/services/bekam", description: "Terapi detoksifikasi darah", icon: Droplets },
-        { name: "Pijat Refleksi", href: "/services/refleksi", description: "Relaksasi titik saraf", icon: Activity },
-        { name: "Medical Check Up", href: "/services/mcu", description: "Pemeriksaan kesehatan", icon: Stethoscope },
         { name: "Adds On", href: "/services/adds-on", description: "Layanan tambahan", icon: PlusCircle }
       ]
     },
@@ -50,7 +51,7 @@ export function Navbar({ settings, branches = [] }: { settings?: any, branches?:
           <div className="flex-shrink-0 flex items-center">
             <Link href="/" className="flex items-center gap-2 group">
               <Image 
-                src="/logo.png" 
+                src="/radja-bekam-logo.png" 
                 alt="Radja Bekam Logo" 
                 unoptimized
                 width={250} 
@@ -120,7 +121,7 @@ export function Navbar({ settings, branches = [] }: { settings?: any, branches?:
             ))}
             <Link
                href="/contact"
-               className="bg-gradient-to-r from-primary to-blue-600 hover:from-blue-700 hover:to-blue-800 text-white transition-all px-8 py-3 rounded-full font-bold text-base shadow-[0_8px_20px_rgba(59,130,246,0.3)] hover:shadow-[0_8px_25px_rgba(59,130,246,0.5)] hover:-translate-y-0.5"
+               className="bg-gradient-to-r from-primary to-blue-600 hover:from-blue-700 hover:to-blue-800 text-white transition-all px-8 py-3 rounded-full font-bold text-base shadow-[0_8px_20px_rgba(5,150,105,0.3)] hover:shadow-[0_8px_25px_rgba(5,150,105,0.5)] hover:-translate-y-0.5"
             >
                Hubungi Kami
             </Link>

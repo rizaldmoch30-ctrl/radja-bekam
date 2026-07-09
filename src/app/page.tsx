@@ -1,23 +1,23 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, ShieldCheck, Stethoscope, Users, Star, ExternalLink, Quote, Activity, AlertCircle, ChevronDown } from "lucide-react";
+import { eq } from "drizzle-orm";
 import fs from "fs";
 import path from "path";
-import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { settings, services, branches } from "@/lib/db/schema";
 import { HeroBookingBar } from "@/components/sections/HeroBookingBar";
 import { InteractiveGejala } from "@/components/sections/InteractiveGejala";
 import { TestimonialCarousel } from "@/components/sections/TestimonialCarousel";
+import { PWARedirect } from "@/components/ui/PWARedirect";
 
 export const revalidate = 0; // Disable static caching so it gets the latest settings if updated
-export const dynamic = 'force-dynamic';
 
 export default async function Home() {
   const settingsData = await db.select().from(settings).where(eq(settings.id, "company_info")).limit(1);
   const allServices = await db.select().from(services).where(eq(services.isActive, true));
   const activeBranches = await db.select().from(branches).where(eq(branches.isActive, true));
-  
+
   const featuredServices = allServices.slice(0, 4);
 
   const companyInfo = settingsData[0] || {
@@ -28,29 +28,30 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col w-full">
+      <PWARedirect />
       {/* Hero Section */}
       <section className="relative min-h-[90vh] flex items-center pt-24 pb-32 overflow-hidden">
         {/* Background Image & Overlays */}
         <div className="absolute inset-0 w-full h-full z-0">
-            {/* Base Image */}
-            <Image 
-              src="/hero-bekam.png" 
-              alt="Klinik Radja Bekam Premium" 
-              unoptimized
-              fill
-              className="object-cover object-center scale-105 animate-[kenburns_20s_ease-in-out_infinite_alternate]"
-              priority
-            />
-            {/* Advanced Gradients for Premium Look */}
-            <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/80 to-transparent z-10 md:w-3/4"></div>
-            <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent z-10"></div>
-            <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-900/10 to-transparent z-10 mix-blend-overlay"></div>
+          {/* Base Image */}
+          <Image
+            src="/hero-bekam.png"
+            alt="Klinik Radja Bekam Premium"
+            unoptimized
+            fill
+            className="object-cover object-center scale-105 animate-[kenburns_20s_ease-in-out_infinite_alternate]"
+            priority
+          />
+          {/* Advanced Gradients for Premium Look */}
+          <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/80 to-transparent z-10 md:w-3/4"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent z-10"></div>
+          <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-900/10 to-transparent z-10 mix-blend-overlay"></div>
         </div>
 
         {/* Main Content */}
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-20 mt-10 md:mt-0">
           <div className="max-w-3xl space-y-6 sm:space-y-8 backdrop-blur-sm bg-white/40 md:bg-white/30 p-6 sm:p-12 rounded-[2rem] sm:rounded-[3rem] border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
-            
+
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-full bg-gradient-to-r from-accent/20 to-amber-100 border border-accent/20 shadow-sm backdrop-blur-md">
               <Star className="h-3 w-3 sm:h-4 sm:w-4 text-accent fill-accent" />
@@ -61,13 +62,28 @@ export default async function Home() {
 
             {/* Title */}
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-primary leading-[1.15] sm:leading-[1.1] tracking-tight">
-              {companyInfo.heroTitle.split(' ').map((word, i, arr) => 
-                i === arr.length - 1 ? (
-                  <span key={i} className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-accent block sm:inline"> {word}</span>
-                ) : (
-                  <span key={i}> {word}</span>
-                )
-              )}
+              {(() => {
+                const title = companyInfo.heroTitle || "";
+                const regex = /(berawal dari sini)/i;
+                if (regex.test(title)) {
+                  const parts = title.split(regex);
+                  return parts.map((part, i) => 
+                    regex.test(part) ? (
+                      <span key={i} className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-accent">{part}</span>
+                    ) : (
+                      <span key={i}>{part}</span>
+                    )
+                  );
+                }
+                
+                return title.split(' ').map((word, i, arr) =>
+                  i === arr.length - 1 ? (
+                    <span key={i} className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-accent block sm:inline"> {word}</span>
+                  ) : (
+                    <span key={i}> {word}</span>
+                  )
+                );
+              })()}
             </h1>
 
             {/* Description */}
@@ -83,9 +99,10 @@ export default async function Home() {
 
           </div>
         </div>
-        
+
         {/* Custom Animation Keyframes inline using tailwind arbitrarily (or we can just let it gracefully scale) */}
-        <style dangerouslySetInnerHTML={{__html: `
+        <style dangerouslySetInnerHTML={{
+          __html: `
           @keyframes kenburns {
             0% { transform: scale(1); }
             100% { transform: scale(1.08); }
@@ -107,7 +124,7 @@ export default async function Home() {
             <h2 className="text-4xl md:text-5xl font-extrabold text-primary mb-6">Mengapa Memilih <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-600">Radja Bekam?</span></h2>
             <p className="text-foreground/60 max-w-2xl mx-auto text-lg leading-relaxed">Komitmen kami adalah memberikan layanan kesehatan sunnah terbaik dengan standar profesionalisme dan keamanan tertinggi.</p>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-8 lg:gap-10">
             {/* Card 1 */}
             <div className="group relative bg-white p-8 md:p-10 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 hover:border-blue-200 hover:shadow-[0_20px_40px_rgb(59,130,246,0.15)] transition-all duration-500 hover:-translate-y-3 overflow-hidden">
@@ -138,13 +155,13 @@ export default async function Home() {
             </div>
 
             {/* Card 3 */}
-            <div className="group relative bg-white p-8 md:p-10 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 hover:border-emerald-200 hover:shadow-[0_20px_40px_rgb(16,185,129,0.15)] transition-all duration-500 hover:-translate-y-3 overflow-hidden">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-emerald-50/80 rounded-bl-[100%] -mr-10 -mt-10 transition-transform duration-700 ease-out group-hover:scale-150"></div>
+            <div className="group relative bg-white p-8 md:p-10 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 hover:border-blue-200 hover:shadow-[0_20px_40px_rgb(16,185,129,0.15)] transition-all duration-500 hover:-translate-y-3 overflow-hidden">
+              <div className="absolute top-0 right-0 w-40 h-40 bg-blue-50/80 rounded-bl-[100%] -mr-10 -mt-10 transition-transform duration-700 ease-out group-hover:scale-150"></div>
               <div className="relative z-10">
-                <div className="h-20 w-20 bg-gradient-to-br from-emerald-400 to-teal-500 text-white rounded-2xl flex items-center justify-center mb-8 shadow-xl shadow-teal-200/50 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
+                <div className="h-20 w-20 bg-gradient-to-br from-blue-400 to-blue-500 text-white rounded-2xl flex items-center justify-center mb-8 shadow-xl shadow-blue-200/50 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500">
                   <Users className="h-10 w-10" />
                 </div>
-                <h3 className="text-2xl font-bold mb-4 text-primary group-hover:text-emerald-600 transition-colors">Nyaman & Terpisah</h3>
+                <h3 className="text-2xl font-bold mb-4 text-primary group-hover:text-blue-600 transition-colors">Nyaman & Terpisah</h3>
                 <p className="text-foreground/70 text-base leading-relaxed">
                   Menjaga privasi Anda dengan area pelayanan yang nyaman dan terpisah secara eksklusif bagi pria dan wanita.
                 </p>
@@ -166,16 +183,16 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Services Highlight */}
+      {/* Services Section */}
       <section className="py-24 bg-[#f1f5f9]">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-end mb-12">
             <div>
               <h2 className="text-3xl font-bold text-primary mb-3">Layanan Unggulan Kami</h2>
-              <p className="text-foreground/60 max-w-xl text-sm">Pilihan terapi terbaik yang dirancang untuk mengoptimalkan kesehatan fisik dan mental Anda melalui metode pengobatan sunnah yang teruji.</p>
+              <p className="text-foreground/70 max-w-2xl">Kami menawarkan berbagai terapi sunnah dan pengobatan holistik yang ditangani langsung oleh terapis bersertifikat resmi.</p>
             </div>
-            <Link href="/services" className="text-primary font-medium hover:underline mt-4 md:mt-0 flex items-center gap-1 text-sm">
-              Semua Layanan <ExternalLink className="h-4 w-4" />
+            <Link href="/services" className="hidden md:flex items-center gap-2 text-primary font-bold hover:text-primary/80 transition-colors group">
+              Lihat Semua Layanan <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
 
@@ -184,35 +201,36 @@ export default async function Home() {
               const imagePath = `/images/services/${service.id}.png`;
               const exists = fs.existsSync(path.join(process.cwd(), `public${imagePath}`));
               return (
-              <div key={service.id} className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all border border-border flex flex-col sm:flex-row">
-                <div className="sm:w-2/5 h-48 sm:h-auto relative overflow-hidden group">
-                   <Image 
-                     src={exists ? imagePath : '/images/hero-bekam.jpg'}
-                     alt={service.name}
-                     fill
-                     className="object-cover group-hover:scale-105 transition-transform duration-700 ease-in-out"
-                     sizes="(max-width: 640px) 100vw, 40vw"
-                   />
-                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-60"></div>
-                </div>
-                <div className="p-6 sm:w-3/5 flex flex-col justify-center">
-                  <div className="text-xs font-bold text-accent tracking-wider mb-2 uppercase flex items-center gap-1">
-                     {idx % 2 === 0 ? <ShieldCheck className="h-3 w-3" /> : <Stethoscope className="h-3 w-3" />} 
-                     {idx % 2 === 0 ? 'SUNNAH THERAPY' : 'RELAXATION'}
+                <div key={service.id} className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all border border-border flex flex-col sm:flex-row">
+                  <div className="sm:w-2/5 h-48 sm:h-auto relative overflow-hidden group">
+                    <Image
+                      src={exists ? imagePath : '/images/hero-bekam.jpg'}
+                      alt={service.name}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-700 ease-in-out"
+                      sizes="(max-width: 640px) 100vw, 40vw"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-60"></div>
                   </div>
-                  <h3 className="text-xl font-bold mb-2 text-primary">{service.name}</h3>
-                  <p className="text-foreground/70 text-sm mb-4 line-clamp-3">
-                    {service.description}
-                  </p>
-                  <div className="text-primary font-bold mb-4">
-                    Rp {service.price.toLocaleString('id-ID')}
+                  <div className="p-6 sm:w-3/5 flex flex-col justify-center">
+                    <div className="text-xs font-bold text-accent tracking-wider mb-2 uppercase flex items-center gap-1">
+                      {idx % 2 === 0 ? <ShieldCheck className="h-3 w-3" /> : <Stethoscope className="h-3 w-3" />}
+                      {idx % 2 === 0 ? 'SUNNAH THERAPY' : 'RELAXATION'}
+                    </div>
+                    <h3 className="text-xl font-bold mb-2 text-primary">{service.name}</h3>
+                    <p className="text-foreground/70 text-sm mb-4 line-clamp-3">
+                      {service.description}
+                    </p>
+                    <div className="text-primary font-bold mb-4">
+                      Rp {service.price.toLocaleString('id-ID')}
+                    </div>
+                    <Link href={`/booking?service=${service.id}`} className="text-primary font-medium hover:text-primary/80 text-sm border-b border-primary/30 inline-block w-max pb-0.5">
+                      Pesan Layanan
+                    </Link>
                   </div>
-                  <Link href={`/booking?service=${service.id}`} className="text-primary font-medium hover:text-primary/80 text-sm border-b border-primary/30 inline-block w-max pb-0.5">
-                    Pesan Layanan
-                  </Link>
                 </div>
-              </div>
-            )})}
+              )
+            })}
           </div>
         </div>
       </section>
@@ -226,7 +244,7 @@ export default async function Home() {
           </div>
 
           <div className="relative">
-             <TestimonialCarousel />
+            <TestimonialCarousel />
           </div>
         </div>
       </section>
@@ -245,7 +263,7 @@ export default async function Home() {
               Lihat Semua Artikel <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-8">
             {[
               {
@@ -272,11 +290,11 @@ export default async function Home() {
             ].map((blog, idx) => (
               <div key={idx} className="bg-white rounded-3xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transition-all duration-500 border border-gray-100 group flex flex-col h-full hover:-translate-y-2">
                 <div className="h-56 relative overflow-hidden">
-                  <Image 
-                    src={blog.image} 
-                    alt={blog.title} 
-                    fill 
-                    className="object-cover transition-transform duration-700 ease-in-out group-hover:scale-110" 
+                  <Image
+                    src={blog.image}
+                    alt={blog.title}
+                    fill
+                    className="object-cover transition-transform duration-700 ease-in-out group-hover:scale-110"
                     sizes="(max-width: 768px) 100vw, 33vw"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent opacity-80"></div>
@@ -297,9 +315,9 @@ export default async function Home() {
               </div>
             ))}
           </div>
-          
+
           <div className="mt-10 text-center md:hidden">
-             <Link href="/blog" className="inline-flex items-center gap-2 bg-white px-6 py-3 rounded-full font-bold text-primary shadow-sm border border-gray-100">
+            <Link href="/blog" className="inline-flex items-center gap-2 bg-white px-6 py-3 rounded-full font-bold text-primary shadow-sm border border-gray-100">
               Lihat Semua Artikel <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
@@ -345,7 +363,7 @@ export default async function Home() {
                     {faq.q}
                   </span>
                   <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all duration-300">
-                     <ChevronDown className="h-5 w-5 text-slate-400 group-hover:text-white transition-transform duration-500 group-open:-rotate-180" />
+                    <ChevronDown className="h-5 w-5 text-slate-400 group-hover:text-white transition-transform duration-500 group-open:-rotate-180" />
                   </div>
                 </summary>
                 <div className="px-6 sm:px-8 pb-8 pt-2 text-slate-600 text-base leading-relaxed bg-white border-t border-gray-50 flex gap-4">

@@ -36,20 +36,20 @@ export default function BlogPage() {
   return (
     <div className="flex flex-col w-full bg-[#f8fafc]">
       {/* Hero Header */}
-      <section className="relative bg-[#0a192f] text-white pt-32 pb-40 overflow-hidden">
+      <section className="relative bg-primary text-white pt-32 pb-40 overflow-hidden">
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
-          <div className="absolute top-[20%] left-[20%] w-[30%] h-[50%] rounded-full bg-[#d4af37]/20 blur-[120px]"></div>
+          <div className="absolute top-[20%] left-[20%] w-[30%] h-[50%] rounded-full bg-accent/20 blur-[120px]"></div>
           <div className="absolute top-[40%] right-[10%] w-[40%] h-[60%] rounded-full bg-blue-600/10 blur-[150px]"></div>
         </div>
 
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center max-w-4xl">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-md mb-8">
-            <Sparkles className="h-4 w-4 text-[#d4af37]" />
-            <span className="text-[#d4af37] font-bold text-xs tracking-widest uppercase">Edukasi Kesehatan</span>
+            <Sparkles className="h-4 w-4 text-accent" />
+            <span className="text-accent font-bold text-xs tracking-widest uppercase">Edukasi Kesehatan</span>
           </div>
           <h1 className="text-5xl md:text-7xl font-black mb-6 tracking-tight leading-tight">
-            Artikel & <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#d4af37] to-amber-300">Berita Sehat</span>
+            Artikel & <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-amber-300">Berita Sehat</span>
           </h1>
           <p className="text-xl text-gray-300 max-w-2xl mx-auto font-medium leading-relaxed mb-10">
             Temukan informasi terkini seputar kesehatan, rahasia pengobatan sunnah, dan tips praktis menjaga kebugaran tubuh setiap hari.
@@ -65,7 +65,7 @@ export default function BlogPage() {
               placeholder="Cari artikel kesehatan..." 
               className="block w-full pl-12 pr-4 py-4 bg-transparent border-none text-white placeholder-gray-400 focus:ring-0 sm:text-lg focus:outline-none"
             />
-            <button className="bg-gradient-to-r from-[#d4af37] to-amber-500 hover:from-amber-400 hover:to-amber-600 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-lg hidden sm:block">
+            <button className="bg-gradient-to-r from-accent to-amber-500 hover:from-amber-400 hover:to-amber-600 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-lg hidden sm:block">
               Cari
             </button>
           </div>
@@ -89,17 +89,17 @@ export default function BlogPage() {
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-slate-900/10 to-transparent opacity-80 group-hover:opacity-60 transition-opacity"></div>
                   
                   {/* Category Badge Floating */}
-                  <div className="absolute top-6 left-6 bg-white/95 backdrop-blur-md text-[#0a192f] font-bold text-xs tracking-wider px-4 py-2 rounded-full shadow-lg">
+                  <div className="absolute top-6 left-6 bg-white/95 backdrop-blur-md text-primary font-bold text-xs tracking-wider px-4 py-2 rounded-full shadow-lg">
                     {article.category}
                   </div>
                 </div>
                 
                 <div className="p-8 flex flex-col flex-grow relative bg-white">
                   <div className="flex items-center gap-5 text-sm font-semibold text-gray-400 mb-5">
-                    <span className="flex items-center gap-1.5"><User className="h-4 w-4 text-[#d4af37]" /> {article.author}</span>
-                    <span className="flex items-center gap-1.5"><Calendar className="h-4 w-4 text-[#d4af37]" /> {article.date}</span>
+                    <span className="flex items-center gap-1.5"><User className="h-4 w-4 text-accent" /> {article.author}</span>
+                    <span className="flex items-center gap-1.5"><Calendar className="h-4 w-4 text-accent" /> {article.date}</span>
                   </div>
-                  <h2 className="text-2xl font-black text-slate-800 mb-4 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-[#d4af37] group-hover:to-amber-600 transition-all leading-snug">
+                  <h2 className="text-2xl font-black text-slate-800 mb-4 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-accent group-hover:to-amber-600 transition-all leading-snug">
                     <Link href={`/blog/${article.id}`}>
                       {article.title}
                     </Link>
@@ -123,8 +123,8 @@ export default function BlogPage() {
           </div>
 
           {/* Epic CTA Box */}
-          <div className="mt-24 relative rounded-[3rem] overflow-hidden bg-gradient-to-br from-[#0a192f] to-[#0b1a30] shadow-[0_20px_60px_rgba(0,0,0,0.1)] p-12 md:p-16 text-center border border-white/10 group">
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#d4af37]/10 blur-[100px] rounded-full -mr-40 -mt-40 pointer-events-none group-hover:bg-[#d4af37]/20 transition-all duration-1000"></div>
+          <div className="mt-24 relative rounded-[3rem] overflow-hidden bg-gradient-to-br from-primary to-blue-950 shadow-[0_20px_60px_rgba(0,0,0,0.1)] p-12 md:p-16 text-center border border-white/10 group">
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent/10 blur-[100px] rounded-full -mr-40 -mt-40 pointer-events-none group-hover:bg-accent/20 transition-all duration-1000"></div>
             
             <div className="relative z-10">
               <h3 className="text-3xl md:text-5xl font-black text-white mb-6">Punya Pertanyaan Spesifik?</h3>
@@ -133,7 +133,7 @@ export default function BlogPage() {
               </p>
               <Link
                 href="/contact"
-                className="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-[#d4af37] to-amber-500 hover:from-amber-400 hover:to-amber-600 text-white px-10 py-4 rounded-2xl font-bold text-lg shadow-[0_8px_25px_rgba(212,175,55,0.3)] hover:shadow-[0_15px_35px_rgba(212,175,55,0.5)] hover:-translate-y-1 transition-all duration-300"
+                className="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-accent to-amber-500 hover:from-amber-400 hover:to-amber-600 text-white px-10 py-4 rounded-2xl font-bold text-lg shadow-[0_8px_25px_rgba(251,191,36,0.3)] hover:shadow-[0_15px_35px_rgba(251,191,36,0.5)] hover:-translate-y-1 transition-all duration-300"
               >
                 Hubungi Kami Sekarang <ArrowRight className="h-5 w-5" />
               </Link>

@@ -8,11 +8,11 @@ export function HealthCheck() {
   const [activeTab, setActiveTab] = useState<"bmi" | "stres" | "diabetes" | "jantung">("bmi");
 
   return (
-    <section className="pt-32 pb-24 relative overflow-hidden bg-[#0a192f]">
+    <section className="pt-32 pb-24 relative overflow-hidden bg-primary">
       {/* Decorative Background Elements */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay"></div>
-        <div className="absolute -top-[10%] -right-[10%] w-[50%] h-[50%] rounded-full bg-[#d4af37]/20 blur-[120px]"></div>
+        <div className="absolute -top-[10%] -right-[10%] w-[50%] h-[50%] rounded-full bg-accent/20 blur-[120px]"></div>
         <div className="absolute top-[40%] -left-[10%] w-[40%] h-[40%] rounded-full bg-amber-500/10 blur-[120px]"></div>
         <div className="absolute -bottom-[10%] right-[20%] w-[60%] h-[60%] rounded-full bg-blue-500/10 blur-[150px]"></div>
       </div>
@@ -20,11 +20,11 @@ export function HealthCheck() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 shadow-sm border border-white/20 backdrop-blur-md mb-6">
-            <Activity className="w-4 h-4 text-[#d4af37]" />
-            <span className="text-sm font-bold text-[#d4af37] tracking-wider uppercase">Cek Kesehatan Mandiri</span>
+            <Activity className="w-4 h-4 text-accent" />
+            <span className="text-sm font-bold text-accent tracking-wider uppercase">Cek Kesehatan Mandiri</span>
           </div>
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6 leading-tight tracking-tight">
-            Ketahui Status Kesehatan <br className="hidden md:block" /><span className="text-transparent bg-clip-text bg-gradient-to-r from-[#d4af37] to-amber-400">Anda (Gratis)</span>
+            Ketahui Status Kesehatan <br className="hidden md:block" /><span className="text-transparent bg-clip-text bg-gradient-to-r from-accent to-amber-400">Anda (Gratis)</span>
           </h2>
           <p className="text-lg text-gray-300 leading-relaxed font-medium">
             Deteksi dini adalah langkah awal pencegahan. Gunakan kalkulator interaktif premium kami untuk mengetahui tingkat kesehatan Anda saat ini dan dapatkan rekomendasi terapi yang paling tepat.
@@ -117,10 +117,10 @@ function BMICalculator() {
         linkHref = "/services/refleksi";
       } else if (bmi >= 18.5 && bmi <= 24.9) {
         status = "Ideal (Normal)";
-        color = "text-emerald-600";
-        bgLight = "bg-emerald-50 border-emerald-200";
+        color = "text-blue-600";
+        bgLight = "bg-blue-50 border-blue-200";
         advice = "Pertahankan gaya hidup sehat Anda! Lakukan bekam secara rutin untuk menjaga imunitas.";
-        linkLabel = "Rekomendasi: Bekam Sunnah";
+        linkLabel = "Rekomendasi: Bekam Holistik";
         linkHref = "/services/bekam";
       } else if (bmi >= 25 && bmi <= 29.9) {
         status = "Gemuk (Overweight)";
@@ -228,8 +228,8 @@ function StressCalculator() {
     if (score <= 4) {
       setResult({ 
         status: "Stres Ringan / Normal", 
-        color: "text-emerald-600",
-        bgLight: "bg-emerald-50 border-emerald-200",
+        color: "text-blue-600",
+        bgLight: "bg-blue-50 border-blue-200",
         advice: "Anda mengelola stres dengan sangat baik! Pertahankan dengan pola hidup sehat.",
         linkLabel: "Rekomendasi: Totok Wajah",
         linkHref: "/services/adds-on"
@@ -240,8 +240,8 @@ function StressCalculator() {
         color: "text-amber-500", 
         bgLight: "bg-amber-50 border-amber-200",
         advice: "Anda mulai merasa tertekan. Beristirahatlah sejenak dan lakukan relaksasi untuk otot kaku.",
-        linkLabel: "Rekomendasi: Refleksi Full Body",
-        linkHref: "/services/refleksi"
+        linkLabel: "Rekomendasi: Bekam Holistik",
+        linkHref: "/services/bekam"
       });
     } else {
       setResult({ 
@@ -337,10 +337,10 @@ function DiabetesCalculator() {
     if (score <= 2) {
       setResult({ 
         status: "Risiko Rendah", 
-        color: "text-emerald-600",
-        bgLight: "bg-emerald-50 border-emerald-200", 
+        color: "text-blue-600",
+        bgLight: "bg-blue-50 border-blue-200", 
         advice: "Peluang Anda terkena diabetes saat ini tergolong rendah. Jaga terus gaya hidup sehat.",
-        linkLabel: "Rekomendasi: Bekam Sunnah",
+        linkLabel: "Rekomendasi: Bekam Tradisional",
         linkHref: "/services/bekam"
       });
     } else if (score <= 4) {
@@ -453,8 +453,8 @@ function HeartCalculator() {
     if (score <= 1) {
       setResult({ 
         status: "Jantung Sehat", 
-        color: "text-emerald-600",
-        bgLight: "bg-emerald-50 border-emerald-200", 
+        color: "text-blue-600",
+        bgLight: "bg-blue-50 border-blue-200", 
         advice: "Risiko penyakit jantung koroner Anda rendah. Teruskan kebiasaan sehat Anda!",
         linkLabel: "Rekomendasi: Bekam Tradisional",
         linkHref: "/services/bekam"

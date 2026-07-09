@@ -31,7 +31,7 @@ export default function BMICalculatorPage() {
         message = "Anda perlu meningkatkan asupan kalori bernutrisi. Konsultasikan dengan ahli gizi.";
       } else if (bmi >= 18.5 && bmi < 24.9) {
         category = "Normal (Ideal)";
-        color = "text-green-500";
+        color = "text-blue-500";
         message = "Luar biasa! Pertahankan pola makan sehat dan gaya hidup aktif Anda. Terapi bekam sangat baik untuk menjaga kebugaran.";
       } else if (bmi >= 25 && bmi < 29.9) {
         category = "Kelebihan Berat Badan";

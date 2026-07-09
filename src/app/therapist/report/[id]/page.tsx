@@ -219,7 +219,7 @@ export default function TherapistReportViewPage({ params }: { params: Promise<{ 
       <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-6 lg:p-8 relative overflow-hidden">
         {/* Background decorative elements */}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full bg-indigo-600/10 blur-3xl -z-10" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-emerald-600/5 blur-3xl -z-10" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-blue-600/5 blur-3xl -z-10" />
 
         <div className="max-w-3xl mx-auto space-y-6 pb-12">
 
@@ -264,7 +264,7 @@ export default function TherapistReportViewPage({ params }: { params: Promise<{ 
                   <span className="text-xs font-semibold text-slate-500">treatment</span>
                 </div>
                 <div className="text-slate-400 text-xs mt-3 flex items-center gap-1 bg-slate-950 px-2 py-1 rounded-lg border border-slate-900">
-                  <TrendingUp className="w-3.5 h-3.5 text-emerald-500" /> Kunjungan Selesai
+                  <TrendingUp className="w-3.5 h-3.5 text-blue-500" /> Kunjungan Selesai
                 </div>
               </div>
 
@@ -276,7 +276,7 @@ export default function TherapistReportViewPage({ params }: { params: Promise<{ 
                   <span className="text-xs font-semibold text-slate-500">rate</span>
                 </div>
                 <div className="text-slate-400 text-[11px] mt-3 flex justify-between bg-slate-950 px-2 py-1 rounded-lg border border-slate-900 font-bold">
-                  <span className="text-green-500">{report.attendancePresent} H</span>
+                  <span className="text-blue-500">{report.attendancePresent} H</span>
                   <span className="text-amber-500">{report.attendanceLate} T</span>
                   <span className="text-red-500">{report.attendanceAbsent} A</span>
                   {report.attendancePermit > 0 && <span className="text-purple-400">{report.attendancePermit} I</span>}
@@ -300,7 +300,7 @@ export default function TherapistReportViewPage({ params }: { params: Promise<{ 
           {/* Section 2: Payslip (Slip Gaji Digital) */}
           <div className="space-y-3">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider pl-1 flex items-center gap-2">
-              <CreditCard className="w-4 h-4 text-emerald-400" /> Slip Gaji Digital Bulanan
+              <CreditCard className="w-4 h-4 text-blue-400" /> Slip Gaji Digital Bulanan
             </h3>
 
             <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-850 rounded-3xl p-6 sm:p-8 shadow-lg space-y-6">
@@ -315,7 +315,7 @@ export default function TherapistReportViewPage({ params }: { params: Promise<{ 
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-400">Total Komisi Tindakan</span>
-                    <span className="font-semibold text-emerald-400">+{formatRupiah(report.commissions)}</span>
+                    <span className="font-semibold text-blue-400">+{formatRupiah(report.commissions)}</span>
                   </div>
                   {report.allowances > 0 && (
                     <div className="flex justify-between">
@@ -352,8 +352,8 @@ export default function TherapistReportViewPage({ params }: { params: Promise<{ 
                   <div className="text-3xl font-black text-white mt-1">{formatRupiah(report.takeHomePay)}</div>
                 </div>
                 
-                <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Telah Ditransfer
+                <span className="bg-blue-500/10 text-blue-400 border border-blue-500/25 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-blue-500" /> Telah Ditransfer
                 </span>
               </div>
 
@@ -370,8 +370,8 @@ export default function TherapistReportViewPage({ params }: { params: Promise<{ 
               
               {/* Kelebihan */}
               {report.notesStrengths && (
-                <div className="bg-gradient-to-r from-emerald-950/20 to-slate-900/40 border border-emerald-500/15 rounded-2xl p-5">
-                  <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                <div className="bg-gradient-to-r from-blue-950/20 to-slate-900/40 border border-blue-500/15 rounded-2xl p-5">
+                  <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
                     🌟 Apresiasi / Kelebihan Bulan Ini
                   </h4>
                   <p className="text-slate-350 text-sm mt-2 leading-relaxed whitespace-pre-wrap">{report.notesStrengths}</p>

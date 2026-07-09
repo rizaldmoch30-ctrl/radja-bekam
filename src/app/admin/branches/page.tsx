@@ -11,6 +11,7 @@ type Branch = {
   phone: string;
   whatsappNumber: string;
   operatingHours: string;
+  operatingHoursWeekend: string;
   mapUrl: string | null;
   isActive: boolean;
 };
@@ -30,6 +31,7 @@ export default function AdminBranchesPage() {
     phone: "",
     whatsappNumber: "",
     operatingHours: "09:00 - 21:00 WIB",
+    operatingHoursWeekend: "09:00 - 21:00 WIB",
     mapUrl: "",
     isActive: true,
   });
@@ -67,6 +69,7 @@ export default function AdminBranchesPage() {
       phone: "",
       whatsappNumber: "",
       operatingHours: "09:00 - 21:00 WIB",
+      operatingHoursWeekend: "09:00 - 21:00 WIB",
       mapUrl: "",
       isActive: true,
     });
@@ -127,18 +130,18 @@ export default function AdminBranchesPage() {
           rightContent={
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
               <div className="relative w-full sm:w-auto">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/60" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input 
                   type="text" 
                   placeholder="Cari cabang..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-900 placeholder-gray-400 text-sm transition-all"
+                  className="w-full pl-9 pr-3 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-gray-900 placeholder-gray-400 text-sm backdrop-blur-md transition-all"
                 />
               </div>
               <button 
                 onClick={handleAddNew}
-                className="w-full sm:w-auto bg-white text-indigo-900 hover:bg-gray-50 px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-black/10 active:scale-95 whitespace-nowrap"
+                className="w-full sm:w-auto bg-white text-blue-900 hover:bg-gray-50 px-5 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-black/10 active:scale-95 whitespace-nowrap"
               >
                 <Plus className="h-5 w-5" /> Tambah Cabang
               </button>
@@ -175,9 +178,13 @@ export default function AdminBranchesPage() {
                     <label className="text-sm font-medium text-gray-700">Nomor WhatsApp (Angka Saja)</label>
                     <input type="text" value={formData.whatsappNumber} onChange={e => setFormData({...formData, whatsappNumber: e.target.value})} required placeholder="62812..." className="w-full px-3 py-2 border rounded-md focus:ring-primary focus:border-primary" />
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-700">Jam Operasional</label>
-                    <input type="text" value={formData.operatingHours} onChange={e => setFormData({...formData, operatingHours: e.target.value})} required placeholder="Senin-Jumat: 09:00-21:00 | Sabtu-Minggu: 09:00-22:00" className="w-full px-3 py-2 border rounded-md focus:ring-primary focus:border-primary" />
+                  <div className="space-y-1.5 md:col-span-1">
+                    <label className="text-sm font-medium text-gray-700">Jam Operasional (Senin - Jumat)</label>
+                    <input type="text" value={formData.operatingHours} onChange={e => setFormData({...formData, operatingHours: e.target.value})} required placeholder="09:00 - 21:00 WIB" className="w-full px-3 py-2 border rounded-md focus:ring-primary focus:border-primary" />
+                  </div>
+                  <div className="space-y-1.5 md:col-span-1">
+                    <label className="text-sm font-medium text-gray-700">Jam Operasional (Sabtu - Minggu)</label>
+                    <input type="text" value={formData.operatingHoursWeekend} onChange={e => setFormData({...formData, operatingHoursWeekend: e.target.value})} required placeholder="09:00 - 22:00 WIB" className="w-full px-3 py-2 border rounded-md focus:ring-primary focus:border-primary" />
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-sm font-medium text-gray-700">Status</label>
@@ -233,7 +240,7 @@ export default function AdminBranchesPage() {
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="font-bold text-lg text-gray-900">{branch.name}</h3>
-                      <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full font-medium ${branch.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                      <span className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full font-medium ${branch.isActive ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
                         {branch.isActive ? "Aktif" : "Nonaktif"}
                       </span>
                     </div>
@@ -257,11 +264,35 @@ export default function AdminBranchesPage() {
                         <div className="text-xs text-gray-400 font-semibold uppercase mb-1">Telepon</div>
                         <div className="font-medium text-gray-900">{branch.phone}</div>
                       </div>
-                      <div>
+                      <div className="col-span-2">
                         <div className="text-xs text-gray-400 font-semibold uppercase mb-1">Jam Operasional</div>
-                        <div className="font-medium text-gray-900">{branch.operatingHours}</div>
+                        <div className="font-medium text-gray-900 grid grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <span className="text-gray-500">Weekday:</span><br/>
+                            {branch.operatingHours}
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Weekend:</span><br/>
+                            {branch.operatingHoursWeekend}
+                          </div>
+                        </div>
                       </div>
                     </div>
+                    
+                    {branch.mapUrl && (
+                      <div className="mt-4 pt-4 border-t border-gray-100">
+                        <div className="text-xs text-gray-400 font-semibold uppercase mb-2">Pratinjau Peta Google Maps</div>
+                        <div className="h-32 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 relative">
+                           {branch.mapUrl.includes("embed") || branch.mapUrl.includes("output=embed") ? (
+                             <iframe src={branch.mapUrl} className="absolute inset-0 w-full h-full border-0" loading="lazy"></iframe>
+                           ) : (
+                             <div className="w-full h-full text-red-500 flex items-center justify-center text-xs text-center p-2">
+                               Link bukan format Embed. Harap gunakan fitur Sematkan Peta.
+                             </div>
+                           )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

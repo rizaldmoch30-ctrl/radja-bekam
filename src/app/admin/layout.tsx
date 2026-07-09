@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Menu, CalendarCheck, Users, Package, Wallet, Settings, X, Inbox, MapPin, TrendingUp, TrendingDown, Activity, ShieldCheck, ChevronDown, Store, Clock, Award, Receipt, FileText, BookOpen } from "lucide-react";
+import { LogOut, Menu, CalendarCheck, Users, Package, Wallet, Settings, X, Inbox, MapPin, TrendingUp, TrendingDown, Activity, ShieldCheck, ChevronDown, Store, Clock, Award, Receipt, FileText, BookOpen, Home, User } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -19,22 +19,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     Pengaturan: false,
   });
 
+
+
   useEffect(() => {
-    const isKeuanganActive = 
-      pathname === "/admin" || 
-      pathname === "/admin/finance" || 
+    const isKeuanganActive =
+      pathname === "/admin" ||
+      pathname === "/admin/finance" ||
       pathname?.startsWith("/admin/finance/");
-      
-    const isPengaturanActive = 
-      pathname === "/admin/settings" || 
-      pathname === "/admin/branches" || 
-      pathname?.startsWith("/admin/settings/") || 
+
+    const isPengaturanActive =
+      pathname === "/admin/settings" ||
+      pathname === "/admin/branches" ||
+      pathname?.startsWith("/admin/settings/") ||
       pathname?.startsWith("/admin/branches/");
 
-    const isPegawaiActive = 
-      pathname === "/admin/therapists" || 
-      pathname === "/admin/staff" || 
-      pathname?.startsWith("/admin/therapists") || 
+    const isPegawaiActive =
+      pathname === "/admin/therapists" ||
+      pathname === "/admin/staff" ||
+      pathname?.startsWith("/admin/therapists") ||
       pathname?.startsWith("/admin/staff") ||
       pathname === "/admin/attendance";
 
@@ -53,47 +55,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   useEffect(() => {
-    // 1. Fetch Session
+    // ISS-002: Redirect RBAC dihapus dari sini — tangani via middleware server-side.
+    // useEffect ini hanya mengurus data UI: session, branch cookie, pending count, branch list.
     const checkSession = async () => {
       try {
         const res = await fetch("/api/auth/session");
         if (res.ok) {
           const data = await res.json();
-          const perms: string[] = data.session.permissions || [];
           setSession(data.session);
-          
-          // Role Based Access Control (RBAC) Protections via Custom Permissions
-          if (pathname === "/admin" && !perms.includes("DASHBOARD_ANALITIK")) {
-             // Let them stay on /admin if it's the only page, or hide dashboard
-          }
-          if (pathname.startsWith("/admin/finance")) {
-            if (pathname === "/admin/finance/expenses" && !perms.includes("KEUANGAN_PENGELUARAN")) router.push("/admin");
-            else if (pathname === "/admin/finance/cash-mutations" && !perms.includes("KEUANGAN_MUTASI")) router.push("/admin");
-            else if (pathname === "/admin/finance/laba-rugi" && !perms.includes("KEUANGAN_LABARUGI")) router.push("/admin");
-            else if (pathname === "/admin/finance" && !perms.includes("KEUANGAN_PEMASUKAN")) router.push("/admin");
-          }
-          if (pathname.startsWith("/admin/settings")) {
-             if (pathname.startsWith("/admin/settings/users") && !perms.includes("PENGATURAN_PENGGUNA")) router.push("/admin");
-             else if (pathname.startsWith("/admin/settings/commissions") && !perms.includes("PENGATURAN_KOMISI")) router.push("/admin");
-          }
-          if (pathname.startsWith("/admin/branches") && !perms.includes("PENGATURAN_CABANG")) {
-            router.push("/admin");
-          }
-          if (pathname.startsWith("/admin/inventory") && !perms.includes("INVENTARIS_BARANG")) {
-            router.push("/admin");
-          }
-          if (pathname.startsWith("/admin/therapists") && !pathname.includes("/reports") && !perms.includes("PEGAWAI_TERAPIS")) router.push("/admin");
-          if (pathname.startsWith("/admin/staff") && !pathname.includes("/payroll") && !perms.includes("PEGAWAI_STAFF")) router.push("/admin");
-          if (pathname.startsWith("/admin/attendance") && !perms.includes("PEGAWAI_ABSENSI")) router.push("/admin");
-          if ((pathname.startsWith("/admin/therapists/reports") || pathname.startsWith("/admin/staff/payroll")) && !perms.includes("PEGAWAI_SLIP")) router.push("/admin");
 
-          if (pathname.startsWith("/admin/reservations") && !perms.includes("RESERVASI_ONLINE")) {
-            router.push("/admin");
-          }
-          if (pathname.startsWith("/admin/visits") && !perms.includes("BUKUPASIEN_REKAMMEDIS")) {
-            router.push("/admin");
-          }
-          
           // Read selected branch from cookie
           const match = document.cookie.match(new RegExp('(^| )radja-bekam-selected-branch=([^;]+)'));
           const currentBranch = match ? match[2] : "ALL";
@@ -181,34 +151,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-sky-200 via-sky-50 to-slate-50 flex flex-col md:flex-row pb-28 md:pb-0">
-      {/* Mobile Header */}
-      <div className="md:hidden bg-transparent text-gray-900 px-6 pt-6 pb-2 flex items-center justify-between sticky top-0 z-40">
-        <h1 className="text-xl font-extrabold tracking-tight">
-          <span className="text-blue-600">Radja</span>{" "}
-          <span className="text-gray-900">Bekam</span>{" "}
-          <span className="text-blue-500/80 font-medium text-sm">Admin</span>
-        </h1>
-        {session && (
-          <div className="text-xs text-gray-700 font-bold bg-white/40 backdrop-blur-md px-3 py-1 rounded-full flex items-center gap-1 border border-white/60 shadow-sm max-w-[120px] truncate">
-            <Store className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-            <span className="truncate">{session.role === "SUPER_ADMIN" ? "Pusat" : session.branchId}</span>
-          </div>
-        )}
-      </div>
-
+    <div className="min-h-screen bg-slate-50 md:bg-gradient-to-b md:from-blue-100/30 md:via-blue-50/10 md:to-slate-50 flex flex-col md:flex-row pb-24 md:pb-0">
+      {/* Mobile Header di-pindahkan ke page.tsx agar menyatu dengan desain kartu hijau */}
       {/* Sidebar */}
       <div className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-foreground text-background transform transition-transform duration-300 ease-in-out flex flex-col
+        fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-blue-950 to-blue-900 text-white transform transition-transform duration-300 ease-in-out flex flex-col border-r border-blue-800/50 shadow-2xl
         ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
         md:sticky md:top-0 md:h-screen md:translate-x-0
       `}>
         <div className="flex items-center justify-between md:justify-start px-6 py-6 border-b border-background/10">
           <Link href="/admin" className="hover:opacity-90 transition-opacity">
             <h1 className="text-2xl md:text-3xl font-bold">
-              <span className="text-background">Radja</span>{" "}
-              <span className="text-accent">Bekam</span><br className="hidden md:block"/>
-              <span className="text-background/60 font-normal text-sm md:text-base mt-1 md:block">Admin Panel</span>
+              <span className="text-white">Radja Bekam</span>{" "}
+              <span className="text-blue-400">Reflexology</span><br className="hidden md:block" />
+              <span className="text-white/60 font-normal text-sm md:text-base mt-1 md:block">Admin Panel</span>
             </h1>
           </Link>
           <button onClick={() => setIsMobileMenuOpen(false)} className="md:hidden text-background/80 hover:text-white">
@@ -218,20 +174,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Profile Card & Branch Selector */}
         {session && (
-          <div className="px-6 py-4 border-b border-background/10 bg-background/5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-full bg-accent/20 border border-accent/30 flex items-center justify-center text-accent font-bold shrink-0">
+          <div className="px-5 py-5 border-b border-white/5">
+            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 flex items-center gap-3 shadow-inner">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-400 to-blue-600 border border-blue-300/30 flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm">
                 {session.name.charAt(0).toUpperCase()}
               </div>
-              <div className="overflow-hidden">
-                <p className="font-bold text-sm text-background truncate">{session.name}</p>
-                <div className="flex items-center gap-1 mt-0.5 text-xs text-background/60">
-                  <ShieldCheck className="w-3.5 h-3.5 text-accent shrink-0" />
+              <div className="overflow-hidden flex-1">
+                <p className="font-bold text-sm text-white truncate drop-shadow-sm">{session.name}</p>
+                <div className="flex items-center gap-1 mt-1 text-[10px] text-blue-200/80 font-medium tracking-wide uppercase">
+                  <ShieldCheck className="w-3 h-3 text-blue-400 shrink-0" />
                   <span className="truncate">
-                    {session.role === "SUPER_ADMIN" ? "Super Admin" : 
-                     session.role === "INVESTOR" ? "Investor" :
-                     session.role === "THERAPIST" ? "Terapis" :
-                     session.role === "CASHIER" ? "Kasir" : "Admin Cabang"}
+                    {session.role === "SUPER_ADMIN" ? "Super Admin" :
+                      session.role === "INVESTOR" ? "Investor" :
+                        session.role === "THERAPIST" ? "Terapis" :
+                          session.role === "CASHIER" ? "Kasir" : "Admin Cabang"}
                   </span>
                 </div>
               </div>
@@ -272,9 +228,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               { name: "Buku Pasien", href: "/admin/visits", icon: CalendarCheck },
               { name: "Transaksi Pelanggan", href: "/admin/transactions", icon: BookOpen },
               { name: "Layanan Terapi", href: "/admin/services", icon: Activity },
-              { 
-                name: "Pegawai", 
-                href: "/admin/therapists", 
+              {
+                name: "Pegawai",
+                href: "/admin/therapists",
                 icon: Users,
                 subItems: [
                   { name: "Data Terapis", href: "/admin/therapists", icon: Users },
@@ -285,9 +241,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 ]
               },
               { name: "Inventaris", href: "/admin/inventory", icon: Package },
-              { 
-                name: "Keuangan", 
-                href: "/admin/finance", 
+              {
+                name: "Keuangan",
+                href: "/admin/finance",
                 icon: Wallet,
                 subItems: [
                   { name: "Pemasukan & Pengeluaran", href: "/admin/finance", icon: Wallet },
@@ -297,14 +253,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   { name: "Buku Besar", href: "/admin/finance/buku-besar", icon: Receipt },
                 ]
               },
-              { 
-                name: "Pengaturan", 
-                href: "/admin/settings", 
+              {
+                name: "Pengaturan",
+                href: "/admin/settings",
                 icon: Settings,
                 subItems: [
                   ...(session?.role === "SUPER_ADMIN" ? [
+                    { name: "Info Perusahaan", href: "/admin/settings", icon: Store },
                     { name: "Cabang", href: "/admin/branches", icon: MapPin },
-                    { name: "Pengguna Sistem", href: "/admin/settings/users", icon: Users }
+                    { name: "Pengguna Sistem", href: "/admin/settings/users", icon: Users },
+                    { name: "System Logs", href: "/admin/system-logs", icon: Activity }
                   ] : []),
                   { name: "Sinkronisasi Komisi", href: "/admin/settings/commissions", icon: Award }
                 ]
@@ -314,13 +272,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             // Permissions filtering
             const filteredNavLinks = navLinks.filter(link => {
               const perms = session?.permissions || [];
-              
+
               if (link.name === "Dashboard") return perms.includes("DASHBOARD_ANALITIK");
               if (link.name === "Reservasi Online") return perms.includes("RESERVASI_ONLINE");
               if (link.name === "Buku Pasien") return perms.includes("BUKUPASIEN_REKAMMEDIS");
               if (link.name === "Transaksi Pelanggan") return perms.includes("KEUANGAN_PEMASUKAN") || perms.includes("BUKUPASIEN_REKAMMEDIS");
               if (link.name === "Layanan Terapi") return perms.includes("PENGATURAN_CABANG"); // Opsional
-              
+
               if (link.name === "Pegawai") {
                 link.subItems = link.subItems?.filter(sub => {
                   if (sub.name === "Data Terapis") return perms.includes("PEGAWAI_TERAPIS");
@@ -331,9 +289,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 });
                 return (link.subItems && link.subItems.length > 0);
               }
-              
+
               if (link.name === "Inventaris") return perms.includes("INVENTARIS_BARANG");
-              
+
               if (link.name === "Keuangan") {
                 link.subItems = link.subItems?.filter(sub => {
                   if (sub.name === "Pemasukan & Pengeluaran") return perms.includes("KEUANGAN_PEMASUKAN");
@@ -345,9 +303,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 });
                 return (link.subItems && link.subItems.length > 0);
               }
-              
+
               if (link.name === "Pengaturan") {
                 link.subItems = link.subItems?.filter(sub => {
+                  if (sub.name === "Info Perusahaan") return session?.role === "SUPER_ADMIN";
                   if (sub.name === "Cabang") return perms.includes("PENGATURAN_CABANG");
                   if (sub.name === "Pengguna Sistem") return perms.includes("PENGATURAN_PENGGUNA");
                   if (sub.name === "Sinkronisasi Komisi") return perms.includes("PENGATURAN_KOMISI");
@@ -358,15 +317,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
               return false;
             });
-            
+
             return filteredNavLinks.map((link) => {
               const hasSubItems = link.subItems && link.subItems.length > 0;
               const isExpanded = expandedMenus[link.name] || false;
-              
+
               const isExactActive = pathname === link.href;
               const isParentActive = isExactActive || (link.href !== "/admin" && pathname?.startsWith(link.href || ""));
               const Icon = link.icon;
-              
+
               return (
                 <div key={link.name} className="space-y-1">
                   <Link
@@ -379,14 +338,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         setIsMobileMenuOpen(false);
                       }
                     }}
-                    className={`flex items-center justify-between w-full px-4 py-3 rounded-lg transition-all ${
-                      isExactActive 
-                        ? "bg-accent text-accent-foreground font-semibold" 
+                    className={`flex items-center justify-between w-full px-4 py-3 rounded-xl transition-all duration-300 relative group ${isExactActive
+                        ? "bg-gradient-to-r from-blue-500/20 to-transparent text-blue-300 font-bold border border-blue-400/20 shadow-[0_4px_12px_rgba(0,0,0,0.1)] backdrop-blur-md"
                         : isParentActive
-                          ? "bg-background/10 text-background font-medium"
-                          : "text-background/70 hover:bg-background/10 hover:text-background"
-                    }`}
+                          ? "bg-white/5 text-blue-100 font-medium border border-transparent"
+                          : "text-white/60 hover:bg-white/5 hover:text-white border border-transparent"
+                      }`}
                   >
+                    {isExactActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1/2 bg-blue-400 rounded-r-full" />}
                     <div className="flex items-center gap-3">
                       <div className="relative">
                         <Icon className="h-5 w-5" />
@@ -400,14 +359,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       <span>{link.name}</span>
                     </div>
                     {hasSubItems && (
-                      <ChevronDown 
-                        className={`h-4 w-4 text-background/60 transition-transform duration-200 ${
-                          isExpanded ? "rotate-180" : ""
-                        }`} 
+                      <ChevronDown
+                        className={`h-4 w-4 text-background/60 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""
+                          }`}
                       />
                     )}
                   </Link>
-                  
+
                   {hasSubItems && isExpanded && (
                     <div className="space-y-1 ml-6 pl-4 border-l border-background/10 animate-in fade-in slide-in-from-top-1 duration-150">
                       {link.subItems.map((sub) => {
@@ -418,11 +376,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                             key={sub.name}
                             href={sub.href}
                             onClick={() => setIsMobileMenuOpen(false)}
-                            className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition-colors ${
-                              isSubActive 
-                                ? "bg-accent text-accent-foreground font-semibold" 
-                                : "text-background/60 hover:bg-background/10 hover:text-background"
-                            }`}
+                            className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition-colors ${isSubActive
+                                ? "bg-blue-600 text-white font-semibold shadow-md"
+                                : "text-white/60 hover:bg-white/10 hover:text-white"
+                              }`}
                           >
                             <SubIcon className="h-4 w-4" />
                             <span>{sub.name}</span>
@@ -451,7 +408,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Main Content Area */}
       <div className="flex-1 overflow-x-hidden">
         {isMobileMenuOpen && (
-          <div 
+          <div
             className="fixed inset-0 bg-black/50 z-40 md:hidden backdrop-blur-sm"
             onClick={() => setIsMobileMenuOpen(false)}
           />
@@ -461,38 +418,49 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation */}
-      <div className="md:hidden fixed bottom-6 left-6 right-6 bg-white/70 backdrop-blur-2xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.08)] rounded-full flex justify-between items-center z-40 p-2 pb-safe-offset-2">
-        {bottomNavLinks.map((link) => {
-          const isActive = pathname === link.href || (link.href !== "/admin" && pathname?.startsWith(link.href));
-          const Icon = link.icon;
-          return (
-            <Link 
-              key={link.name} 
-              href={link.href}
-              className={`flex flex-col items-center justify-center flex-1 py-1 transition-all duration-300 relative group ${isActive ? "text-blue-600" : "text-gray-400 hover:text-gray-600"}`}
-            >
-              <div className={`relative flex items-center justify-center w-10 h-10 transition-all duration-300 ${isActive ? "bg-blue-600 text-white rounded-full shadow-md" : "bg-transparent group-hover:scale-110"}`}>
-                <Icon className="h-[20px] w-[20px]" />
-                {link.hasBadge && pendingReservations > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border border-white"></span>
-                  </span>
-                )}
-              </div>
-            </Link>
-          );
-        })}
+      {/* Mobile Bottom Navigation (Seabank Style) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.04)] flex justify-between items-center z-40 px-2 h-[70px] pb-safe">
         
-        <button 
-          onClick={() => setIsMobileMenuOpen(true)}
-          className={`flex flex-col items-center justify-center flex-1 py-1 transition-all duration-300 relative group ${isMobileMenuOpen ? "text-blue-600" : "text-gray-400 hover:text-gray-600"}`}
-        >
-          <div className={`relative flex items-center justify-center w-10 h-10 transition-all duration-300 ${isMobileMenuOpen ? "bg-blue-600 text-white rounded-full shadow-md" : "bg-transparent group-hover:scale-110"}`}>
-            <Menu className="h-[20px] w-[20px]" />
-          </div>
+        {/* 1. Beranda */}
+        <Link href="/admin" className={`flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors ${pathname === "/admin" ? "text-blue-600" : "text-gray-400 hover:text-gray-600"}`}>
+           <Home className="w-[22px] h-[22px]" />
+           <span className="text-[10px] font-semibold">Beranda</span>
+        </Link>
+        
+        {/* 2. Kunjungan */}
+        <Link href="/admin/visits" className={`flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors ${pathname?.startsWith("/admin/visits") ? "text-blue-600" : "text-gray-400 hover:text-gray-600"}`}>
+           <CalendarCheck className="w-[22px] h-[22px]" />
+           <span className="text-[10px] font-semibold">Kunjungan</span>
+        </Link>
+        
+        {/* 3. Reservasi (Center Popping Button) */}
+        <div className="flex-1 flex justify-center h-full relative">
+          <Link href="/admin/reservations" className="absolute -top-5 flex flex-col items-center justify-center group">
+            <div className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center shadow-[0_8px_20px_rgba(16,185,129,0.3)] border-4 border-white text-white z-50 group-active:scale-95 transition-transform relative">
+               <Inbox className="w-6 h-6" />
+               {pendingReservations > 0 && (
+                  <span className="absolute 1 top-0 right-0 flex h-3.5 w-3.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-red-500 border-2 border-white"></span>
+                  </span>
+               )}
+            </div>
+            <span className="text-[10px] text-gray-500 font-semibold mt-1 transition-colors group-hover:text-blue-600">Reservasi</span>
+          </Link>
+        </div>
+
+        {/* 4. Keuangan */}
+        <Link href="/admin/finance" className={`flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors ${pathname?.startsWith("/admin/finance") ? "text-blue-600" : "text-gray-400 hover:text-gray-600"}`}>
+           <Wallet className="w-[22px] h-[22px]" />
+           <span className="text-[10px] font-semibold">Keuangan</span>
+        </Link>
+        
+        {/* 5. Menu / Saya */}
+        <button onClick={() => setIsMobileMenuOpen(true)} className={`flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors ${isMobileMenuOpen ? "text-blue-600" : "text-gray-400 hover:text-gray-600"}`}>
+           <User className="w-[22px] h-[22px]" />
+           <span className="text-[10px] font-semibold">Saya</span>
         </button>
+        
       </div>
     </div>
   );

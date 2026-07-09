@@ -3,8 +3,6 @@ import { db } from "@/lib/db";
 import { settings } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
-export const dynamic = "force-dynamic";
-
 // GET: Fetch company settings
 export async function GET() {
   try {
@@ -29,7 +27,8 @@ export async function PUT(request: Request) {
       companyName, description, address, phone, email, 
       whatsappNumber, facebookUrl, instagramUrl, youtubeUrl,
       heroBadgeText, heroTitle, heroDescription,
-      operatingHours, mapUrl
+      operatingHours, operatingHoursWeekend, mapUrl,
+      aboutPageContent
     } = body;
 
     if (!companyName || !address || !phone || !email || !whatsappNumber) {
@@ -51,7 +50,9 @@ export async function PUT(request: Request) {
         heroTitle,
         heroDescription,
         operatingHours,
+        operatingHoursWeekend,
         mapUrl,
+        aboutPageContent,
         updatedAt: new Date().toISOString(),
       })
       .where(eq(settings.id, "company_info"))

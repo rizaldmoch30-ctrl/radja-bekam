@@ -7,7 +7,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
   try {
     const { id } = await context.params;
     const body = await request.json();
-    const { name, address, phone, whatsappNumber, operatingHours, mapUrl, isActive } = body;
+    const { name, address, phone, whatsappNumber, operatingHours, operatingHoursWeekend, mapUrl, isActive } = body;
 
     const updatedBranch = await db.update(branches)
       .set({
@@ -16,6 +16,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
         phone,
         whatsappNumber,
         operatingHours,
+        operatingHoursWeekend,
         mapUrl,
         isActive,
       })

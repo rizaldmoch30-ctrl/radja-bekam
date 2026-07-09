@@ -43,7 +43,7 @@ function TherapistCommissionsContent() {
     setMessage(null);
     try {
       // Fetch all services
-      const resServices = await fetch("/api/services");
+      const resServices = await fetch(`/api/services?t=${Date.now()}`);
       let servicesData: Service[] = [];
       if (resServices.ok) {
         const json = await resServices.json();
@@ -51,7 +51,7 @@ function TherapistCommissionsContent() {
       }
 
       // Fetch global sync status
-      const resSync = await fetch("/api/therapist-service-commissions/sync-all");
+      const resSync = await fetch(`/api/therapist-service-commissions/sync-all?t=${Date.now()}`);
       let syncData: any = {};
       if (resSync.ok) {
         const json = await resSync.json();
@@ -204,25 +204,25 @@ function TherapistCommissionsContent() {
           icon={Settings2}
         />
 
-        <div className="bg-indigo-50 border border-indigo-100 p-5 rounded-2xl mb-8 flex justify-between items-center animate-in fade-in duration-300">
+        <div className="bg-blue-50 border border-blue-100 p-5 rounded-2xl mb-8 flex justify-between items-center animate-in fade-in duration-300">
           <div className="flex items-center gap-4">
-             <div className="bg-indigo-100 p-3 rounded-full">
-                <Users className="w-6 h-6 text-indigo-600" />
+             <div className="bg-blue-100 p-3 rounded-full">
+                <Users className="w-6 h-6 text-blue-600" />
              </div>
              <div>
                <h3 className="text-lg font-bold text-gray-900">Total Terapis Aktif</h3>
                <p className="text-gray-600 text-sm">Sinkronisasi akan diterapkan pada {totalActiveTherapists} terapis ini secara massal.</p>
              </div>
           </div>
-          <div className="text-center bg-white px-5 py-3 rounded-xl shadow-sm border border-indigo-50">
-             <span className="text-3xl font-black text-indigo-600">{totalActiveTherapists}</span>
+          <div className="text-center bg-white px-5 py-3 rounded-xl shadow-sm border border-blue-50">
+             <span className="text-3xl font-black text-blue-600">{totalActiveTherapists}</span>
              <span className="text-sm font-semibold text-gray-500 block">Terapis</span>
           </div>
         </div>
 
         {message && (
-          <div className={`mb-6 p-4 rounded-xl border flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300 ${message.type === "success" ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"}`}>
-            {message.type === "success" ? <CheckCircle className="w-5 h-5 text-green-600 shrink-0" /> : <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />}
+          <div className={`mb-6 p-4 rounded-xl border flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300 ${message.type === "success" ? "bg-blue-50 border-blue-200 text-blue-800" : "bg-red-50 border-red-200 text-red-800"}`}>
+            {message.type === "success" ? <CheckCircle className="w-5 h-5 text-blue-600 shrink-0" /> : <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />}
             <span className="text-sm font-semibold">{message.text}</span>
           </div>
         )}
@@ -244,7 +244,7 @@ function TherapistCommissionsContent() {
                   <tr>
                     <td colSpan={5} className="px-6 py-16 text-center text-gray-400">
                       <div className="flex flex-col items-center">
-                        <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
                         Sedang memuat data layanan...
                       </div>
                     </td>
@@ -257,7 +257,7 @@ function TherapistCommissionsContent() {
                   </tr>
                 ) : (
                   rows.map((row) => (
-                    <tr key={row.serviceId} className={`hover:bg-indigo-50/30 transition-colors group ${row.isModified ? 'bg-amber-50/30' : ''}`}>
+                    <tr key={row.serviceId} className={`hover:bg-blue-50/30 transition-colors group ${row.isModified ? 'bg-amber-50/30' : ''}`}>
                       <td className="px-6 py-4 font-bold text-gray-900">
                         {row.serviceName}
                       </td>
@@ -272,7 +272,7 @@ function TherapistCommissionsContent() {
                             placeholder={!row.isUniform && row.activeCount > 0 ? "Bervariasi" : "Tidak ada komisi (Rp 0)"}
                             value={row.commissionAmount !== null ? row.commissionAmount : ""}
                             onChange={(e) => handleAmountChange(row.serviceId, e.target.value)}
-                            className={`px-4 py-2.5 bg-gray-50 border rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-sm font-semibold outline-none w-44 text-center transition-all ${row.isModified ? 'border-amber-400 bg-amber-50 text-amber-900' : 'border-gray-200'}`}
+                            className={`px-4 py-2.5 bg-gray-50 border rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-semibold outline-none w-44 text-center transition-all ${row.isModified ? 'border-amber-400 bg-amber-50 text-amber-900' : 'border-gray-200'}`}
                           />
                         </div>
                       </td>
@@ -280,7 +280,7 @@ function TherapistCommissionsContent() {
                         {row.activeCount === 0 ? (
                           <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 bg-gray-100 text-gray-500 rounded-md">Tidak Diatur (Rp 0)</span>
                         ) : row.isUniform && row.activeCount === totalActiveTherapists ? (
-                          <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 bg-green-100 text-green-700 rounded-md">Tersinkronisasi</span>
+                          <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 bg-blue-100 text-blue-700 rounded-md">Tersinkronisasi</span>
                         ) : (
                           <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-1 bg-orange-100 text-orange-700 rounded-md">Bervariasi / Parsial</span>
                         )}
@@ -292,7 +292,7 @@ function TherapistCommissionsContent() {
                             onClick={() => handleSaveRow(row)}
                             disabled={!row.isModified || saving || row.commissionAmount === null}
                             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm border
-                              ${row.isModified && row.commissionAmount !== null ? 'bg-indigo-600 text-white hover:bg-indigo-700 border-indigo-700' : 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed'}
+                              ${row.isModified && row.commissionAmount !== null ? 'bg-blue-600 text-white hover:bg-blue-700 border-blue-700' : 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed'}
                             `}
                           >
                             Simpan & Sinkronisasi
@@ -324,7 +324,7 @@ function TherapistCommissionsContent() {
                 id="save-all-commissions-btn"
                 onClick={handleSaveAll}
                 disabled={saving || !hasModifiedRows}
-                className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 disabled:text-gray-500 disabled:shadow-none text-white px-8 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-200 active:scale-95 transition-all cursor-pointer"
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500 disabled:shadow-none text-white px-8 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-200 active:scale-95 transition-all cursor-pointer"
               >
                 {saving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <RefreshCw className="w-5 h-5" />}
                 {saving ? "Menyinkronkan..." : "Sinkronisasi Semua Perubahan"}

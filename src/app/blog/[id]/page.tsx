@@ -52,7 +52,7 @@ Stres kronis adalah pemicu tekanan darah tinggi yang sering diabaikan. Sesi beka
 
 Terapi bekam untuk hipertensi harus dilakukan oleh terapis yang terlatih dan bersertifikat. Jangan menghentikan konsumsi obat-obatan medis yang diresepkan dokter tanpa berkonsultasi terlebih dahulu. Bekam berfungsi sebagai **terapi komplementer** — pelengkap — bukan pengganti pengobatan medis utama.
 
-Jika Anda atau keluarga menderita hipertensi dan ingin mencoba manfaat bekam, konsultasikan kondisi Anda dengan terapis kami di Navara Reflexology untuk mendapatkan program terapi yang tepat dan aman.
+Jika Anda atau keluarga menderita hipertensi dan ingin mencoba manfaat bekam, konsultasikan kondisi Anda dengan terapis kami di Radja Bekam untuk mendapatkan program terapi yang tepat dan aman.
     `.trim(),
   },
   {
@@ -108,7 +108,7 @@ Menurut teori refleksiologi, terdapat lebih dari 7.000 ujung saraf pada setiap t
 3. Berikan tekanan menggunakan ibu jari dengan gerakan memutar selama 5-10 detik di setiap titik.
 4. Lakukan selama 20-30 menit, bergantian pada kedua kaki.
 
-Untuk hasil yang optimal dan penanganan kondisi kesehatan tertentu, selalu percayakan pada terapis refleksi profesional dan bersertifikat seperti yang ada di Navara Reflexology.
+Untuk hasil yang optimal dan penanganan kondisi kesehatan tertentu, selalu percayakan pada terapis refleksi profesional dan bersertifikat seperti yang ada di Radja Bekam.
     `.trim(),
   },
   {
@@ -116,7 +116,7 @@ Untuk hasil yang optimal dan penanganan kondisi kesehatan tertentu, selalu perca
     title: "Mitos & Fakta Seputar Bekam yang Wajib Anda Tahu",
     excerpt: "Apakah bekam itu sakit? Benarkah bekam bisa menyembuhkan segala penyakit? Mari kita kupas tuntas mitos dan fakta seputar terapi pengobatan sunnah ini.",
     category: "Edukasi",
-    author: "Tim Navara Reflexology",
+    author: "Tim Radja Bekam",
     date: "1 Juni 2026",
     readTime: "7 menit",
     imageUrl: "/images/blog/edukasi.png",
@@ -147,7 +147,7 @@ Bekam (Al-Hijamah) adalah salah satu metode pengobatan tertua di dunia yang bera
 
 Bekam adalah terapi yang memiliki dasar ilmiah dan manfaat yang nyata jika dilakukan dengan benar oleh tenaga ahli yang kompeten. Jangan biarkan mitos menghalangi Anda dari mendapatkan manfaatnya, namun juga jangan mudah percaya dengan klaim-klaim yang berlebihan.
 
-Di Navara Reflexology, setiap sesi bekam ditangani oleh terapis bersertifikat dengan standar higienitas dan keamanan yang ketat. Konsultasikan kondisi kesehatan Anda sebelum memulai terapi.
+Di Radja Bekam, setiap sesi bekam ditangani oleh terapis bersertifikat dengan standar higienitas dan keamanan yang ketat. Konsultasikan kondisi kesehatan Anda sebelum memulai terapi.
     `.trim(),
   },
 ];
@@ -157,7 +157,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const article = articles.find((a) => a.id === id);
   if (!article) return { title: "Artikel Tidak Ditemukan" };
   return {
-    title: `${article.title} - Navara Reflexology`,
+    title: `${article.title} - Radja Bekam`,
     description: article.excerpt,
   };
 }
@@ -209,7 +209,7 @@ export default async function BlogDetailPage({ params }: { params: Promise<{ id:
         const text = trimmed.replace(/^- ?✅ /, "");
         elements.push(
           <li key={key++} className="flex items-center gap-3 text-slate-700">
-            <span className="text-emerald-500 text-lg">✅</span>
+            <span className="text-blue-500 text-lg">✅</span>
             <span>{text}</span>
           </li>
         );
@@ -227,9 +227,9 @@ export default async function BlogDetailPage({ params }: { params: Promise<{ id:
         const isMyth = trimmed.startsWith("❌");
         const text = trimmed.replace(/^[❌✅]\s?(Mitos\s\d+:\s?)?/, "").replace(/^\*\*✅ Fakta:\*\*\s?/, "");
         elements.push(
-          <div key={key++} className={`flex items-start gap-3 p-4 rounded-xl mb-2 ${isMyth ? "bg-red-50 border border-red-100" : "bg-emerald-50 border border-emerald-100"}`}>
+          <div key={key++} className={`flex items-start gap-3 p-4 rounded-xl mb-2 ${isMyth ? "bg-red-50 border border-red-100" : "bg-blue-50 border border-blue-100"}`}>
             <span className="text-2xl shrink-0">{isMyth ? "❌" : "✅"}</span>
-            <p className={`font-semibold ${isMyth ? "text-red-800" : "text-emerald-800"}`}>
+            <p className={`font-semibold ${isMyth ? "text-red-800" : "text-blue-800"}`}>
               {isMyth ? `Mitos: "${text.replace(/^"/, "").replace(/"$/, "")}"` : `Fakta: ${text}`}
             </p>
           </div>
@@ -319,7 +319,7 @@ export default async function BlogDetailPage({ params }: { params: Promise<{ id:
         </div>
 
         {/* CTA */}
-        <div className="mt-16 bg-gradient-to-br from-primary to-emerald-800 rounded-3xl p-8 text-center text-white">
+        <div className="mt-16 bg-gradient-to-br from-primary to-blue-800 rounded-3xl p-8 text-center text-white">
           <h3 className="text-2xl font-black mb-3">Ingin Mencoba Terapi Bekam?</h3>
           <p className="text-white/80 mb-6 max-w-md mx-auto">
             Tim terapis profesional kami siap membantu. Reservasi sekarang dan dapatkan konsultasi gratis sebelum sesi pertama Anda.

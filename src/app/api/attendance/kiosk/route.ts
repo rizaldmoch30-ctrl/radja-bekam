@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { attendance, therapists } from "@/lib/db/schema";
+import { attendance, therapists, branches } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
-import fs from "fs/promises";
-import path from "path";
-
 export async function POST(request: Request) {
   try {
     const session = await getSession();
@@ -37,23 +34,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Anda hanya bisa mengakses Kiosk untuk cabang Anda." }, { status: 403 });
     }
 
-    // 2. Save the photo to public/uploads/attendance/
-    const uploadsDir = path.join(process.cwd(), "public", "uploads", "attendance");
-    try {
-      await fs.access(uploadsDir);
-    } catch {
-      await fs.mkdir(uploadsDir, { recursive: true });
-    }
-
-    // Extract base64 data
-    const base64Data = photoBase64.replace(/^data:image\/\w+;base64,/, "");
     const dateStr = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
-    const timeStr = new Date().toLocaleTimeString("sv-SE", { timeZone: "Asia/Jakarta", hour: "2-digit", minute: "2-digit", second: "2-digit" }).replace(/:/g, "-");
-    const fileName = `${dateStr}_${timeStr}_${therapist.id}.jpg`;
-    const filePath = path.join(uploadsDir, fileName);
-
-    await fs.writeFile(filePath, base64Data, "base64");
-    const photoUrl = `/uploads/attendance/${fileName}`;
+    const photoUrl = photoBase64; // Save directly as base64 string to avoid EROFS in serverless environments
 
     // 3. Update or Insert Attendance Record
     const existing = await db
@@ -77,10 +59,21 @@ export async function POST(request: Request) {
     } else {
       // Create new record (Clock In)
       const id = `ATT-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;
+      // Tentukan branchId yang valid (gunakan branch therapist atau fallback ke cabang pertama yang ada)
+      let finalBranchId = therapist.branchId;
+      if (!finalBranchId) {
+        const fallbackBranch = await db.select({ id: branches.id }).from(branches).limit(1);
+        if (fallbackBranch.length > 0) {
+          finalBranchId = fallbackBranch[0].id;
+        } else {
+          finalBranchId = branchId; // Fallback ke yang dikirim client jika database cabang kosong
+        }
+      }
+
       await db.insert(attendance).values({
         id,
         therapistId: therapist.id,
-        branchId: branchId, // could use therapist.branchId but we use the kiosk's branch
+        branchId: finalBranchId as string,
         date: dateStr,
         clockIn: currentTime,
         status: currentTime > "09:00" ? "LATE" : "PRESENT",
@@ -99,6 +92,6 @@ export async function POST(request: Request) {
 
   } catch (error) {
     console.error("POST /api/attendance/kiosk error:", error);
-    return NextResponse.json({ error: "Terjadi kesalahan sistem saat memproses absensi." }, { status: 500 });
+    return NextResponse.json({ error: "Terjadi kesalahan sistem saat memproses absensi.", details: error instanceof Error ? error.message : String(error) }, { status: 500 });
   }
 }

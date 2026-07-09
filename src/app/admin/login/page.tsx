@@ -91,7 +91,7 @@ export default function AdminLoginPage() {
           <div 
             className="absolute inset-0 backdrop-blur-[6px]"
             style={{
-              background: 'linear-gradient(rgba(11,82,63,0.72), rgba(20,56,48,0.78))'
+              background: 'linear-gradient(rgba(30,58,138,0.72), rgba(15,23,42,0.78))'
             }}
           />
         </motion.div>
@@ -168,7 +168,7 @@ export default function AdminLoginPage() {
         <div 
           className="absolute inset-0 z-0"
           style={{
-            background: 'linear-gradient(135deg, #F8FCFB 0%, #F2FAF8 50%, #EDF8F5 100%)'
+            background: 'linear-gradient(135deg, #F0F9FF 0%, #EFF6FF 50%, #DBEAFE 100%)'
           }}
         />
         {/* Top Right Radial Glow */}
@@ -245,7 +245,7 @@ export default function AdminLoginPage() {
                   required
                   value={form.username}
                   onChange={(e) => setForm({ ...form, username: e.target.value })}
-                  className="w-full bg-white border border-gray-200 text-gray-900 px-5 transition-all duration-200 outline-none placeholder:text-[#98A2B3] hover:border-blue-400 focus:border-blue-500 focus:shadow-[0_0_0_5px_rgba(22,163,74,0.12)]"
+                  className="w-full bg-white border border-gray-200 text-gray-900 px-5 transition-all duration-200 outline-none placeholder:text-[#98A2B3] hover:border-blue-400 focus:border-blue-500 focus:shadow-[0_0_0_5px_rgba(37,99,235,0.12)]"
                   style={{ height: '60px', borderRadius: '18px', fontSize: '16px' }}
                   placeholder="Masukkan username"
                 />
@@ -261,7 +261,7 @@ export default function AdminLoginPage() {
                     required
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    className="w-full bg-white border border-gray-200 text-gray-900 px-5 pr-12 transition-all duration-200 outline-none placeholder:text-[#98A2B3] hover:border-blue-400 focus:border-blue-500 focus:shadow-[0_0_0_5px_rgba(22,163,74,0.12)]"
+                    className="w-full bg-white border border-gray-200 text-gray-900 px-5 pr-12 transition-all duration-200 outline-none placeholder:text-[#98A2B3] hover:border-blue-400 focus:border-blue-500 focus:shadow-[0_0_0_5px_rgba(37,99,235,0.12)]"
                     style={{ height: '60px', borderRadius: '18px', fontSize: '16px' }}
                     placeholder="••••••••"
                   />
@@ -292,8 +292,8 @@ export default function AdminLoginPage() {
                 style={{ 
                   height: '60px', 
                   borderRadius: '18px',
-                  background: 'linear-gradient(to right, #18B678, #119C67)',
-                  boxShadow: '0 15px 35px rgba(22,163,74,0.25)'
+                  background: 'linear-gradient(to right, #3B82F6, #1D4ED8)',
+                  boxShadow: '0 15px 35px rgba(37,99,235,0.25)'
                 }}
               >
                 {loading ? (

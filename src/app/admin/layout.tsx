@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Menu, CalendarCheck, Users, Package, Wallet, Settings, X, Inbox, MapPin, TrendingUp, TrendingDown, Activity, ShieldCheck, ChevronDown, Store, Clock, Award, Receipt, FileText, BookOpen, Home, User } from "lucide-react";
+import { LogOut, Menu, CalendarCheck, Users, Package, Wallet, Settings, X, Inbox, MapPin, TrendingUp, TrendingDown, Activity, ShieldCheck, ChevronDown, Store, Clock, Award, Receipt, FileText, BookOpen, Home, User, Check } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -13,6 +13,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [loading, setLoading] = useState(true);
   const [branches, setBranches] = useState<any[]>([]);
   const [selectedBranch, setSelectedBranch] = useState("ALL");
+  const [isBranchDropdownOpen, setIsBranchDropdownOpen] = useState(false);
   const [pendingReservations, setPendingReservations] = useState(0);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
     Keuangan: false,
@@ -195,20 +196,71 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             {/* Branch Selector / Display */}
             {(session.role === "SUPER_ADMIN" || session.role === "INVESTOR") ? (
-              <div className="mt-4">
+              <div className="mt-4 relative">
                 <label className="block text-[10px] font-bold tracking-wider text-background/50 uppercase mb-1.5">Pilih Cabang Aktif</label>
+                
                 <div className="relative">
-                  <select
-                    value={selectedBranch}
-                    onChange={(e) => handleBranchChange(e.target.value)}
-                    className="w-full text-xs font-semibold bg-background/10 hover:bg-background/20 border border-background/25 text-background rounded-lg px-3 py-2 outline-none cursor-pointer appearance-none pr-8 transition-colors"
+                  <button
+                    onClick={() => setIsBranchDropdownOpen(!isBranchDropdownOpen)}
+                    className={`w-full flex items-center justify-between text-xs font-semibold border rounded-xl px-3 py-2.5 outline-none cursor-pointer transition-all ${
+                      isBranchDropdownOpen 
+                        ? "bg-white/20 border-white/40 shadow-inner" 
+                        : "bg-background/10 hover:bg-background/15 border-background/25"
+                    } text-background`}
                   >
-                    <option value="ALL" className="text-foreground bg-white">Semua Cabang (Pusat)</option>
-                    {branches.map(b => (
-                      <option key={b.id} value={b.id} className="text-foreground bg-white">{b.name}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 text-background/60 pointer-events-none" />
+                    <span className="truncate">
+                      {selectedBranch === "ALL" ? "Semua Cabang (Pusat)" : branches.find(b => b.id === selectedBranch)?.name || "Pilih Cabang"}
+                    </span>
+                    <ChevronDown className={`w-4 h-4 text-background/60 transition-transform duration-300 shrink-0 ${isBranchDropdownOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {isBranchDropdownOpen && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-40" 
+                        onClick={() => setIsBranchDropdownOpen(false)} 
+                      />
+                      <div className="absolute top-full left-0 right-0 mt-2 z-50 bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div className="max-h-[250px] overflow-y-auto custom-scrollbar p-1.5">
+                          <button
+                            onClick={() => {
+                              handleBranchChange("ALL");
+                              setIsBranchDropdownOpen(false);
+                            }}
+                            className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold flex items-center justify-between transition-colors ${
+                              selectedBranch === "ALL" 
+                                ? "bg-blue-50 text-blue-700" 
+                                : "text-gray-700 hover:bg-gray-50"
+                            }`}
+                          >
+                            Semua Cabang (Pusat)
+                            {selectedBranch === "ALL" && <Check className="w-4 h-4 text-blue-600 shrink-0" />}
+                          </button>
+                          
+                          {branches.length > 0 && <div className="h-px bg-gray-100 my-1 mx-2" />}
+                          
+                          {branches.map(b => (
+                            <button
+                              key={b.id}
+                              onClick={() => {
+                                handleBranchChange(b.id);
+                                setIsBranchDropdownOpen(false);
+                              }}
+                              className={`w-full text-left px-3 py-2.5 rounded-lg text-xs font-semibold flex items-center justify-between transition-colors ${
+                                selectedBranch === b.id 
+                                  ? "bg-blue-50 text-blue-700" 
+                                  : "text-gray-700 hover:bg-gray-50"
+                              }`}
+                            >
+                              <span className="truncate pr-2">{b.name}</span>
+                              {selectedBranch === b.id && <Check className="w-4 h-4 text-blue-600 shrink-0" />}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             ) : (

@@ -7,6 +7,7 @@ import { getServicePrice, SERVICES_LIST } from "@/lib/pricing";
 import { createJournalEntry, COA } from "@/lib/accounting";
 import { financeTransactions, therapistCommissions, therapistServiceCommissions } from "@/lib/db/schema";
 import crypto from "crypto";
+import { logSystemAction } from "@/lib/logger";
 
 // Helper: Generate invoice number format INV-BRANCH_CODE-YYYYMMDD-SEQ
 async function generateInvoiceNumber(branchId: string, tx?: any): Promise<string> {
@@ -365,6 +366,8 @@ export async function POST(request: Request) {
         changeAmount: Math.max(0, (amountPaid || grandTotal) - grandTotal),
       };
     });
+
+    await logSystemAction("CREATE_INVOICE", "invoice", txResult.id, `Struk baru dibuat: ${txResult.invoiceNumber} sebesar Rp ${txResult.grandTotal.toLocaleString('id-ID')}`);
 
     return NextResponse.json({
       success: true,

@@ -25,7 +25,7 @@ export function Navbar({ settings, branches = [] }: { settings?: any, branches?:
       href: "/services",
       subItems: [
         { name: "Paket Treatment", href: "/services/paket-treatment", description: "Pilihan paket lengkap", icon: Package },
-        { name: "Full Body Massages", href: "/services/full-body-massages", description: "Pijat relaksasi seluruh tubuh", icon: Heart },
+        { name: "MCU", href: "/services/mcu", description: "Medical Check Up", icon: Heart },
         { name: "Refleksi", href: "/services/refleksi", description: "Relaksasi titik saraf", icon: Activity },
         { name: "Bekam", href: "/services/bekam", description: "Terapi detoksifikasi darah", icon: Droplets },
         { name: "Adds On", href: "/services/adds-on", description: "Layanan tambahan", icon: PlusCircle }

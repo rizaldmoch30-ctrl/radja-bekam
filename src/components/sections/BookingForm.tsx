@@ -44,7 +44,7 @@ export function BookingForm({
 
   const categorizedServices = {
     "Paket Treatment": services.filter(s => s.category === "Paket Treatment" || (!s.category && s.name.toLowerCase().includes("paket"))),
-    "Full Body Massages": services.filter(s => s.category === "Full Body Massages" || (!s.category && s.name.toLowerCase().includes("pijat"))),
+    "Mcu": services.filter(s => s.category === "Mcu"),
     "Refleksi": services.filter(s => s.category === "Refleksi" || (!s.category && (s.name.toLowerCase().includes("refleksi") || s.name.toLowerCase().includes("totok")))),
     "Bekam": services.filter(s => s.category === "Bekam" || (!s.category && s.name.toLowerCase().includes("bekam"))),
     "Adds On": services.filter(s => s.category === "Adds On" || (!s.category && (s.name.toLowerCase().includes("cek") || s.name.toLowerCase().includes("infra")))),

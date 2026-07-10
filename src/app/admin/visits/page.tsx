@@ -852,7 +852,7 @@ export default function AdminVisitsPage() {
                         className="w-full px-4 py-3 bg-blue-50 border-2 border-dashed border-blue-300 rounded-xl text-blue-700 font-semibold focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none cursor-pointer hover:bg-blue-100"
                       >
                         <option value="">+ Tambah Layanan / Treatment</option>
-                        {["Paket Treatment", "Full Body Massages", "Refleksi", "Bekam", "Adds On"].map(cat => {
+                        {["Paket Treatment", "Mcu", "Refleksi", "Bekam", "Adds On"].map(cat => {
                           const catServices = services.filter(s => s.category === cat || (!s.category && cat === "Paket Treatment"));
                           if (catServices.length === 0) return null;
                           return (
@@ -1444,7 +1444,7 @@ export default function AdminVisitsPage() {
                               </div>
                               
                               <div className="max-h-64 overflow-y-auto p-2 space-y-2">
-                                {["Paket Treatment", "Full Body Massages", "Refleksi", "Bekam", "Adds On", "Lainnya"].map(cat => {
+                                {["Paket Treatment", "Mcu", "Refleksi", "Bekam", "Adds On", "Lainnya"].map(cat => {
                                   const catServices = services.filter(s => {
                                     if (cat === "Lainnya") return !s.category;
                                     return (s.category === cat || (!s.category && cat === "Paket Treatment")) && s.name.toLowerCase().includes(serviceSearch.toLowerCase());

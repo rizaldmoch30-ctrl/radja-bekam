@@ -9,7 +9,7 @@ export async function GET() {
     
     for (const s of allServices) {
       const name = s.name.toLowerCase();
-      let newCategory: "Paket Treatment" | "Full Body Massages" | "Refleksi" | "Bekam" | "Adds On" = "Paket Treatment";
+      let newCategory: "Paket Treatment" | "Mcu" | "Refleksi" | "Bekam" | "Adds On" = "Paket Treatment";
       
       if (name.includes("refleksi") && name.includes("bekam")) {
         newCategory = "Paket Treatment";
@@ -17,7 +17,9 @@ export async function GET() {
         newCategory = "Paket Treatment";
       } else if (name.includes("refleksi") || name.includes("pijat") || name.includes("totok")) {
         newCategory = "Refleksi";
-      } else if (name.includes("cek") || name.includes("mcu") || name.includes("infrared")) {
+      } else if (name.includes("cek") || name.includes("mcu")) {
+        newCategory = "Mcu";
+      } else if (name.includes("infrared") || name.includes("lilin") || name.includes("telinga")) {
         newCategory = "Adds On";
       } else {
         newCategory = "Bekam";

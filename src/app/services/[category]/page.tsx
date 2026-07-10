@@ -9,18 +9,18 @@ import { eq, and } from "drizzle-orm";
 export default async function CategoryServicePage({ params }: { params: Promise<{ category: string }> }) {
   const { category } = await params;
   
-  const categoryData: Record<string, { title: string, description: string, image: string, dbCategory: "Paket Treatment" | "Full Body Massages" | "Refleksi" | "Bekam" | "Adds On" }> = {
+  const categoryData: Record<string, { title: string, description: string, image: string, dbCategory: "Paket Treatment" | "Mcu" | "Refleksi" | "Bekam" | "Adds On" }> = {
     "paket-treatment": {
       title: "Paket Treatment Kombinasi",
       description: "Pilihan paket lengkap terapi untuk hasil yang lebih maksimal dan menyeluruh dengan harga yang lebih hemat.",
       image: "/bekam_banner.png",
       dbCategory: "Paket Treatment"
     },
-    "full-body-massages": {
-      title: "Full Body Massages",
-      description: "Pijatan ke seluruh tubuh untuk menghilangkan lelah, pegal, dan memulihkan energi setelah rutinitas yang padat.",
+    "mcu": {
+      title: "Medical Check Up (MCU)",
+      description: "Layanan pemeriksaan kesehatan dasar untuk mengetahui kondisi tubuh Anda sebelum tindakan terapi.",
       image: "/refleksi_banner.png",
-      dbCategory: "Full Body Massages"
+      dbCategory: "Mcu"
     },
     "refleksi": {
       title: "Pijat Refleksi & Relaksasi",

@@ -1,16 +1,29 @@
 import { db } from "@/lib/db";
 import { services } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, or, isNull, and } from "drizzle-orm";
+import { getActiveBranchFilter } from "@/lib/auth";
 
 // GET /api/services — List all active services (or all if ?all=true)
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const all = searchParams.get("all") === "true";
+    const branchFilter = await getActiveBranchFilter();
+
+    let conditions = [];
+
+    if (!all) {
+      conditions.push(eq(services.isActive, true));
+    }
+
+    if (branchFilter) {
+      conditions.push(or(eq(services.branchId, branchFilter), isNull(services.branchId)));
+    }
 
     let query = db.select().from(services);
-    if (!all) {
-      query = query.where(eq(services.isActive, true)) as any;
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
     }
 
     const result = await query;
@@ -32,7 +45,9 @@ export async function POST(request: Request) {
       return Response.json({ error: "Data layanan tidak lengkap" }, { status: 400 });
     }
 
+    const branchFilter = await getActiveBranchFilter();
     const newId = `SRV-${Date.now()}`;
+    
     const result = await db.insert(services).values({
       id: newId,
       name,
@@ -40,6 +55,7 @@ export async function POST(request: Request) {
       price: Number(price),
       durationMinutes: Number(durationMinutes),
       category: category || "Paket Treatment",
+      branchId: branchFilter || null,
       isActive: isActive !== undefined ? isActive : true,
     }).returning();
 

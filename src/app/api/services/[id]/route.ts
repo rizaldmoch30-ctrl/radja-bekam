@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { services } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { logSystemAction } from "@/lib/logger";
+import { checkBranchAccess } from "@/lib/auth";
 
 export async function PUT(
   request: Request,
@@ -16,6 +17,14 @@ export async function PUT(
     if (existing.length === 0) {
       return Response.json({ error: "Layanan tidak ditemukan" }, { status: 404 });
     }
+    
+    if (existing[0].branchId) {
+      const hasAccess = await checkBranchAccess(existing[0].branchId);
+      if (!hasAccess) {
+        return Response.json({ error: "Forbidden: You do not have access to modify this service" }, { status: 403 });
+      }
+    }
+
     const oldPrice = existing[0].price;
 
     const result = await db.update(services).set({
@@ -53,6 +62,13 @@ export async function DELETE(
     const existing = await db.select().from(services).where(eq(services.id, id)).limit(1);
     if (existing.length === 0) {
       return Response.json({ error: "Layanan tidak ditemukan" }, { status: 404 });
+    }
+
+    if (existing[0].branchId) {
+      const hasAccess = await checkBranchAccess(existing[0].branchId);
+      if (!hasAccess) {
+        return Response.json({ error: "Forbidden: You do not have access to delete this service" }, { status: 403 });
+      }
     }
 
     const result = await db.update(services).set({

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Calendar, Users, Camera, UserCheck, Play, Image as ImageIcon, Search } from "lucide-react";
+import { Calendar, Users, Camera, UserCheck, Play, Image as ImageIcon, Search, Store } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import Image from "next/image";
 
@@ -26,11 +26,39 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(true);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [session, setSession] = useState<any>(null);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [selectedBranchId, setSelectedBranchId] = useState<string>("ALL");
 
-  const fetchAttendance = useCallback(async (targetDate: string) => {
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        const [sessionRes, branchesRes] = await Promise.all([
+          fetch("/api/auth/session"),
+          fetch("/api/branches")
+        ]);
+        
+        if (sessionRes.ok) {
+          const sessionData = await sessionRes.json();
+          setSession(sessionData);
+        }
+        
+        if (branchesRes.ok) {
+          const branchesJson = await branchesRes.json();
+          setBranches(branchesJson.data || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch initial data:", err);
+      }
+    };
+    fetchInitialData();
+  }, []);
+
+  const fetchAttendance = useCallback(async (targetDate: string, branchId: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/attendance?date=${targetDate}`);
+      const branchQuery = branchId !== "ALL" ? `&branchId=${branchId}` : "";
+      const res = await fetch(`/api/attendance?date=${targetDate}${branchQuery}`);
       if (res.ok) {
         const json = await res.json();
         setRecords(json.data || []);
@@ -43,8 +71,8 @@ export default function AttendancePage() {
   }, []);
 
   useEffect(() => {
-    fetchAttendance(date);
-  }, [date, fetchAttendance]);
+    fetchAttendance(date, selectedBranchId);
+  }, [date, selectedBranchId, fetchAttendance]);
 
   const filteredRecords = records.filter(r => r.therapistName.toLowerCase().includes(searchQuery.toLowerCase()));
 
@@ -59,6 +87,24 @@ export default function AttendancePage() {
           icon={Users}
           rightContent={
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto mt-4 md:mt-0">
+              {session?.role === "SUPER_ADMIN" && branches.length > 0 && (
+                <div className="relative w-full sm:w-auto">
+                  <Store className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  <select
+                    value={selectedBranchId}
+                    onChange={(e) => setSelectedBranchId(e.target.value)}
+                    className="pl-9 pr-8 py-2.5 bg-white border border-gray-200 text-gray-800 rounded-xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-sm outline-none w-full shadow-sm cursor-pointer appearance-none transition-all"
+                  >
+                    <option value="ALL">Semua Cabang (Pusat)</option>
+                    {branches.map(b => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                  </div>
+                </div>
+              )}
               <div className="relative w-full sm:w-auto">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <input 

@@ -12,7 +12,10 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const dateParam = searchParams.get("date") || new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
-    const branchFilter = await getActiveBranchFilter();
+    
+    // Use query param if provided, otherwise fallback to global cookie
+    const queryBranchId = searchParams.get("branchId");
+    const branchFilter = queryBranchId || await getActiveBranchFilter();
 
     // 1. Get therapists based on branch filter
     const therapistConditions = [eq(therapists.isActive, true)];

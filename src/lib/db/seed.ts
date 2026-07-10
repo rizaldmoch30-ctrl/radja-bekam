@@ -23,10 +23,7 @@ async function seed() {
 
   console.log("✅ Branches seeded");
 
-  // ---- Seed Services ----
-  await db.insert(services).values([
-    // Removed 3 treatments
-  ]).onConflictDoNothing();
+  // ---- Seed Services handled by sync-services.ts ----
 
   console.log("✅ Services seeded");
 

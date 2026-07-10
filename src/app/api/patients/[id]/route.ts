@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { patients, patientVisits, services, branches, therapists } from "@/lib/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import { checkBranchAccess } from "@/lib/auth";
 
 export async function GET(
   request: Request,
@@ -22,6 +23,14 @@ export async function GET(
     }
 
     const patient = patientData[0];
+
+    // Branch access check
+    if (patient.branchId) {
+      const hasAccess = await checkBranchAccess(patient.branchId);
+      if (!hasAccess) {
+        return NextResponse.json({ error: "Forbidden: You do not have access to this patient" }, { status: 403 });
+      }
+    }
 
     // Fetch visit history with joined details
     const visits = await db

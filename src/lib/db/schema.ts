@@ -117,6 +117,7 @@ export const patients = pgTable("patients", {
   phone: text("phone").notNull(),
   address: text("address"),
   gender: text("gender", { enum: ["L", "P"] }),
+  branchId: text("branch_id").references(() => branches.id),
   createdAt: text("created_at").notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text("updated_at").notNull().$defaultFn(() => new Date().toISOString()),
 });

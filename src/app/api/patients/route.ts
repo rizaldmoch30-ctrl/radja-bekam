@@ -1,10 +1,27 @@
 import { db } from "@/lib/db";
 import { patients } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, or, isNull } from "drizzle-orm";
+import { getActiveBranchFilter } from "@/lib/auth";
 
 export async function GET() {
   try {
-    const result = await db.select().from(patients);
+    const branchFilter = await getActiveBranchFilter();
+    
+    let result;
+    if (branchFilter) {
+      result = await db
+        .select()
+        .from(patients)
+        .where(
+          or(
+            eq(patients.branchId, branchFilter),
+            isNull(patients.branchId)
+          )
+        );
+    } else {
+      result = await db.select().from(patients);
+    }
+    
     return Response.json({ data: result });
   } catch (error) {
     console.error("GET /api/patients error:", error);
@@ -21,6 +38,7 @@ export async function POST(request: Request) {
       return Response.json({ error: "Nama dan nomor telepon wajib diisi" }, { status: 400 });
     }
 
+    const branchFilter = await getActiveBranchFilter();
     const newId = `P-${Date.now()}`;
     const result = await db.insert(patients).values({
       id: newId,
@@ -28,6 +46,7 @@ export async function POST(request: Request) {
       phone,
       address,
       gender,
+      branchId: branchFilter || null,
     }).returning();
 
     return Response.json({ data: result[0] });

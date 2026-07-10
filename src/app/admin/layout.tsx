@@ -329,7 +329,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               if (link.name === "Reservasi Online") return perms.includes("RESERVASI_ONLINE");
               if (link.name === "Buku Pasien") return perms.includes("BUKUPASIEN_REKAMMEDIS");
               if (link.name === "Transaksi Pelanggan") return perms.includes("KEUANGAN_PEMASUKAN") || perms.includes("BUKUPASIEN_REKAMMEDIS");
-              if (link.name === "Layanan Terapi") return perms.includes("PENGATURAN_CABANG"); // Opsional
+              if (link.name === "Layanan Terapi") return perms.includes("PENGATURAN_CABANG") || session?.role === "CASHIER" || session?.role === "BRANCH_ADMIN";
 
               if (link.name === "Pegawai") {
                 link.subItems = link.subItems?.filter(sub => {

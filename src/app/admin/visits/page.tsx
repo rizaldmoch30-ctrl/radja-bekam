@@ -288,7 +288,7 @@ export default function AdminVisitsPage() {
       if (resSession.ok) {
         const sessionData = await resSession.json();
         setSession(sessionData.session);
-        if (sessionData.session.role === "BRANCH_ADMIN") {
+        if (sessionData.session.role === "BRANCH_ADMIN" || sessionData.session.role === "CASHIER") {
           setFormData(prev => ({ ...prev, branchId: sessionData.session.branchId || "" }));
           setPosBranchId(sessionData.session.branchId || "");
         }
@@ -806,7 +806,7 @@ export default function AdminVisitsPage() {
                           <Store className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                           <select
                             required
-                            disabled={!!posVisitId || session?.role === "BRANCH_ADMIN"}
+                            disabled={!!posVisitId || session?.role === "BRANCH_ADMIN" || session?.role === "CASHIER"}
                             value={posBranchId}
                             onChange={e => setPosBranchId(e.target.value)}
                             className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none"
@@ -1498,7 +1498,7 @@ export default function AdminVisitsPage() {
                         <Store className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                         <select 
                           required 
-                          disabled={session?.role === "BRANCH_ADMIN"}
+                          disabled={session?.role === "BRANCH_ADMIN" || session?.role === "CASHIER"}
                           value={formData.branchId} 
                           onChange={e => setFormData({ ...formData, branchId: e.target.value })} 
                           className="w-full pl-9 pr-4 py-3 bg-gray-50/50 border-2 border-gray-200 rounded-xl focus:bg-white focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all appearance-none disabled:opacity-70 font-medium"

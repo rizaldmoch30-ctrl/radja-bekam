@@ -21,7 +21,6 @@ const rbacMap = [
   { route: '/admin/attendance', permission: 'PEGAWAI_ABSENSI' },
   { route: '/admin/inventory', permission: 'INVENTARIS_BARANG' },
   { route: '/admin/branches', permission: 'PENGATURAN_CABANG' },
-  { route: '/admin/services', permission: 'PENGATURAN_CABANG' },
 ];
 
 export default async function proxy(request: NextRequest) {
@@ -70,6 +69,13 @@ export default async function proxy(request: NextRequest) {
       
       if (pathname.startsWith('/admin/transactions')) {
         if (!permissions.includes('KEUANGAN_PEMASUKAN') && !permissions.includes('BUKUPASIEN_REKAMMEDIS')) {
+          return NextResponse.redirect(new URL('/admin/unauthorized', request.url));
+        }
+        return NextResponse.next();
+      }
+
+      if (pathname.startsWith('/admin/services')) {
+        if (role !== 'CASHIER' && role !== 'BRANCH_ADMIN' && !permissions.includes('PENGATURAN_CABANG')) {
           return NextResponse.redirect(new URL('/admin/unauthorized', request.url));
         }
         return NextResponse.next();

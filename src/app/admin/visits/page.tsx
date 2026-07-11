@@ -1908,16 +1908,16 @@ export default function AdminVisitsPage() {
                               </div>
                             </td>
                             <td className={tdClass}>
-                              <div className="flex flex-col gap-3">
+                              <div className="flex flex-col gap-2">
                                 {group.map(serviceVisit => (
-                                  <div key={serviceVisit.id} className="flex flex-col gap-1 border-l-2 border-indigo-100 pl-2">
-                                    <div className="text-sm font-medium text-gray-800 flex items-center gap-1.5">
+                                  <div key={serviceVisit.id} className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                    <span className="text-[13px] font-bold text-gray-800 flex items-center gap-1.5">
                                       <Activity className="w-3.5 h-3.5 text-blue-500"/> {getServiceName(serviceVisit.serviceId)}
-                                    </div>
-                                    <div className="flex items-center gap-2 mt-0.5">
-                                      <div className="text-xs text-gray-500 flex items-center gap-1.5">
-                                        <User className="w-3.5 h-3.5"/> {getTherapistName(serviceVisit.therapistId)}
-                                      </div>
+                                    </span>
+                                    <span className="text-[11px] text-gray-500 flex items-center gap-1 border-l border-gray-200 pl-2">
+                                      <User className="w-3 h-3"/> {getTherapistName(serviceVisit.therapistId)}
+                                    </span>
+                                    <div className="pl-1">
                                       {renderTherapyStatus(serviceVisit)}
                                     </div>
                                   </div>

@@ -211,14 +211,14 @@ export default function AdminVisitsPage() {
   const renderTherapyStatus = (v: PatientVisit) => {
     if (v.status === "completed") {
       return (
-        <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 border border-gray-200">
+        <div className="inline-flex w-max items-center gap-1.5 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 border border-gray-200">
           <CheckCircle2 className="w-3 h-3" /> Selesai
         </div>
       );
     }
     if (v.status === "cancelled") {
       return (
-        <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-600 border border-red-200">
+        <div className="inline-flex w-max items-center gap-1.5 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-red-100 text-red-600 border border-red-200">
           <X className="w-3 h-3" /> Batal
         </div>
       );
@@ -232,21 +232,21 @@ export default function AdminVisitsPage() {
       
       if (mins > 0) {
         return (
-          <div className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 border border-amber-200 shadow-sm animate-in fade-in">
-            <Timer className="w-3 h-3 animate-pulse" /> Sisa {mins} mnt
+          <div className="inline-flex w-max items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 border border-amber-200 shadow-sm animate-in fade-in">
+            <Timer className="w-2.5 h-2.5 animate-pulse" /> Sisa {mins} mnt
           </div>
         );
       } else {
         if (v.paymentStatus === "PAID") {
           return (
-            <div className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 border border-gray-200">
+            <div className="inline-flex w-max items-center gap-1.5 px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 border border-gray-200">
               <CheckCircle2 className="w-3 h-3" /> Selesai
             </div>
           );
         }
         return (
-          <div className="mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-700 border border-red-200 shadow-sm animate-in fade-in">
-            <AlertCircle className="w-3 h-3 animate-pulse" /> Waktu Habis ({Math.abs(mins)} mnt)
+          <div className="inline-flex w-max items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-red-100 text-red-700 border border-red-200 shadow-sm animate-in fade-in">
+            <AlertCircle className="w-2.5 h-2.5 animate-pulse" /> Habis ({Math.abs(mins)}m)
           </div>
         );
       }
@@ -1914,10 +1914,12 @@ export default function AdminVisitsPage() {
                                     <div className="text-sm font-medium text-gray-800 flex items-center gap-1.5">
                                       <Activity className="w-3.5 h-3.5 text-blue-500"/> {getServiceName(serviceVisit.serviceId)}
                                     </div>
-                                    <div className="text-xs text-gray-500 flex items-center gap-1.5 mt-0.5">
-                                      <User className="w-3.5 h-3.5"/> {getTherapistName(serviceVisit.therapistId)}
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                      <div className="text-xs text-gray-500 flex items-center gap-1.5">
+                                        <User className="w-3.5 h-3.5"/> {getTherapistName(serviceVisit.therapistId)}
+                                      </div>
+                                      {renderTherapyStatus(serviceVisit)}
                                     </div>
-                                    {renderTherapyStatus(serviceVisit)}
                                   </div>
                                 ))}
                               </div>

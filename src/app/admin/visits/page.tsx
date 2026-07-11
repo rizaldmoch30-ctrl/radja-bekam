@@ -768,8 +768,18 @@ export default function AdminVisitsPage() {
     ? `Rp ${(kpiRevenueToday / 1000000).toLocaleString('id-ID', { maximumFractionDigits: 1 })} Juta`
     : formatRupiah(kpiRevenueToday);
 
-  const totalPages = Math.ceil(finalVisits.length / itemsPerPage);
-  const paginatedVisits = finalVisits.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const groupedFinalVisits = (() => {
+    const groups: { [key: string]: typeof finalVisits } = {};
+    for (const v of finalVisits) {
+      const key = `${v.patientId}_${v.visitDate}_${v.visitTime}`;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(v);
+    }
+    return Object.values(groups);
+  })();
+
+  const totalPages = Math.ceil(groupedFinalVisits.length / itemsPerPage);
+  const paginatedGroups = groupedFinalVisits.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const renderPOSFormContent = () => (
     <>
@@ -1850,7 +1860,8 @@ export default function AdminVisitsPage() {
                         </button>
                       </td></tr>
                     ) : (
-                      paginatedVisits.map(v => {
+                      paginatedGroups.map(group => {
+                        const v = group[0];
                         const visitNumber = getVisitSequenceNumber(v.patientId, v.id);
                         const isNewPatient = visitNumber === 1;
                         
@@ -1886,23 +1897,33 @@ export default function AdminVisitsPage() {
                               </div>
                             </td>
                             <td className={tdClass}>
-                              <div className="text-sm font-medium text-gray-800 flex items-center gap-1.5">
-                                <Activity className="w-3.5 h-3.5 text-blue-500"/> {getServiceName(v.serviceId)}
+                              <div className="flex flex-col gap-3">
+                                {group.map(serviceVisit => (
+                                  <div key={serviceVisit.id} className="flex flex-col gap-1 border-l-2 border-indigo-100 pl-2">
+                                    <div className="text-sm font-medium text-gray-800 flex items-center gap-1.5">
+                                      <Activity className="w-3.5 h-3.5 text-blue-500"/> {getServiceName(serviceVisit.serviceId)}
+                                    </div>
+                                    <div className="text-xs text-gray-500 flex items-center gap-1.5 mt-0.5">
+                                      <User className="w-3.5 h-3.5"/> {getTherapistName(serviceVisit.therapistId)}
+                                    </div>
+                                    {renderTherapyStatus(serviceVisit)}
+                                  </div>
+                                ))}
                               </div>
-                              <div className="text-xs text-gray-500 flex items-center gap-1.5 mt-1">
-                                <User className="w-3.5 h-3.5"/> {getTherapistName(v.therapistId)}
-                              </div>
-                              {renderTherapyStatus(v)}
                             </td>
                             {selectedBranchId === "ALL" && (
                               <td className={tdClass}>
-                                <div className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded-md">
-                                  <Store className="w-3.5 h-3.5"/> {getBranchName(v.branchId)}
+                                <div className="flex flex-col gap-1">
+                                  {Array.from(new Set(group.map(g => g.branchId))).map(bId => (
+                                    <div key={bId} className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded-md">
+                                      <Store className="w-3.5 h-3.5"/> {getBranchName(bId)}
+                                    </div>
+                                  ))}
                                 </div>
                               </td>
                             )}
                             <td className={tdClass}>
-                              {v.paymentStatus === "PAID" ? (
+                              {group.every(g => g.paymentStatus === "PAID") ? (
                                 <div className="flex flex-col items-start gap-1">
                                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-blue-100 text-blue-700 border border-blue-200 w-full justify-center group-hover:shadow-sm transition-shadow">
                                     <Check className="w-3 h-3" /> Lunas
@@ -1914,37 +1935,40 @@ export default function AdminVisitsPage() {
                                     >
                                       <Plus className="w-3 h-3"/> Tambah Layanan
                                     </button>
-                                    <button
-                                      onClick={() => handleDeleteVisit(v.id)}
-                                      className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
-                                      title="Hapus Data Kunjungan"
-                                    >
-                                      <Trash2 className="w-3 h-3" />
-                                    </button>
                                   </div>
                                 </div>
                               ) : (
                                 <div className="flex flex-col items-start gap-1">
                                   <button 
-                                    onClick={() => handleOpenPOSForVisit(v.id, v.patientId, v.branchId, v.therapistId, v.serviceId)}
+                                    onClick={() => handleOpenPOSForVisit(v.id, v.patientId, v.branchId, v.therapistId, "")}
                                     className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm"
                                   >
                                     Ke Kasir
                                   </button>
-                                  <button
-                                    onClick={() => handleDeleteVisit(v.id)}
-                                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-xs font-medium"
-                                    title="Hapus Data Kunjungan"
-                                  >
-                                    <Trash2 className="w-3 h-3" /> Hapus
-                                  </button>
                                 </div>
                               )}
+                              <div className="mt-2 pt-2 border-t border-gray-100 flex flex-col gap-1 w-full">
+                                {group.map(serviceVisit => (
+                                  <button
+                                    key={`del-${serviceVisit.id}`}
+                                    onClick={() => handleDeleteVisit(serviceVisit.id)}
+                                    className="w-full text-left inline-flex items-center gap-1.5 px-2 py-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors text-[10px] font-medium"
+                                    title={`Hapus ${getServiceName(serviceVisit.serviceId)}`}
+                                  >
+                                    <Trash2 className="w-3 h-3" /> Hapus Layanan
+                                  </button>
+                                ))}
+                              </div>
                             </td>
                             <td className={tdClass}>
-                              <p className="text-sm text-gray-600 whitespace-normal line-clamp-2 max-w-sm" title={v.notes || ""}>
-                                {v.notes || <span className="text-gray-400 italic">Tidak ada catatan</span>}
-                              </p>
+                              <div className="flex flex-col gap-2">
+                                {Array.from(new Set(group.map(g => g.notes).filter(Boolean))).map((note, i) => (
+                                  <p key={i} className="text-sm text-gray-600 whitespace-normal line-clamp-2 max-w-sm" title={note || ""}>
+                                    {note}
+                                  </p>
+                                ))}
+                                {group.every(g => !g.notes) && <span className="text-gray-400 italic text-sm">Tidak ada catatan</span>}
+                              </div>
                             </td>
                           </tr>
                         );
@@ -1963,7 +1987,7 @@ export default function AdminVisitsPage() {
                     currentPage={currentPage} 
                     totalPages={totalPages} 
                     onPageChange={setCurrentPage} 
-                    totalItems={finalVisits.length} 
+                    totalItems={groupedFinalVisits.length} 
                     itemsPerPage={itemsPerPage} 
                   />
                 )}

@@ -735,8 +735,7 @@ export default function AdminVisitsPage() {
     const matchDate = filterDate === "" || v.visitDate === filterDate;
     const patientName = getPatientName(v.patientId).toLowerCase();
     const matchSearch = patientName.includes(searchQuery.toLowerCase());
-    const matchStatus = filterStatus === "ALL" || v.status === filterStatus;
-    return matchBranch && matchDate && matchSearch && matchStatus;
+    return matchBranch && matchDate && matchSearch;
   }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   // Hitung KPI menggunakan data asli (bukan paginated)

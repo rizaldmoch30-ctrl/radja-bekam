@@ -1805,15 +1805,16 @@ export default function AdminVisitsPage() {
                             </div>
                           </div>
                           <div className="flex flex-col gap-2 pl-[54px]">
-                            {group.map(serviceVisit => (
-                              <div key={serviceVisit.id} className="bg-white border border-gray-100 p-2.5 rounded-lg flex items-center justify-between shadow-sm">
-                                <div className="flex flex-col gap-0.5">
-                                  <span className="font-semibold text-xs text-gray-800 flex items-center gap-1.5"><Activity className="w-3 h-3 text-blue-500"/> {getServiceName(serviceVisit.serviceId)}</span>
-                                  <span className="text-[10px] text-gray-500 flex items-center gap-1.5"><User className="w-3 h-3"/> {getTherapistName(serviceVisit.therapistId)}</span>
-                                </div>
-                                <div>{renderTherapyStatus(serviceVisit)}</div>
+                            <div className="bg-white border border-gray-100 p-2.5 rounded-lg flex items-center justify-between shadow-sm">
+                              <div className="flex flex-col gap-0.5">
+                                <span className="font-semibold text-xs text-gray-800 flex items-center gap-1.5">
+                                  <Activity className="w-3 h-3 text-blue-500"/> {getServiceName(v.serviceId)}
+                                  {group.length > 1 && <span className="text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded text-[10px] ml-1">+{group.length - 1} lainnya</span>}
+                                </span>
+                                <span className="text-[10px] text-gray-500 flex items-center gap-1.5"><User className="w-3 h-3"/> {getTherapistName(v.therapistId)}</span>
                               </div>
-                            ))}
+                              <div>{renderTherapyStatus(v)}</div>
+                            </div>
                           </div>
                         </div>
                       );
@@ -1909,29 +1910,26 @@ export default function AdminVisitsPage() {
                             </td>
                             <td className={tdClass}>
                               <div className="flex flex-col gap-2">
-                                {group.map(serviceVisit => (
-                                  <div key={serviceVisit.id} className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                                    <span className="text-[13px] font-bold text-gray-800 flex items-center gap-1.5">
-                                      <Activity className="w-3.5 h-3.5 text-blue-500"/> {getServiceName(serviceVisit.serviceId)}
-                                    </span>
-                                    <span className="text-[11px] text-gray-500 flex items-center gap-1 border-l border-gray-200 pl-2">
-                                      <User className="w-3 h-3"/> {getTherapistName(serviceVisit.therapistId)}
-                                    </span>
-                                    <div className="pl-1">
-                                      {renderTherapyStatus(serviceVisit)}
-                                    </div>
+                                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                  <span className="text-[13px] font-bold text-gray-800 flex items-center gap-1.5">
+                                    <Activity className="w-3.5 h-3.5 text-blue-500"/> {getServiceName(v.serviceId)}
+                                    {group.length > 1 && <span className="text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded text-[10px] ml-1">+{group.length - 1} lainnya</span>}
+                                  </span>
+                                  <span className="text-[11px] text-gray-500 flex items-center gap-1 border-l border-gray-200 pl-2">
+                                    <User className="w-3 h-3"/> {getTherapistName(v.therapistId)}
+                                  </span>
+                                  <div className="pl-1">
+                                    {renderTherapyStatus(v)}
                                   </div>
-                                ))}
+                                </div>
                               </div>
                             </td>
                             {selectedBranchId === "ALL" && (
                               <td className={tdClass}>
                                 <div className="flex flex-col gap-1">
-                                  {Array.from(new Set(group.map(g => g.branchId))).map(bId => (
-                                    <div key={bId} className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded-md">
-                                      <Store className="w-3.5 h-3.5"/> {getBranchName(bId)}
-                                    </div>
-                                  ))}
+                                  <div className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded-md">
+                                    <Store className="w-3.5 h-3.5"/> {getBranchName(v.branchId)}
+                                  </div>
                                 </div>
                               </td>
                             )}
@@ -1961,16 +1959,17 @@ export default function AdminVisitsPage() {
                                 </div>
                               )}
                               <div className="mt-2 pt-2 border-t border-gray-100 flex flex-col gap-1 w-full">
-                                {group.map(serviceVisit => (
-                                  <button
-                                    key={`del-${serviceVisit.id}`}
-                                    onClick={() => handleDeleteVisit(serviceVisit.id)}
-                                    className="w-full text-left inline-flex items-center gap-1.5 px-2 py-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors text-[10px] font-medium"
-                                    title={`Hapus ${getServiceName(serviceVisit.serviceId)}`}
-                                  >
-                                    <Trash2 className="w-3 h-3" /> Hapus Layanan
-                                  </button>
-                                ))}
+                                <button
+                                  onClick={() => {
+                                    if (window.confirm('Hapus seluruh kunjungan ini?')) {
+                                      group.forEach(g => handleDeleteVisit(g.id));
+                                    }
+                                  }}
+                                  className="w-full text-left inline-flex items-center gap-1.5 px-2 py-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors text-[10px] font-medium"
+                                  title="Hapus Kunjungan"
+                                >
+                                  <Trash2 className="w-3 h-3" /> Hapus Kunjungan
+                                </button>
                               </div>
                             </td>
                             <td className={tdClass}>

@@ -2454,62 +2454,107 @@ export default function AdminVisitsPage() {
 
             <div className="p-6 overflow-y-auto bg-gray-50/30 flex-1">
               <div className="space-y-4">
-                {visits
-                  .filter(v => v.patientId === selectedPatientHistoryId)
-                  .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                  .map((visit, idx, arr) => (
-                    <div key={visit.id} className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm relative overflow-hidden group hover:border-indigo-200 transition-colors">
-                      <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-indigo-400 to-blue-500"></div>
-                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 pl-2">
-                        <div className="space-y-3 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-bold text-gray-900 text-lg">{visit.visitDate.split('-').reverse().join('/')}</span>
-                            <span className="text-sm font-medium bg-gray-100 text-gray-600 px-2.5 py-1 rounded-md flex items-center gap-1.5 border border-gray-200">
-                              <Clock className="w-3.5 h-3.5"/> {visit.visitTime}
-                            </span>
-                            <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200 uppercase tracking-wide">
-                              Kunjungan #{arr.length - idx}
-                            </span>
-                            {visit.paymentStatus === "PAID" && (
-                              <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200 uppercase tracking-wide flex items-center gap-1">
-                                <CheckCircle2 className="w-3.5 h-3.5"/> Lunas
+                {(() => {
+                  const patientVisits = visits
+                    .filter(v => v.patientId === selectedPatientHistoryId)
+                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+                  const groupedVisits = patientVisits.reduce((acc, visit) => {
+                    const key = `${visit.visitDate}_${visit.visitTime}`;
+                    if (!acc[key]) {
+                      acc[key] = [];
+                    }
+                    acc[key].push(visit);
+                    return acc;
+                  }, {} as Record<string, typeof patientVisits>);
+
+                  const groupedArray = Object.entries(groupedVisits).map(([key, groupVisits]) => ({
+                    key,
+                    visits: groupVisits,
+                    createdAt: groupVisits[0].createdAt
+                  })).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+                  return groupedArray.map((group, idx, arr) => {
+                    const firstVisit = group.visits[0];
+                    const uniqueTherapists = Array.from(new Set(group.visits.map(v => v.therapistId)));
+                    const uniqueBranches = Array.from(new Set(group.visits.map(v => v.branchId)));
+                    const uniqueNotes = Array.from(new Set(group.visits.map(v => v.notes).filter(Boolean)));
+                    
+                    return (
+                      <div key={group.key} className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm relative overflow-hidden group hover:border-indigo-200 transition-colors">
+                        <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-indigo-400 to-blue-500"></div>
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 pl-2">
+                          <div className="space-y-3 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-bold text-gray-900 text-lg">{firstVisit.visitDate.split('-').reverse().join('/')}</span>
+                              <span className="text-sm font-medium bg-gray-100 text-gray-600 px-2.5 py-1 rounded-md flex items-center gap-1.5 border border-gray-200">
+                                <Clock className="w-3.5 h-3.5"/> {firstVisit.visitTime}
                               </span>
-                            )}
+                              <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-200 uppercase tracking-wide">
+                                Kunjungan #{arr.length - idx}
+                              </span>
+                              {firstVisit.paymentStatus === "PAID" && (
+                                <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200 uppercase tracking-wide flex items-center gap-1">
+                                  <CheckCircle2 className="w-3.5 h-3.5"/> Lunas
+                                </span>
+                              )}
+                            </div>
+                            
+                            <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 text-sm">
+                              <div className="space-y-1">
+                                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Layanan</span>
+                                <div className="flex flex-col gap-1.5">
+                                  {group.visits.map(v => (
+                                    <div key={v.id} className="flex items-center gap-2 text-gray-800 font-medium">
+                                      <Activity className="w-4 h-4 text-blue-500"/> {getServiceName(v.serviceId)}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Terapis</span>
+                                <div className="flex flex-col gap-1.5">
+                                  {uniqueTherapists.map(tId => (
+                                    <div key={tId} className="flex items-center gap-2 text-gray-800 font-medium">
+                                      <User className="w-4 h-4 text-indigo-400"/> {getTherapistName(tId)}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Cabang</span>
+                                <div className="flex flex-col gap-1.5">
+                                  {uniqueBranches.map(bId => (
+                                    <div key={bId} className="flex items-center gap-2 text-gray-800 font-medium">
+                                      <Store className="w-4 h-4 text-amber-500"/> {getBranchName(bId)}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
                           </div>
                           
-                          <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 text-sm">
-                            <div className="space-y-1">
-                              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Layanan</span>
-                              <div className="flex items-center gap-2 text-gray-800 font-medium">
-                                <Activity className="w-4 h-4 text-blue-500"/> {getServiceName(visit.serviceId)}
-                              </div>
+                          <div className="sm:max-w-xs w-full bg-gray-50 rounded-xl p-3 border border-gray-100">
+                            <div className="flex items-center gap-1.5 font-bold text-gray-700 mb-1.5 text-xs uppercase tracking-wider">
+                              <FileText className="w-3.5 h-3.5" /> Catatan Medis
                             </div>
-                            <div className="space-y-1">
-                              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Terapis</span>
-                              <div className="flex items-center gap-2 text-gray-800 font-medium">
-                                <User className="w-4 h-4 text-indigo-400"/> {getTherapistName(visit.therapistId)}
-                              </div>
-                            </div>
-                            <div className="space-y-1">
-                              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Cabang</span>
-                              <div className="flex items-center gap-2 text-gray-800 font-medium">
-                                <Store className="w-4 h-4 text-amber-500"/> {getBranchName(visit.branchId)}
-                              </div>
+                            <div className="flex flex-col gap-2">
+                              {uniqueNotes.length > 0 ? uniqueNotes.map((note, idx) => (
+                                <p key={idx} className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
+                                  {note}
+                                </p>
+                              )) : (
+                                <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap italic text-gray-400">
+                                  Tidak ada catatan medis untuk kunjungan ini.
+                                </p>
+                              )}
                             </div>
                           </div>
-                        </div>
-                        
-                        <div className="sm:max-w-xs w-full bg-gray-50 rounded-xl p-3 border border-gray-100">
-                          <div className="flex items-center gap-1.5 font-bold text-gray-700 mb-1.5 text-xs uppercase tracking-wider">
-                            <FileText className="w-3.5 h-3.5" /> Catatan Medis
-                          </div>
-                          <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-wrap">
-                            {visit.notes || <span className="italic text-gray-400">Tidak ada catatan medis untuk kunjungan ini.</span>}
-                          </p>
                         </div>
                       </div>
-                    </div>
-                ))}
+                    );
+                  });
+                })()}
               </div>
             </div>
             

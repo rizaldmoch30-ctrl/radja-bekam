@@ -1809,7 +1809,14 @@ export default function AdminVisitsPage() {
                               <div className="flex flex-col gap-0.5">
                                 <span className="font-semibold text-xs text-gray-800 flex items-center gap-1.5">
                                   <Activity className="w-3 h-3 text-blue-500"/> {getServiceName(v.serviceId)}
-                                  {group.length > 1 && <span className="text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded text-[10px] ml-1">+{group.length - 1} lainnya</span>}
+                                  {group.length > 1 && (
+                                    <span 
+                                      className="text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded text-[10px] ml-1 cursor-help"
+                                      title={`Layanan lainnya:\n${group.slice(1).map(g => `• ${getServiceName(g.serviceId)}`).join('\n')}`}
+                                    >
+                                      +{group.length - 1} lainnya
+                                    </span>
+                                  )}
                                 </span>
                                 <span className="text-[10px] text-gray-500 flex items-center gap-1.5"><User className="w-3 h-3"/> {getTherapistName(v.therapistId)}</span>
                               </div>
@@ -1913,7 +1920,14 @@ export default function AdminVisitsPage() {
                                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                                   <span className="text-[13px] font-bold text-gray-800 flex items-center gap-1.5">
                                     <Activity className="w-3.5 h-3.5 text-blue-500"/> {getServiceName(v.serviceId)}
-                                    {group.length > 1 && <span className="text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded text-[10px] ml-1">+{group.length - 1} lainnya</span>}
+                                    {group.length > 1 && (
+                                      <span 
+                                        className="text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded text-[10px] ml-1 cursor-help"
+                                        title={`Layanan lainnya:\n${group.slice(1).map(g => `• ${getServiceName(g.serviceId)}`).join('\n')}`}
+                                      >
+                                        +{group.length - 1} lainnya
+                                      </span>
+                                    )}
                                   </span>
                                   <span className="text-[11px] text-gray-500 flex items-center gap-1 border-l border-gray-200 pl-2">
                                     <User className="w-3 h-3"/> {getTherapistName(v.therapistId)}

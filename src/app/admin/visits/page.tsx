@@ -717,8 +717,17 @@ export default function AdminVisitsPage() {
 
   const getVisitSequenceNumber = (patientId: string, visitId: string) => {
     const patientVisits = visits.filter(v => v.patientId === patientId);
-    const index = patientVisits.findIndex(v => v.id === visitId);
-    return patientVisits.length - index;
+    const groups: { [key: string]: typeof patientVisits } = {};
+    for (const v of patientVisits) {
+      const key = `${v.visitDate}_${v.visitTime}`;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(v);
+    }
+    const sortedGroups = Object.values(groups).sort((a, b) => 
+      new Date(b[0].createdAt).getTime() - new Date(a[0].createdAt).getTime()
+    );
+    const groupIndex = sortedGroups.findIndex(g => g.some(v => v.id === visitId));
+    return groupIndex >= 0 ? sortedGroups.length - groupIndex : 1;
   };
 
   let finalVisits = visits.filter(v => {
@@ -726,23 +735,32 @@ export default function AdminVisitsPage() {
     const matchDate = filterDate === "" || v.visitDate === filterDate;
     const patientName = getPatientName(v.patientId).toLowerCase();
     const matchSearch = patientName.includes(searchQuery.toLowerCase());
-    return matchBranch && matchDate && matchSearch;
+    const matchStatus = filterStatus === "ALL" || v.status === filterStatus;
+    return matchBranch && matchDate && matchSearch && matchStatus;
   }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  // KPI Calculations (Actual Data)
+  // Hitung KPI menggunakan data asli (bukan paginated)
   const todayDateString = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
   
   const branchVisits = visits.filter(v => selectedBranchId === "ALL" || v.branchId === selectedBranchId);
-  const kpiVisitsToday = branchVisits.filter(v => v.visitDate === todayDateString).length;
+  
+  const kpiVisitsToday = Array.from(new Set(
+    branchVisits.filter(v => v.visitDate === todayDateString).map(v => `${v.patientId}_${v.visitTime}`)
+  )).length;
+  
   const kpiRevenueToday = branchVisits
     .filter(v => v.visitDate === todayDateString && v.paymentStatus === "PAID")
     .reduce((sum, v) => {
       const service = services.find(s => s.id === v.serviceId);
       return sum + (service?.price || 0);
     }, 0);
-  const kpiNewPatientsToday = branchVisits
-    .filter(v => v.visitDate === todayDateString && getVisitSequenceNumber(v.patientId, v.id) === 1)
-    .length;
+    
+  const kpiNewPatientsToday = Array.from(new Set(
+    branchVisits
+      .filter(v => v.visitDate === todayDateString && getVisitSequenceNumber(v.patientId, v.id) === 1)
+      .map(v => v.patientId)
+  )).length;
+  
   const kpiRetention = kpiVisitsToday > 0 
     ? Math.round(((kpiVisitsToday - kpiNewPatientsToday) / kpiVisitsToday) * 100)
     : 0;

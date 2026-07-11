@@ -1,0 +1,32 @@
+diff a/src/app/admin/page.tsx b/src/app/admin/page.tsx	(rejected hunks)
+@@ -242,9 +258,27 @@ export default function AdminDashboard() {
+             description={`Selamat datang kembali 👋 • ${new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())}`}
+             icon={LayoutDashboard}
+             rightContent={
+-              <div className="bg-white/80 backdrop-blur-md px-4 py-2 rounded-xl border border-gray-100 shadow-sm flex items-center gap-2">
+-                <Clock className="w-4 h-4 text-emerald-600" />
+-                <span className="text-xs font-bold text-gray-600">Update terakhir: <span className="text-gray-900">{new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB</span></span>
++              <div className="flex flex-col sm:flex-row items-center gap-3">
++                {/* Branch Filter Dropdown - Only show if Super Admin */}
++                {session?.role === "SUPER_ADMIN" && !loading && branches.length > 0 && (
++                  <div className="relative w-full sm:w-auto">
++                    <select
++                      value={filterBranch}
++                      onChange={(e) => setFilterBranch(e.target.value)}
++                      className="px-4 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-teal-500/20 text-sm outline-none cursor-pointer w-full transition-all appearance-none pr-10 shadow-sm font-medium"
++                    >
++                      <option value="ALL">Semua Cabang</option>
++                      {branches.map(b => (
++                        <option key={b.id} value={b.id}>{b.name}</option>
++                      ))}
++                    </select>
++                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 font-bold text-[10px]">▼</div>
++                  </div>
++                )}
++                <div className="bg-white/80 backdrop-blur-md px-4 py-2.5 rounded-xl border border-gray-100 shadow-sm flex items-center gap-2">
++                  <Clock className="w-4 h-4 text-emerald-600" />
++                  <span className="text-xs font-bold text-gray-600">Update terakhir: <span className="text-gray-900">{new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB</span></span>
++                </div>
+               </div>
+             }
+           />

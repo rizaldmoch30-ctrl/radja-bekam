@@ -37,13 +37,13 @@ const AnimatedNumber = ({ value, isCurrency = true }: { value: number, isCurrenc
 };
 
 // Therapist Status Dashboard Widget
-function TherapistStatusWidget({ showBalance }: { showBalance: boolean }) {
+function TherapistStatusWidget({ showBalance, filterBranch }: { showBalance: boolean, filterBranch: string }) {
   const [counts, setCounts] = useState({ AVAILABLE: 0, BUSY: 0, BREAK: 0, OFF: 0, total: 0 });
 
   useEffect(() => {
     const fetchStatus = async () => {
       try {
-        const res = await fetch("/api/therapists/availability");
+        const res = await fetch(`/api/therapists/availability?branchId=${filterBranch}`);
         if (res.ok) {
           const data = await res.json();
           const list = data.data || [];
@@ -60,7 +60,7 @@ function TherapistStatusWidget({ showBalance }: { showBalance: boolean }) {
     fetchStatus();
     const interval = setInterval(fetchStatus, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [filterBranch]);
 
   return (
     <div className="bg-gray-50/50 border border-gray-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-[20px] p-5 flex flex-col justify-between min-h-[155px] hover:bg-white hover:shadow-md hover:border-purple-400 hover:-translate-y-1.5 transition-all duration-300 group">
@@ -101,6 +101,10 @@ export default function AdminDashboard() {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
+  
+  const [session, setSession] = useState<any>(null);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [filterBranch, setFilterBranch] = useState("ALL");
 
   const [targetIncome, setTargetIncome] = useState(0);
   const [targetVisits, setTargetVisits] = useState(0);
@@ -133,7 +137,7 @@ export default function AdminDashboard() {
     setAiResult(null);
     setAiError(null);
     try {
-      const res = await fetch(`/api/ai-analysis?month=${month}`);
+      const res = await fetch(`/api/ai-analysis?month=${month}&branchId=${filterBranch}`);
       const json = await res.json();
       if (json.success) {
         setAiResult(json.data);
@@ -150,9 +154,11 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [kpiRes, summaryRes] = await Promise.all([
-        fetch(`/api/dashboard/kpi-chart?month=${month}`),
-        fetch(`/api/dashboard/summary?month=${month}`)
+      const [kpiRes, summaryRes, branchRes, sessionRes] = await Promise.all([
+        fetch(`/api/dashboard/kpi-chart?month=${month}&branchId=${filterBranch}`),
+        fetch(`/api/dashboard/summary?month=${month}&branchId=${filterBranch}`),
+        fetch("/api/branches"),
+        fetch("/api/auth/session")
       ]);
 
       if (kpiRes.ok) {
@@ -170,6 +176,16 @@ export default function AdminDashboard() {
           setSummaryData(json.data);
         }
       }
+      
+      if (branchRes.ok) {
+        const bJson = await branchRes.json();
+        setBranches(bJson.data || []);
+      }
+      
+      if (sessionRes.ok) {
+        const sJson = await sessionRes.json();
+        setSession(sJson.session);
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -179,7 +195,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     fetchData();
-  }, [month]);
+  }, [month, filterBranch]);
 
   const handleSaveTarget = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -399,7 +415,7 @@ export default function AdminDashboard() {
                   </div>
 
                   {/* Terapis Hari Ini — Live Status */}
-                  <TherapistStatusWidget showBalance={showBalance} />
+                  <TherapistStatusWidget showBalance={showBalance} filterBranch={filterBranch} />
 
                   {/* Total Persediaan */}
                   <div className="bg-gray-50/50 border border-gray-200/60 shadow-[0_2px_10px_rgba(0,0,0,0.02)] rounded-[20px] p-5 flex flex-col justify-between min-h-[155px] hover:bg-white hover:shadow-md hover:border-amber-400 hover:-translate-y-1.5 transition-all duration-300 group">

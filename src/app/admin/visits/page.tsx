@@ -1772,37 +1772,48 @@ export default function AdminVisitsPage() {
                   </div>
                 ) : (
                   <div className="divide-y divide-gray-100">
-                    {paginatedVisits.map(v => {
+                    {paginatedGroups.map(group => {
+                      const v = group[0];
                       const patientName = getPatientName(v.patientId);
                       const initial = patientName.charAt(0).toUpperCase();
-                      const isCompleted = v.status === "completed";
-                      const isPaid = v.paymentStatus === "PAID";
+                      const isPaid = group.every(g => g.paymentStatus === "PAID");
                       
                       return (
-                        <div key={v.id} className="p-4 flex items-center justify-between hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer" onClick={() => setSelectedPatientHistoryId(v.patientId)}>
-                          <div className="flex items-center gap-3">
-                            <div className="w-[42px] h-[42px] rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg shadow-sm border border-blue-600">
-                              {initial}
+                        <div key={v.id} className="p-4 flex flex-col gap-3 hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer" onClick={() => setSelectedPatientHistoryId(v.patientId)}>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-[42px] h-[42px] rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg shadow-sm border border-blue-600 shrink-0">
+                                {initial}
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="font-bold text-[14px] text-gray-900 leading-tight mb-0.5">{patientName}</span>
+                                <span className="text-[11px] text-gray-500 font-medium mb-1">
+                                  {v.visitDate.split('-').reverse().join('/')} &bull; {v.visitTime}
+                                </span>
+                              </div>
                             </div>
-                            <div className="flex flex-col">
-                              <span className="font-bold text-[14px] text-gray-900 leading-tight mb-0.5">{patientName}</span>
-                              <span className="text-[11px] text-gray-500 font-medium mb-1">
-                                {v.visitDate.split('-').reverse().join('/')} &bull; {getServiceName(v.serviceId)}
-                              </span>
-                              <div>{renderTherapyStatus(v)}</div>
+                            <div className="flex flex-col items-end gap-1">
+                              {isPaid ? (
+                                <button onClick={(e) => { e.stopPropagation(); }} className="p-1.5 text-yellow-500">
+                                  <CheckCircle2 className="w-5 h-5 fill-yellow-50" />
+                                </button>
+                              ) : (
+                                <button onClick={(e) => { e.stopPropagation(); handleOpenPOSForVisit(v.id, v.patientId, v.branchId, v.therapistId, ""); }} className="p-1.5 text-orange-500 hover:scale-110 transition-transform">
+                                  <Wallet className="w-5 h-5" />
+                                </button>
+                              )}
                             </div>
                           </div>
-                          
-                          <div className="flex flex-col items-end gap-1">
-                            {isPaid ? (
-                              <button onClick={(e) => { e.stopPropagation(); }} className="p-1.5 text-yellow-500">
-                                <CheckCircle2 className="w-5 h-5 fill-yellow-50" />
-                              </button>
-                            ) : (
-                              <button onClick={(e) => { e.stopPropagation(); handleOpenPOSForVisit(v.id, v.patientId, v.branchId, v.therapistId, v.serviceId); }} className="p-1.5 text-orange-500 hover:scale-110 transition-transform">
-                                <Wallet className="w-5 h-5" />
-                              </button>
-                            )}
+                          <div className="flex flex-col gap-2 pl-[54px]">
+                            {group.map(serviceVisit => (
+                              <div key={serviceVisit.id} className="bg-white border border-gray-100 p-2.5 rounded-lg flex items-center justify-between shadow-sm">
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="font-semibold text-xs text-gray-800 flex items-center gap-1.5"><Activity className="w-3 h-3 text-blue-500"/> {getServiceName(serviceVisit.serviceId)}</span>
+                                  <span className="text-[10px] text-gray-500 flex items-center gap-1.5"><User className="w-3 h-3"/> {getTherapistName(serviceVisit.therapistId)}</span>
+                                </div>
+                                <div>{renderTherapyStatus(serviceVisit)}</div>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       );
@@ -1817,7 +1828,7 @@ export default function AdminVisitsPage() {
                       currentPage={currentPage}
                       totalPages={totalPages}
                       onPageChange={setCurrentPage}
-                      totalItems={finalVisits.length}
+                      totalItems={groupedFinalVisits.length}
                       itemsPerPage={itemsPerPage}
                     />
                   </div>

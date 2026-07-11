@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig: any = {
   allowedDevOrigins: ['192.168.1.5'],
   eslint: {
     ignoreDuringBuilds: true,

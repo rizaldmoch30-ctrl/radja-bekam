@@ -208,6 +208,27 @@ export default function AdminVisitsPage() {
     return () => clearInterval(timer);
   }, []);
 
+  const handleFinishVisit = async (visitId: string) => {
+    if (!window.confirm("Selesaikan layanan kunjungan ini sekarang?")) return;
+    
+    try {
+      const res = await fetch(`/api/patient-visits/${visitId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "completed" })
+      });
+      if (res.ok) {
+        fetchData();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Gagal menyelesaikan kunjungan");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Terjadi kesalahan jaringan");
+    }
+  };
+
   const renderTherapyStatus = (v: PatientVisit) => {
     if (v.status === "completed") {
       return (
@@ -235,9 +256,13 @@ export default function AdminVisitsPage() {
       
       if (mins > 0) {
         return (
-          <div className="inline-flex w-max items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 border border-amber-200 shadow-sm animate-in fade-in">
+          <button 
+            onClick={(e) => { e.stopPropagation(); handleFinishVisit(v.id); }}
+            title="Klik untuk menyelesaikan layanan sekarang"
+            className="inline-flex w-max items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 border border-amber-200 shadow-sm animate-in fade-in hover:bg-amber-200 transition-colors"
+          >
             <Timer className="w-2.5 h-2.5 animate-pulse" /> Sisa {mins} mnt
-          </div>
+          </button>
         );
       } else {
         if (v.paymentStatus === "PAID") {
@@ -248,9 +273,13 @@ export default function AdminVisitsPage() {
           );
         }
         return (
-          <div className="inline-flex w-max items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-red-100 text-red-700 border border-red-200 shadow-sm animate-in fade-in">
+          <button 
+            onClick={(e) => { e.stopPropagation(); handleFinishVisit(v.id); }}
+            title="Klik untuk menyelesaikan layanan sekarang"
+            className="inline-flex w-max items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-red-100 text-red-700 border border-red-200 shadow-sm animate-in fade-in hover:bg-red-200 transition-colors"
+          >
             <AlertCircle className="w-2.5 h-2.5 animate-pulse" /> Habis ({Math.abs(mins)}m)
-          </div>
+          </button>
         );
       }
     }

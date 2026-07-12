@@ -113,3 +113,50 @@ export async function DELETE(
     return Response.json({ error: "Gagal menghapus data kunjungan" }, { status: 500 });
   }
 }
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+
+    if (body.status === "completed") {
+      const nowStr = new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" });
+      const nowJkt = new Date(nowStr);
+      const currentTime = `${String(nowJkt.getHours()).padStart(2, "0")}:${String(nowJkt.getMinutes()).padStart(2, "0")}`;
+
+      // Get visit to find therapist
+      const visit = await db.select().from(patientVisits).where(eq(patientVisits.id, id)).limit(1);
+      if (visit.length === 0) {
+        return Response.json({ error: "Visit not found" }, { status: 404 });
+      }
+
+      await db
+        .update(patientVisits)
+        .set({
+          status: "completed",
+          actualCheckOutTime: currentTime,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(patientVisits.id, id));
+
+      if (visit[0].therapistId) {
+        await db
+          .update(therapists)
+          .set({ availabilityStatus: "AVAILABLE", updatedAt: new Date().toISOString() })
+          .where(eq(therapists.id, visit[0].therapistId));
+      }
+
+      await logSystemAction("UPDATE_VISIT_STATUS", "patient_visit", id, `Status kunjungan diubah menjadi manual completed`);
+      
+      return Response.json({ success: true, message: "Kunjungan berhasil diselesaikan" });
+    }
+
+    return Response.json({ error: "Invalid status update" }, { status: 400 });
+  } catch (error) {
+    console.error("PATCH /api/patient-visits/[id] error:", error);
+    return Response.json({ error: "Gagal mengupdate status" }, { status: 500 });
+  }
+}

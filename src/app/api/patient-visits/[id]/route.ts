@@ -6,7 +6,8 @@ import {
   financeTransactions,
   journalEntries,
   journalLines,
-  therapistMonthlyReports
+  therapistMonthlyReports,
+  therapists
 } from "@/lib/db/schema";
 import { eq, inArray, and } from "drizzle-orm";
 import { logSystemAction } from "@/lib/logger";

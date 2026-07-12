@@ -32,7 +32,7 @@ export async function Footer() {
           <div className="md:col-span-4 space-y-6">
             <Link href="/" className="inline-block bg-white p-3 rounded-2xl shadow-lg border border-white/20 transition-transform hover:scale-105">
               <Image 
-                src="/radja-bekam-logo.png" 
+                src="/logo.png" 
                 alt={`${companyInfo.companyName} Logo`} 
                 width={220} 
                 height={73} 

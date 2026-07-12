@@ -11,7 +11,7 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: '#ffffff',
     icons: [
       {
-        src: '/radja-bekam-logo.png',
+        src: '/logo.png',
         sizes: 'any',
         type: 'image/png',
       },

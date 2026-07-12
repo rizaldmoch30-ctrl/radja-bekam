@@ -51,7 +51,7 @@ export function Navbar({ settings, branches = [] }: { settings?: any, branches?:
           <div className="flex-shrink-0 flex items-center">
             <Link href="/" className="flex items-center gap-2 group">
               <Image 
-                src="/radja-bekam-logo.png" 
+                src="/logo.png" 
                 alt="Radja Bekam Logo" 
                 unoptimized
                 width={250} 

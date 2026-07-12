@@ -652,7 +652,7 @@ export default function AdminTherapistsPage() {
             {/* Header with Logo */}
             <div className="relative h-24 bg-slate-50 flex items-center justify-center border-b border-gray-100 shrink-0">
               <img 
-                src="/radja-bekam-logo.png" 
+                src="/logo.png" 
                 alt="Radja Bekam Logo" 
                 className="h-16 w-auto object-contain" 
               />

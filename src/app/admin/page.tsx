@@ -238,7 +238,7 @@ export default function AdminDashboard() {
         <div className="md:hidden flex items-center justify-between mb-4 mt-2">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-[0_4px_10px_rgba(0,0,0,0.05)] border border-gray-100 overflow-hidden p-1.5">
-              <Image src="/radja-bekam-logo.png" alt="Radja Bekam Logo" width={36} height={36} className="object-contain" />
+              <Image src="/logo.png" alt="Radja Bekam Logo" width={36} height={36} className="object-contain" />
             </div>
             <div>
               <h2 className="font-bold text-gray-900 text-[15px] leading-tight">Fikri Mochamad R...</h2>

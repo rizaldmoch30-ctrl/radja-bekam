@@ -83,7 +83,7 @@ export async function POST(request: Request) {
     }
 
     // Enforce branch context
-    const finalBranchId = session.role === "BRANCH_ADMIN" ? session.branchId : (branchId || null);
+    const finalBranchId = (session.role === "BRANCH_ADMIN" || session.role === "CASHIER") ? session.branchId : (branchId || null);
 
     const newTransaction = {
       id: crypto.randomUUID(),

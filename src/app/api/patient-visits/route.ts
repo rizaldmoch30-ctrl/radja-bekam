@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     }
 
     // Enforce branch context for branch admin
-    const finalBranchId = session.role === "BRANCH_ADMIN" ? session.branchId : branchId;
+    const finalBranchId = (session.role === "BRANCH_ADMIN" || session.role === "CASHIER") ? session.branchId : branchId;
     if (!finalBranchId) {
       return Response.json({ error: "Cabang wajib ditentukan" }, { status: 400 });
     }

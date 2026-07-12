@@ -562,6 +562,17 @@ export default function AdminVisitsPage() {
     }
   }, [activeTab, recapSubTab, recapDate, recapMonth, fetchRecap, fetchMonthlyRecap]);
 
+  const handleOpenNewVisit = () => {
+    setFormData(prev => ({
+      ...prev,
+      visitDate: new Date().toISOString().split('T')[0],
+      visitTime: getFormattedTime(),
+      checkInTime: getFormattedTime(),
+    }));
+    setIsFormOpen(true);
+  };
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedServices.length === 0) return alert("Pilih minimal 1 layanan!");
@@ -1250,7 +1261,7 @@ export default function AdminVisitsPage() {
             <div className="bg-white rounded-[20px] p-4 shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-gray-100">
               <div className="grid grid-cols-4 gap-y-5 gap-x-2">
                 {[
-                  { name: "Tambah", icon: Plus, action: () => setIsFormOpen(true), color: "text-blue-500", badge: "" },
+                  { name: "Tambah", icon: Plus, action: handleOpenNewVisit, color: "text-blue-500", badge: "" },
                   { name: "Hari Ini", icon: CalendarCheck, action: () => { setFilterDate(new Date().toISOString().split("T")[0]); handleTabChange("list"); }, color: "text-blue-500", badge: "New" },
                   { name: "Selesai", icon: CheckCircle2, action: () => handleTabChange("list"), color: "text-blue-500", badge: "" },
                   { name: "Batal", icon: Trash2, action: () => handleTabChange("list"), color: "text-red-500", badge: "" },
@@ -1313,7 +1324,7 @@ export default function AdminVisitsPage() {
             description="Catat dan pantau seluruh riwayat kunjungan pasien."
             icon={CalendarCheck}
             rightContent={
-              <button onClick={() => setIsFormOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors">
+              <button onClick={handleOpenNewVisit} className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors">
                 <Plus className="h-5 w-5" /> Catat Kunjungan
               </button>
             }

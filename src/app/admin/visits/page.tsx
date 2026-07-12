@@ -204,7 +204,7 @@ export default function AdminVisitsPage() {
   // Timer state for active therapies
   const [currentTime, setCurrentTime] = useState(new Date());
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
@@ -227,8 +227,11 @@ export default function AdminVisitsPage() {
       const parts = v.visitDate.split('-');
       const [h, m] = v.checkOutTime.split(":").map(Number);
       const target = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), h, m, 0);
-      const diffMs = target.getTime() - currentTime.getTime();
-      const mins = Math.ceil(diffMs / 60000);
+      
+      // Zero out seconds from currentTime to align countdown perfectly with wall-clock minutes
+      const currentMins = new Date(currentTime.getFullYear(), currentTime.getMonth(), currentTime.getDate(), currentTime.getHours(), currentTime.getMinutes(), 0);
+      const diffMs = target.getTime() - currentMins.getTime();
+      const mins = Math.round(diffMs / 60000);
       
       if (mins > 0) {
         return (

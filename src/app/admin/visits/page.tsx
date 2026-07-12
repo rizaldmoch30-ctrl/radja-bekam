@@ -208,16 +208,28 @@ export default function AdminVisitsPage() {
     return () => clearInterval(timer);
   }, []);
 
-  const handleFinishVisit = async (visitId: string) => {
-    if (!window.confirm("Selesaikan layanan kunjungan ini sekarang?")) return;
+  const [finishModalOpen, setFinishModalOpen] = useState(false);
+  const [visitToFinish, setVisitToFinish] = useState<string | null>(null);
+  const [isFinishing, setIsFinishing] = useState(false);
+
+  const handleFinishVisit = (visitId: string) => {
+    setVisitToFinish(visitId);
+    setFinishModalOpen(true);
+  };
+
+  const confirmFinishVisit = async () => {
+    if (!visitToFinish) return;
+    setIsFinishing(true);
     
     try {
-      const res = await fetch(`/api/patient-visits/${visitId}`, {
+      const res = await fetch(`/api/patient-visits/${visitToFinish}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "completed" })
       });
       if (res.ok) {
+        setFinishModalOpen(false);
+        setVisitToFinish(null);
         fetchData();
       } else {
         const err = await res.json();
@@ -226,6 +238,8 @@ export default function AdminVisitsPage() {
     } catch (err) {
       console.error(err);
       alert("Terjadi kesalahan jaringan");
+    } finally {
+      setIsFinishing(false);
     }
   };
 
@@ -2690,6 +2704,23 @@ export default function AdminVisitsPage() {
           setVisitToDelete(null);
         }}
         isLoading={isDeleting}
+        variant="danger"
+      />
+      
+      {/* Finish Confirmation Modal */}
+      <ConfirmModal
+        isOpen={finishModalOpen}
+        title="Selesaikan Kunjungan?"
+        message="Apakah Anda yakin ingin menandai layanan kunjungan ini sebagai selesai sekarang?"
+        confirmText="Ya, Selesai"
+        cancelText="Batal"
+        onConfirm={confirmFinishVisit}
+        onCancel={() => {
+          setFinishModalOpen(false);
+          setVisitToFinish(null);
+        }}
+        isLoading={isFinishing}
+        variant="info"
       />
 
       </div>

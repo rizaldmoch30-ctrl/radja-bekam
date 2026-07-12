@@ -1,5 +1,5 @@
 import React from "react";
-import { AlertTriangle, X } from "lucide-react";
+import { AlertTriangle, CheckCircle, Info, X } from "lucide-react";
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -10,19 +10,57 @@ interface ConfirmModalProps {
   onConfirm: () => void;
   onCancel: () => void;
   isLoading?: boolean;
+  variant?: "danger" | "success" | "warning" | "info";
 }
 
 export default function ConfirmModal({
   isOpen,
   title,
   message,
-  confirmText = "Hapus Data",
+  confirmText = "Konfirmasi",
   cancelText = "Batal",
   onConfirm,
   onCancel,
   isLoading = false,
+  variant = "danger",
 }: ConfirmModalProps) {
   if (!isOpen) return null;
+
+  const getVariantStyles = () => {
+    switch (variant) {
+      case "success":
+        return {
+          icon: <CheckCircle className="w-8 h-8" />,
+          bgPulse: "bg-green-100",
+          bgIcon: "bg-green-50 text-green-600",
+          btnClass: "bg-green-600 hover:bg-green-700 shadow-[0_4px_14px_0_rgba(22,163,74,0.39)]",
+        };
+      case "warning":
+        return {
+          icon: <AlertTriangle className="w-8 h-8" />,
+          bgPulse: "bg-amber-100",
+          bgIcon: "bg-amber-50 text-amber-600",
+          btnClass: "bg-amber-500 hover:bg-amber-600 shadow-[0_4px_14px_0_rgba(245,158,11,0.39)]",
+        };
+      case "info":
+        return {
+          icon: <Info className="w-8 h-8" />,
+          bgPulse: "bg-blue-100",
+          bgIcon: "bg-blue-50 text-blue-600",
+          btnClass: "bg-blue-600 hover:bg-blue-700 shadow-[0_4px_14px_0_rgba(37,99,235,0.39)]",
+        };
+      case "danger":
+      default:
+        return {
+          icon: <AlertTriangle className="w-8 h-8" />,
+          bgPulse: "bg-red-100",
+          bgIcon: "bg-red-50 text-red-600",
+          btnClass: "bg-red-600 hover:bg-red-700 shadow-[0_4px_14px_0_rgba(220,38,38,0.39)]",
+        };
+    }
+  };
+
+  const styles = getVariantStyles();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -46,9 +84,9 @@ export default function ConfirmModal({
         <div className="flex flex-col items-center text-center">
           {/* Warning Icon with pulse effect */}
           <div className="relative mb-6">
-            <div className="absolute inset-0 bg-red-100 rounded-full animate-ping opacity-75"></div>
-            <div className="relative bg-red-50 text-red-600 w-16 h-16 rounded-full flex items-center justify-center border-4 border-white shadow-sm">
-              <AlertTriangle className="w-8 h-8" />
+            <div className={`absolute inset-0 rounded-full animate-ping opacity-75 ${styles.bgPulse}`}></div>
+            <div className={`relative w-16 h-16 rounded-full flex items-center justify-center border-4 border-white shadow-sm ${styles.bgIcon}`}>
+              {styles.icon}
             </div>
           </div>
 
@@ -70,7 +108,7 @@ export default function ConfirmModal({
             <button
               onClick={onConfirm}
               disabled={isLoading}
-              className="flex-1 px-4 py-3 rounded-xl border border-transparent text-white font-bold bg-red-600 hover:bg-red-700 shadow-[0_4px_14px_0_rgba(220,38,38,0.39)] transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0 flex items-center justify-center gap-2"
+              className={`flex-1 px-4 py-3 rounded-xl border border-transparent text-white font-bold transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0 flex items-center justify-center gap-2 ${styles.btnClass}`}
             >
               {isLoading ? (
                 <>

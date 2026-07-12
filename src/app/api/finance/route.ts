@@ -16,8 +16,18 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const branchFilter = await getActiveBranchFilter();
     
-    // Use the active branch filter, or fallback to query param if super admin
-    const branch = branchFilter || searchParams.get("branch");
+    let branch: string | null = null;
+    if (session.role === "SUPER_ADMIN" || session.role === "INVESTOR") {
+      if (searchParams.has("branch")) {
+        const queryBranch = searchParams.get("branch");
+        branch = (queryBranch === "ALL" || queryBranch === "") ? null : queryBranch;
+      } else {
+        branch = branchFilter;
+      }
+    } else {
+      branch = session.branchId;
+    }
+
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
 

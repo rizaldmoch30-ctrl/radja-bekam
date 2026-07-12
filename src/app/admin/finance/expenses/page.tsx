@@ -146,7 +146,7 @@ export default function AdminExpensesPage() {
     try {
       const { startDate, endDate } = getDateRange();
       const params = new URLSearchParams();
-      if (filterBranch) params.append("branch", filterBranch);
+      params.append("branch", filterBranch || "ALL");
       if (startDate) params.append("startDate", startDate);
       if (endDate) params.append("endDate", endDate);
 

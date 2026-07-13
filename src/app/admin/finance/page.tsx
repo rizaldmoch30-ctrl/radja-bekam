@@ -508,6 +508,7 @@ export default function AdminFinancePage() {
                 <div className="h-full flex items-center justify-center text-gray-400">Belum ada data untuk dirender grafik</div>
               )}
             </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
               <h3 className="text-lg font-semibold mb-6 flex items-center gap-2"><PieChart className="w-5 h-5 text-gray-400" /> Proporsi Pemasukan</h3>

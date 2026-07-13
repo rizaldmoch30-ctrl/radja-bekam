@@ -80,6 +80,17 @@ export default function AdminVisitsPage() {
   const [filterDate, setFilterDate] = useState("");
   const [tableDensity, setTableDensity] = useState<"compact" | "comfortable" | "large">("comfortable");
   
+  // Helper for local date string (YYYY-MM-DD)
+  const getLocalDateString = useCallback(() => {
+    const today = new Date();
+    return today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+  }, []);
+
+  // Set default filter date to today on mount
+  useEffect(() => {
+    setFilterDate(getLocalDateString());
+  }, [getLocalDateString]);
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -1356,7 +1367,7 @@ export default function AdminVisitsPage() {
               <div className="grid grid-cols-4 gap-y-5 gap-x-2">
                 {[
                   { name: "Tambah", icon: Plus, action: handleOpenNewVisit, color: "text-blue-500", badge: "" },
-                  { name: "Hari Ini", icon: CalendarCheck, action: () => { setFilterDate(new Date().toISOString().split("T")[0]); handleTabChange("list"); }, color: "text-blue-500", badge: "New" },
+                  { name: "Hari Ini", icon: CalendarCheck, action: () => { setFilterDate(getLocalDateString()); handleTabChange("list"); }, color: "text-blue-500", badge: "New" },
                   { name: "Selesai", icon: CheckCircle2, action: () => handleTabChange("list"), color: "text-blue-500", badge: "" },
                   { name: "Batal", icon: Trash2, action: () => handleTabChange("list"), color: "text-red-500", badge: "" },
                   { name: "Laporan", icon: FileText, action: () => handleTabChange("recap"), color: "text-orange-500", badge: "" },
@@ -1383,8 +1394,8 @@ export default function AdminVisitsPage() {
           {/* Mobile Tabs */}
           <div className="flex bg-white px-2 border-b border-gray-100 rounded-t-2xl">
             <button 
-              onClick={() => { setActiveTab("list"); setFilterDate(new Date().toISOString().split("T")[0]); }}
-              className={`flex-1 py-3 text-[13px] font-bold text-center border-b-[3px] transition-colors ${filterDate === new Date().toISOString().split("T")[0] && activeTab === "list" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500"}`}
+              onClick={() => { setActiveTab("list"); setFilterDate(getLocalDateString()); }}
+              className={`flex-1 py-3 text-[13px] font-bold text-center border-b-[3px] transition-colors ${filterDate === getLocalDateString() && activeTab === "list" ? "border-blue-500 text-blue-600" : "border-transparent text-gray-500"}`}
             >
               Hari Ini
             </button>

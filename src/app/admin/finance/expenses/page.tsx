@@ -50,6 +50,7 @@ export default function AdminExpensesPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [branches, setBranches] = useState<any[]>([]);
+  const [session, setSession] = useState<any>(null);
   
   // Filters
   const [filterBranch, setFilterBranch] = useState("");
@@ -103,8 +104,19 @@ export default function AdminExpensesPage() {
       }
     };
     
+    const fetchSession = async () => {
+      try {
+        const res = await fetch("/api/auth/session");
+        if (res.ok) {
+          const json = await res.json();
+          setSession(json.session);
+        }
+      } catch (err) {}
+    };
+
     fetchCategories();
     fetchBranches();
+    fetchSession();
   }, []);
 
   const getDateRange = () => {
@@ -311,7 +323,8 @@ export default function AdminExpensesPage() {
 
               <button 
                 onClick={() => {
-                  setFormData({ type: "EXPENSE", category: expenseCategories[0], amount: 0, description: "", branchId: filterBranch, paymentMethod: "CASH", attachmentUrl: "" });
+                  const defaultBranchId = (session?.role !== "SUPER_ADMIN" && session?.role !== "INVESTOR") ? session?.branchId : filterBranch;
+                  setFormData({ type: "EXPENSE", category: expenseCategories[0] || "", amount: 0, description: "", branchId: defaultBranchId || "", paymentMethod: "CASH", attachmentUrl: "" });
                   setIsFormOpen(true);
                 }}
                 className="bg-white text-blue-900 hover:bg-gray-50 px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-black/10 transition-all active:scale-95"
@@ -375,7 +388,8 @@ export default function AdminExpensesPage() {
                     onChange={e => {
                       setFormData({...formData, branchId: e.target.value});
                     }} 
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                    disabled={session?.role !== "SUPER_ADMIN" && session?.role !== "INVESTOR"}
+                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <option value="">Pusat / Tidak Spesifik</option>
                     {branches.map((b) => (

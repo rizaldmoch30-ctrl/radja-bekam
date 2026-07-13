@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { therapists, patientVisits, patients, services, therapistCommissions } from "@/lib/db/schema";
+import { therapists, patientVisits, patients, services, therapistCommissions, therapistServiceCommissions } from "@/lib/db/schema";
 import { eq, and, gte, lte } from "drizzle-orm";
 import { getSession, checkBranchAccess, getActiveBranchFilter } from "@/lib/auth";
 
@@ -71,6 +71,7 @@ export async function GET(
         patientName: patients.name,
         serviceName: services.name,
         servicePrice: services.price,
+        serviceId: patientVisits.serviceId,
         commissionAmount: therapistCommissions.amount,
         commissionStatus: therapistCommissions.status,
       })
@@ -80,11 +81,35 @@ export async function GET(
       .leftJoin(therapistCommissions, eq(patientVisits.id, therapistCommissions.visitId))
       .where(and(...visitConditions));
 
+    // Fetch custom commissions for fallback
+    const customCommissions = await db
+      .select()
+      .from(therapistServiceCommissions)
+      .where(eq(therapistServiceCommissions.therapistId, id));
+
+    const commissionMap = new Map<string, number>();
+    for (const cc of customCommissions) {
+      if (cc.commissionAmount !== null) {
+        commissionMap.set(cc.serviceId, cc.commissionAmount);
+      }
+    }
+
     // Group visits by date, time, and patient to avoid duplicate rows for multiple services
     const groupedVisits = new Map<string, any>();
     
     for (const v of visits) {
       const key = `${v.visitDate}_${v.visitTime}_${v.patientName}`;
+      
+      // Calculate missing commission dynamically if it's null
+      let actualCommission = v.commissionAmount;
+      if (actualCommission === null || actualCommission === undefined) {
+        if (commissionMap.has(v.serviceId)) {
+          actualCommission = commissionMap.get(v.serviceId);
+        } else {
+          actualCommission = therapist.commissionRate || 0;
+        }
+      }
+
       if (groupedVisits.has(key)) {
         const existing = groupedVisits.get(key);
         
@@ -92,18 +117,22 @@ export async function GET(
         if (!existing.visitedIds.has(v.id)) {
           existing.serviceName += `, ${v.serviceName}`;
           existing.servicePrice = (existing.servicePrice || 0) + (v.servicePrice || 0);
+          
+          // Add dynamically calculated commission for this new service
+          existing.commissionAmount = (existing.commissionAmount || 0) + (actualCommission || 0);
+          
           existing.visitedIds.add(v.id);
+        } else if (v.commissionAmount !== null) {
+          // If it's the SAME visitId but DIFFERENT commission rows from DB (due to leftJoin)
+          existing.commissionAmount = (existing.commissionAmount || 0) + (v.commissionAmount || 0);
         }
-        
-        // Add up commissions (they are distinct rows from therapistCommissions join)
-        existing.commissionAmount = (existing.commissionAmount || 0) + (v.commissionAmount || 0);
         
         // Use "in_progress" if any part of the visit is still in progress
         if (v.status === "in_progress") {
           existing.status = "in_progress";
         }
       } else {
-        const newGroup = { ...v, visitedIds: new Set([v.id]) };
+        const newGroup = { ...v, commissionAmount: actualCommission, visitedIds: new Set([v.id]) };
         groupedVisits.set(key, newGroup);
       }
     }

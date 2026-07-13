@@ -512,7 +512,7 @@ export default function AdminFinancePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
               <h3 className="text-lg font-semibold mb-6 flex items-center gap-2"><PieChart className="w-5 h-5 text-gray-400" /> Proporsi Pemasukan</h3>
-              <div className="min-h-[400px] h-auto w-full">
+              <div className="h-[450px] w-full">
                 {pieData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <PieChart>
@@ -547,7 +547,7 @@ export default function AdminFinancePage() {
             
             <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
               <h3 className="text-lg font-semibold mb-6 flex items-center gap-2"><TrendingDown className="w-5 h-5 text-gray-400" /> Proporsi Pengeluaran</h3>
-              <div className="min-h-[400px] h-auto w-full">
+              <div className="h-[450px] w-full">
                 {expensePieData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                     <PieChart>

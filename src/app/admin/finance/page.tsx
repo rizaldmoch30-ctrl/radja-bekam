@@ -328,6 +328,14 @@ export default function AdminFinancePage() {
     return Object.entries(categoriesMap).map(([name, value]) => ({ name, value }));
   }, [transactions]);
 
+  const expensePieData = useMemo(() => {
+    const categoriesMap: Record<string, number> = {};
+    transactions.filter(t => t.type === "EXPENSE").forEach(t => {
+      categoriesMap[t.category] = (categoriesMap[t.category] || 0) + t.amount;
+    });
+    return Object.entries(categoriesMap).map(([name, value]) => ({ name, value }));
+  }, [transactions]);
+
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -453,8 +461,8 @@ export default function AdminFinancePage() {
         </div>
 
         {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm lg:col-span-2">
+        <div className="flex flex-col gap-6 mb-8">
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm w-full">
             <h3 className="text-lg font-semibold mb-6 flex items-center gap-2"><TrendingUp className="w-5 h-5 text-gray-400" /> Tren Keuangan</h3>
             <div className="h-72 w-full">
               {chartData.length > 0 ? (
@@ -500,40 +508,75 @@ export default function AdminFinancePage() {
                 <div className="h-full flex items-center justify-center text-gray-400">Belum ada data untuk dirender grafik</div>
               )}
             </div>
-          </div>
-          
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <h3 className="text-lg font-semibold mb-6 flex items-center gap-2"><PieChart className="w-5 h-5 text-gray-400" /> Proporsi Pemasukan</h3>
-            <div className="h-64 w-full">
-              {pieData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={65}
-                      outerRadius={85}
-                      paddingAngle={4}
-                      dataKey="value"
-                      stroke="none"
-                      cornerRadius={6}
-                    >
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} style={{ filter: 'drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.1))' }} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value: any) => formatRupiah(Number(value))}
-                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                      itemStyle={{ fontWeight: 600 }}
-                    />
-                    <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-gray-400 text-sm text-center">Belum ada data<br/>pemasukan</div>
-              )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+              <h3 className="text-lg font-semibold mb-6 flex items-center gap-2"><PieChart className="w-5 h-5 text-gray-400" /> Proporsi Pemasukan</h3>
+              <div className="h-64 w-full">
+                {pieData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={65}
+                        outerRadius={85}
+                        paddingAngle={4}
+                        dataKey="value"
+                        stroke="none"
+                        cornerRadius={6}
+                      >
+                        {pieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} style={{ filter: 'drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.1))' }} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        formatter={(value: any) => formatRupiah(Number(value))}
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                        itemStyle={{ fontWeight: 600 }}
+                      />
+                      <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-gray-400 text-sm text-center">Belum ada data<br/>pemasukan</div>
+                )}
+              </div>
+            </div>
+            
+            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+              <h3 className="text-lg font-semibold mb-6 flex items-center gap-2"><TrendingDown className="w-5 h-5 text-gray-400" /> Proporsi Pengeluaran</h3>
+              <div className="h-64 w-full">
+                {expensePieData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                    <PieChart>
+                      <Pie
+                        data={expensePieData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={65}
+                        outerRadius={85}
+                        paddingAngle={4}
+                        dataKey="value"
+                        stroke="none"
+                        cornerRadius={6}
+                      >
+                        {expensePieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[(index + 3) % COLORS.length]} style={{ filter: 'drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.1))' }} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        formatter={(value: any) => formatRupiah(Number(value))}
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                        itemStyle={{ fontWeight: 600 }}
+                      />
+                      <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-gray-400 text-sm text-center">Belum ada data<br/>pengeluaran</div>
+                )}
+              </div>
             </div>
           </div>
         </div>

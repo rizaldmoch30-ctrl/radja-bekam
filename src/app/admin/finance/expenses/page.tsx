@@ -342,8 +342,35 @@ export default function AdminExpensesPage() {
           }
         />
 
-        {/* Charts and Cards removed from expenses page */}
-
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 mt-2">
+          <div className="bg-gradient-to-br from-red-500 to-rose-600 rounded-2xl shadow-lg p-6 text-white relative overflow-hidden group hover:shadow-xl transition-all">
+            <div className="absolute right-0 top-0 opacity-10 p-4 group-hover:scale-110 transition-transform">
+              <TrendingDown className="h-32 w-32" />
+            </div>
+            <div className="flex items-center gap-2 text-red-100 font-medium mb-2 relative z-10">
+              <div className="p-2 bg-white/20 rounded-lg text-white backdrop-blur-sm">
+                <Wallet className="h-5 w-5" />
+              </div>
+              Total Pengeluaran (Sesuai Filter)
+            </div>
+            <div className="text-4xl font-bold relative z-10">
+              {formatRupiah(totalExpense)}
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-md p-6 relative overflow-hidden group hover:shadow-lg transition-all flex flex-col justify-center">
+            <div className="flex items-center gap-2 text-gray-500 font-medium mb-2">
+              <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                <Calendar className="h-5 w-5" />
+              </div>
+              Total Transaksi
+            </div>
+            <div className="text-3xl font-bold text-gray-800">
+              {transactions.filter(t => t.type === "EXPENSE").length} <span className="text-base font-normal text-gray-500">transaksi</span>
+            </div>
+          </div>
+        </div>
         {/* Transaction Form Modal */}
         {isFormOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">

@@ -81,16 +81,22 @@ export async function GET(
       .leftJoin(therapistCommissions, eq(patientVisits.id, therapistCommissions.visitId))
       .where(and(...visitConditions));
 
-    // Fetch custom commissions for fallback
-    const customCommissions = await db
+    // Fetch all custom commissions for fallback
+    const allCustomCommissions = await db
       .select()
-      .from(therapistServiceCommissions)
-      .where(eq(therapistServiceCommissions.therapistId, id));
+      .from(therapistServiceCommissions);
 
-    const commissionMap = new Map<string, number>();
-    for (const cc of customCommissions) {
+    const therapistCommissionMap = new Map<string, number>();
+    const globalCommissionMap = new Map<string, number>();
+
+    for (const cc of allCustomCommissions) {
       if (cc.commissionAmount !== null) {
-        commissionMap.set(cc.serviceId, cc.commissionAmount);
+        if (cc.therapistId === id) {
+          therapistCommissionMap.set(cc.serviceId, cc.commissionAmount);
+        }
+        if (!globalCommissionMap.has(cc.serviceId)) {
+          globalCommissionMap.set(cc.serviceId, cc.commissionAmount);
+        }
       }
     }
 
@@ -103,8 +109,10 @@ export async function GET(
       // Calculate missing commission dynamically if it's null
       let actualCommission = v.commissionAmount;
       if (actualCommission === null || actualCommission === undefined) {
-        if (commissionMap.has(v.serviceId)) {
-          actualCommission = commissionMap.get(v.serviceId);
+        if (therapistCommissionMap.has(v.serviceId)) {
+          actualCommission = therapistCommissionMap.get(v.serviceId);
+        } else if (globalCommissionMap.has(v.serviceId)) {
+          actualCommission = globalCommissionMap.get(v.serviceId);
         } else {
           actualCommission = therapist.commissionRate || 0;
         }

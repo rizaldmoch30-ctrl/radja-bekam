@@ -315,6 +315,16 @@ export async function POST(request: Request) {
             let commissionAmount = therapist.commissionRate || 0;
             if (customOverride.length > 0 && customOverride[0].commissionAmount !== null) {
               commissionAmount = customOverride[0].commissionAmount * (item.qty || 1);
+            } else {
+              // Fallback to global commission
+              const globalComm = await db
+                .select({ amount: therapistServiceCommissions.commissionAmount })
+                .from(therapistServiceCommissions)
+                .where(eq(therapistServiceCommissions.serviceId, serviceId))
+                .limit(1);
+              if (globalComm.length > 0 && globalComm[0].amount !== null) {
+                commissionAmount = globalComm[0].amount * (item.qty || 1);
+              }
             }
   
             if (commissionAmount > 0) {

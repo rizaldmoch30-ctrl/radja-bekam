@@ -104,6 +104,16 @@ export async function POST(
           let commissionAmount = therapist.commissionRate || 0;
           if (customOverride.length > 0 && customOverride[0].commissionAmount !== null) {
             commissionAmount = customOverride[0].commissionAmount;
+          } else {
+            // Fallback to global commission
+            const globalComm = await db
+              .select({ amount: therapistServiceCommissions.commissionAmount })
+              .from(therapistServiceCommissions)
+              .where(eq(therapistServiceCommissions.serviceId, visit.serviceId))
+              .limit(1);
+            if (globalComm.length > 0 && globalComm[0].amount !== null) {
+              commissionAmount = globalComm[0].amount;
+            }
           }
 
           if (commissionAmount > 0) {

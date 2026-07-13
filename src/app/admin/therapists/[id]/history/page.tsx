@@ -141,7 +141,7 @@ export default function TherapistHistoryPage({ params }: { params: Promise<{ id:
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-teal-500 to-emerald-600 p-5 rounded-2xl shadow-[0_4px_20px_-4px_rgba(16,185,129,0.4)] flex flex-col justify-between text-white relative overflow-hidden group">
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-5 rounded-2xl shadow-[0_4px_20px_-4px_rgba(59,130,246,0.4)] flex flex-col justify-between text-white relative overflow-hidden group">
                 <div className="absolute right-0 bottom-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mb-10 group-hover:scale-125 transition-transform duration-500 ease-out z-0"></div>
                 <div className="absolute left-10 top-2 w-16 h-16 bg-white/10 rounded-full group-hover:-translate-y-4 transition-transform duration-500 ease-out z-0"></div>
                 
@@ -150,8 +150,8 @@ export default function TherapistHistoryPage({ params }: { params: Promise<{ id:
                     <DollarSign className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-teal-50 text-xs font-bold uppercase tracking-wider">Estimasi Komisi</h3>
-                    <p className="text-xs font-medium text-teal-100/80">Belum termasuk gaji pokok</p>
+                    <h3 className="text-blue-50 text-xs font-bold uppercase tracking-wider">Estimasi Komisi</h3>
+                    <p className="text-xs font-medium text-blue-100/80">Belum termasuk gaji pokok</p>
                   </div>
                 </div>
                 <div className="mt-2 relative z-10">
@@ -163,7 +163,7 @@ export default function TherapistHistoryPage({ params }: { params: Promise<{ id:
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
                 <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-teal-600" />
+                  <Activity className="w-4 h-4 text-blue-600" />
                   Rincian Penanganan Pasien
                 </h3>
                 <div className="text-xs font-medium text-gray-500 bg-white px-3 py-1 rounded-lg border border-gray-200 shadow-sm">
@@ -195,7 +195,7 @@ export default function TherapistHistoryPage({ params }: { params: Promise<{ id:
                       </tr>
                     ) : (
                       data.map((visit) => (
-                        <tr key={visit.id} className="hover:bg-teal-50/30 transition-colors">
+                        <tr key={visit.id} className="hover:bg-blue-50/30 transition-colors">
                           <td className="px-6 py-4">
                             <div className="font-semibold text-gray-900">
                               {new Date(visit.visitDate).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
@@ -216,7 +216,7 @@ export default function TherapistHistoryPage({ params }: { params: Promise<{ id:
                           </td>
                           <td className="px-6 py-4 text-right">
                             {visit.commissionAmount > 0 ? (
-                              <div className="font-black text-teal-600">+{formatRupiah(visit.commissionAmount)}</div>
+                              <div className="font-black text-blue-600">+{formatRupiah(visit.commissionAmount)}</div>
                             ) : (
                               <div className="font-medium text-gray-400">-</div>
                             )}
@@ -239,7 +239,7 @@ export default function TherapistHistoryPage({ params }: { params: Promise<{ id:
 
         {loading && (
           <div className="flex flex-col items-center justify-center py-20">
-            <div className="w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
             <p className="text-gray-500 font-medium">Memuat data histori pasien...</p>
           </div>
         )}

@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { TrendingUp, TrendingDown, Users, Target, Save, Edit2, Calendar, Wallet, Package, Activity, Inbox, WalletCards, ArrowRight, LayoutDashboard, Sparkles, Bell, Eye, EyeOff, ChevronRight, Clock, Flame, Receipt, BookOpen, CalendarCheck, Settings, Star } from "lucide-react";
+import { TrendingUp, TrendingDown, Users, Target, Save, Edit2, Calendar, Wallet, Package, Activity, Inbox, WalletCards, ArrowRight, LayoutDashboard, Sparkles, Bell, Eye, EyeOff, ChevronRight, Clock, Flame, Receipt, BookOpen, CalendarCheck, Settings, Star, MapPin, Check, ChevronDown } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import ReactMarkdown from "react-markdown";
 const formatRupiah = (amount: number) => {
@@ -107,6 +107,7 @@ export default function AdminDashboard() {
   const [session, setSession] = useState<any>(null);
   const [branches, setBranches] = useState<any[]>([]);
   const [filterBranch, setFilterBranch] = useState("");
+  const [isBranchDropdownOpen, setIsBranchDropdownOpen] = useState(false);
 
   const [targetIncome, setTargetIncome] = useState(0);
   const [targetVisits, setTargetVisits] = useState(0);
@@ -230,6 +231,81 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleDashboardBranchChange = (value: string) => {
+    setFilterBranch(value);
+    document.cookie = `radja-bekam-selected-branch=${value}; path=/; max-age=${60 * 60 * 24 * 30}`;
+    setIsBranchDropdownOpen(false);
+  };
+
+  const BranchSelector = () => {
+    if (session?.role !== "SUPER_ADMIN" && session?.role !== "INVESTOR") return null;
+
+    return (
+      <div className="relative z-50">
+        <button
+          onClick={() => setIsBranchDropdownOpen(!isBranchDropdownOpen)}
+          className="flex items-center gap-2 bg-gradient-to-br from-indigo-50 to-blue-50 border border-blue-100 hover:border-blue-300 text-blue-700 px-3.5 py-2 rounded-xl shadow-[0_2px_10px_rgba(59,130,246,0.08)] transition-all group"
+        >
+          <div className="bg-blue-600 rounded-lg p-1 shadow-sm group-hover:scale-105 transition-transform">
+             <MapPin className="w-3.5 h-3.5 text-white" />
+          </div>
+          <span className="text-xs md:text-sm font-bold truncate max-w-[140px] md:max-w-[200px]">
+            {filterBranch === "ALL" || filterBranch === "" 
+              ? "Semua Cabang (Pusat)" 
+              : branches.find(b => b.id === filterBranch)?.name || "Pilih Cabang"}
+          </span>
+          <ChevronDown className={`w-3.5 h-3.5 text-blue-500 transition-transform ${isBranchDropdownOpen ? 'rotate-180' : ''}`} />
+        </button>
+
+        {isBranchDropdownOpen && (
+          <>
+            <div 
+              className="fixed inset-0 z-40" 
+              onClick={() => setIsBranchDropdownOpen(false)} 
+            />
+            <div className="absolute right-0 top-full mt-2 z-50 w-[280px] bg-white/95 backdrop-blur-2xl rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.12)] border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="max-h-[350px] overflow-y-auto custom-scrollbar p-2 space-y-1">
+                <button
+                  onClick={() => handleDashboardBranchChange("ALL")}
+                  className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold flex items-center justify-between transition-colors ${
+                    (filterBranch === "ALL" || filterBranch === "")
+                      ? "bg-blue-600 text-white shadow-md" 
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={`p-1.5 rounded-lg ${(filterBranch === "ALL" || filterBranch === "") ? "bg-white/20" : "bg-gray-200"}`}>
+                       <MapPin className="w-3.5 h-3.5" />
+                    </div>
+                    Semua Cabang (Pusat)
+                  </div>
+                  {(filterBranch === "ALL" || filterBranch === "") && <Check className="w-4 h-4 text-white shrink-0" />}
+                </button>
+                
+                {branches.length > 0 && <div className="h-px bg-gray-100 my-2 mx-2" />}
+                
+                {branches.map(b => (
+                  <button
+                    key={b.id}
+                    onClick={() => handleDashboardBranchChange(b.id)}
+                    className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-between transition-colors ${
+                      filterBranch === b.id 
+                        ? "bg-blue-50 text-blue-700 border border-blue-100 shadow-sm" 
+                        : "text-gray-600 hover:bg-gray-50 border border-transparent"
+                    }`}
+                  >
+                    <span className="truncate pr-2">{b.name}</span>
+                    {filterBranch === b.id && <Check className="w-4 h-4 text-blue-600 shrink-0" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
   const quickLinks = [
     { name: "Keuangan", icon: WalletCards, href: "/admin/finance", color: "text-blue-400", bg: "bg-blue-400/10" },
     { name: "Reservasi", icon: Inbox, href: "/admin/reservations", color: "text-purple-400", bg: "bg-purple-400/10" },
@@ -249,19 +325,25 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
 
         {/* Mobile Header (Seabank Style) - Only visible on Mobile */}
-        <div className="md:hidden flex items-center justify-between mb-4 mt-2">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-[0_4px_10px_rgba(0,0,0,0.05)] border border-gray-100 overflow-hidden p-1.5">
-              <Image src="/logo.png" alt="Radja Bekam Logo" width={36} height={36} className="object-contain" />
+        <div className="md:hidden flex flex-col gap-3 mb-4 mt-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-[0_4px_10px_rgba(0,0,0,0.05)] border border-gray-100 overflow-hidden p-1.5">
+                <Image src="/logo.png" alt="Radja Bekam Logo" width={36} height={36} className="object-contain" />
+              </div>
+              <div>
+                <h2 className="font-bold text-gray-900 text-[15px] leading-tight truncate max-w-[150px]">{session?.name || "Memuat..."}</h2>
+                <p className="text-gray-500 text-[10px] flex items-center gap-1 mt-0.5">Role: Super Admin</p>
+              </div>
             </div>
-            <div>
-              <h2 className="font-bold text-gray-900 text-[15px] leading-tight">Fikri Mochamad R...</h2>
-              <p className="text-gray-500 text-[10px] flex items-center gap-1 mt-0.5">Role: Super Admin <span className="bg-gray-200 px-1.5 py-0.5 rounded-sm">Pst</span></p>
+            <div className="relative p-2 bg-white rounded-full shadow-[0_4px_10px_rgba(0,0,0,0.05)] border border-gray-100">
+              <Bell className="w-5 h-5 text-gray-700" />
+              <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></div>
             </div>
           </div>
-          <div className="relative p-2 bg-white rounded-full shadow-[0_4px_10px_rgba(0,0,0,0.05)] border border-gray-100">
-            <Bell className="w-5 h-5 text-gray-700" />
-            <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></div>
+          {/* Mobile Branch Selector */}
+          <div className="flex justify-start w-full z-50 relative">
+            <BranchSelector />
           </div>
         </div>
 
@@ -272,9 +354,12 @@ export default function AdminDashboard() {
             description={`Selamat datang kembali 👋 • ${new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())}`}
             icon={LayoutDashboard}
             rightContent={
-              <div className="bg-white/80 backdrop-blur-md px-4 py-2 rounded-xl border border-gray-100 shadow-sm flex items-center gap-2">
-                <Clock className="w-4 h-4 text-blue-600" />
-                <span className="text-xs font-bold text-gray-600">Update terakhir: <span className="text-gray-900">{new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB</span></span>
+              <div className="flex items-center gap-3 z-50">
+                <BranchSelector />
+                <div className="bg-white/80 backdrop-blur-md px-4 py-2 rounded-xl border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.03)] flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-blue-600" />
+                  <span className="text-xs font-bold text-gray-600">Update terakhir: <span className="text-gray-900">{new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB</span></span>
+                </div>
               </div>
             }
           />

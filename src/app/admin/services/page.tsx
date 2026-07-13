@@ -51,7 +51,7 @@ export default function AdminServicesPage() {
     setLoading(true);
     try {
       const [res, branchRes, sessionRes] = await Promise.all([
-        fetch(`/api/services?all=true&branchId=${filterBranch}`),
+        fetch(`/api/services?all=false&branchId=${filterBranch}`),
         fetch("/api/branches"),
         fetch("/api/auth/session")
       ]);

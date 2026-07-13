@@ -60,7 +60,6 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    // Instead of hard delete, we do soft delete
     const existing = await db.select().from(services).where(eq(services.id, id)).limit(1);
     if (existing.length === 0) {
       return Response.json({ error: "Layanan tidak ditemukan" }, { status: 404 });
@@ -73,15 +72,27 @@ export async function DELETE(
       }
     }
 
-    const result = await db.delete(services).where(eq(services.id, id)).returning();
+    try {
+      // Attempt hard delete first
+      await db.delete(services).where(eq(services.id, id));
+      await logSystemAction("DELETE_SERVICE", "service", id, `Layanan dihapus permanen: ${existing[0].name}`);
+      return Response.json({ success: true, message: "Layanan berhasil dihapus" });
+    } catch (dbError: any) {
+      // If it fails (likely due to foreign key constraint from patientVisits/reservations),
+      // fallback to soft delete
+      console.warn(`Hard delete failed for service ${id}, falling back to soft delete.`, dbError.message);
+      
+      const result = await db.update(services).set({
+        isActive: false,
+      }).where(eq(services.id, id)).returning();
 
-    if (result.length === 0) {
-      return Response.json({ error: "Layanan tidak ditemukan" }, { status: 404 });
+      if (result.length === 0) {
+        return Response.json({ error: "Layanan tidak ditemukan" }, { status: 404 });
+      }
+
+      await logSystemAction("DELETE_SERVICE", "service", id, `Layanan dinonaktifkan: ${existing[0].name}`);
+      return Response.json({ success: true, message: "Layanan berhasil dihapus (dinonaktifkan karena memiliki riwayat transaksi)" });
     }
-
-    await logSystemAction("DELETE_SERVICE", "service", id, `Layanan dihapus secara permanen: ${existing[0].name}`);
-
-    return Response.json({ success: true, message: "Layanan berhasil dihapus" });
   } catch (error) {
     console.error("DELETE /api/services/[id] error:", error);
     return Response.json({ error: "Gagal menghapus layanan" }, { status: 500 });

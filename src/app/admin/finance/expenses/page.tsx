@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { Plus, Trash2, Wallet, TrendingUp, TrendingDown, DollarSign, Calendar, CreditCard, Download, Settings, X, Link as LinkIcon, BookOpen, Users } from "lucide-react";
+import { Plus, Trash2, Wallet, TrendingUp, TrendingDown, DollarSign, Calendar, CreditCard, Download, Settings, X, Link as LinkIcon, BookOpen, Users, MapPin } from "lucide-react";
 import { SERVICES_LIST, getServicePrice } from "@/lib/pricing";
 import Pagination from "@/components/ui/Pagination";
 import PageHeader from "@/components/layout/PageHeader";
@@ -273,16 +273,23 @@ export default function AdminExpensesPage() {
           icon={TrendingDown}
           rightContent={
             <div className="flex flex-wrap items-center gap-3 mt-4 lg:mt-0">
-              <select
-                value={filterBranch}
-                onChange={(e) => setFilterBranch(e.target.value)}
-                className="bg-white border border-gray-200 text-gray-700 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none appearance-none transition-all cursor-pointer shadow-sm hover:bg-gray-50 font-medium"
-              >
-                <option value="">Semua Cabang</option>
-                {branches.map((b) => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
-                ))}
-              </select>
+              {(session?.role === "SUPER_ADMIN" || session?.role === "INVESTOR") ? (
+                <select
+                  value={filterBranch}
+                  onChange={(e) => setFilterBranch(e.target.value)}
+                  className="bg-white border border-gray-200 text-gray-700 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none appearance-none transition-all cursor-pointer shadow-sm hover:bg-gray-50 font-medium"
+                >
+                  <option value="">Semua Cabang</option>
+                  {branches.map((b) => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="bg-gray-50 border border-gray-200 text-gray-700 rounded-xl px-4 py-2.5 text-sm font-medium flex items-center gap-2 shadow-inner">
+                  <MapPin className="w-4 h-4 text-gray-400" />
+                  {branches.find(b => b.id === session?.branchId)?.name || "Cabang Anda"}
+                </div>
+              )}
               
               <select
                 value={dateFilter}

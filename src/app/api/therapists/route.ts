@@ -60,8 +60,10 @@ export async function GET() {
       .where(and(...commissionsConditions));
 
     const enriched = allTherapists.map(t => {
-      // Pasien ditangani bulan ini
-      const patientsHandled = thisMonthVisits.filter(v => v.therapistId === t.id).length;
+      // Pasien ditangani bulan ini (hindari duplikasi jika 1 pasien ambil banyak layanan di waktu sama)
+      const tVisits = thisMonthVisits.filter(v => v.therapistId === t.id);
+      const uniqueVisits = new Set(tVisits.map(v => `${v.visitDate}_${v.visitTime}_${v.patientId}`));
+      const patientsHandled = uniqueVisits.size;
       // Total komisi bulan ini
       const totalCommission = thisMonthCommissions
         .filter(c => c.therapistId === t.id)

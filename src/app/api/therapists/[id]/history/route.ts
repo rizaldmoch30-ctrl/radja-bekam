@@ -87,10 +87,15 @@ export async function GET(
       const key = `${v.visitDate}_${v.visitTime}_${v.patientName}`;
       if (groupedVisits.has(key)) {
         const existing = groupedVisits.get(key);
-        // Combine service names
-        existing.serviceName += `, ${v.serviceName}`;
-        // Add up prices and commissions
-        existing.servicePrice = (existing.servicePrice || 0) + (v.servicePrice || 0);
+        
+        // Ensure we don't add the same patientVisit's service and price multiple times
+        if (!existing.visitedIds.has(v.id)) {
+          existing.serviceName += `, ${v.serviceName}`;
+          existing.servicePrice = (existing.servicePrice || 0) + (v.servicePrice || 0);
+          existing.visitedIds.add(v.id);
+        }
+        
+        // Add up commissions (they are distinct rows from therapistCommissions join)
         existing.commissionAmount = (existing.commissionAmount || 0) + (v.commissionAmount || 0);
         
         // Use "in_progress" if any part of the visit is still in progress
@@ -98,7 +103,8 @@ export async function GET(
           existing.status = "in_progress";
         }
       } else {
-        groupedVisits.set(key, { ...v });
+        const newGroup = { ...v, visitedIds: new Set([v.id]) };
+        groupedVisits.set(key, newGroup);
       }
     }
     

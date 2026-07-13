@@ -92,7 +92,12 @@ export async function POST(
     const actualCommissions = commissionLogs.reduce((sum, c) => sum + c.amount, 0);
 
     const treatmentLogs = await db
-      .select({ id: patientVisits.id })
+      .select({ 
+        id: patientVisits.id,
+        visitDate: patientVisits.visitDate,
+        visitTime: patientVisits.visitTime,
+        patientId: patientVisits.patientId,
+      })
       .from(patientVisits)
       .where(
         and(
@@ -101,7 +106,8 @@ export async function POST(
           like(patientVisits.visitDate, `${report.month}%`)
         )
       );
-    const actualTreatments = treatmentLogs.length;
+    const uniqueVisits = new Set(treatmentLogs.map(v => `${v.visitDate}_${v.visitTime}_${v.patientId}`));
+    const actualTreatments = uniqueVisits.size;
 
     const actualTakeHomePay = report.baseSalary + actualCommissions + report.allowances + report.bonuses - report.deductions;
 

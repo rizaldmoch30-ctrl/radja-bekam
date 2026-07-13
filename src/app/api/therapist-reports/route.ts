@@ -80,7 +80,12 @@ export async function GET(request: Request) {
       );
 
     const allMonthVisits = await db
-      .select({ therapistId: patientVisits.therapistId })
+      .select({ 
+        therapistId: patientVisits.therapistId,
+        visitDate: patientVisits.visitDate,
+        visitTime: patientVisits.visitTime,
+        patientId: patientVisits.patientId,
+      })
       .from(patientVisits)
       .where(
         and(
@@ -97,7 +102,10 @@ export async function GET(request: Request) {
         const actualCommissions = allMonthCommissions
           .filter(c => c.therapistId === t.id)
           .reduce((sum, c) => sum + c.amount, 0);
-        const actualTreatments = allMonthVisits.filter(v => v.therapistId === t.id).length;
+          
+        const tVisits = allMonthVisits.filter(v => v.therapistId === t.id);
+        const uniqueVisits = new Set(tVisits.map(v => `${v.visitDate}_${v.visitTime}_${v.patientId}`));
+        const actualTreatments = uniqueVisits.size;
 
         const saved = savedReportsMap.get(t.id);
         if (saved) {

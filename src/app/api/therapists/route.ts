@@ -100,22 +100,26 @@ export async function GET() {
              } else if (v.commissionAmount !== null) {
                  existing.commissionAmount = (existing.commissionAmount || 0) + (v.commissionAmount || 0);
              }
+             if (v.status === "in_progress") {
+                 existing.status = "in_progress";
+             }
          } else {
              groupedVisits.set(key, {
                  commissionAmount: actualCommission,
-                 visitedIds: new Set([v.id])
+                 visitedIds: new Set([v.id]),
+                 status: v.status
              });
          }
       }
       
-      // patientsHandled should be unique COMPLETED visits where t.id is the main therapist
-      const mainCompletedVisits = relevantRows.filter(v => v.mainTherapistId === t.id && v.status === "completed");
-      const uniqueVisits = new Set(mainCompletedVisits.map(v => `${v.visitDate}_${v.visitTime}_${v.patientId}`));
-      const patientsHandled = uniqueVisits.size;
-      
+      // patientsHandled should be number of completed groups (matches history page logic)
+      let patientsHandled = 0;
       let totalCommission = 0;
       for (const group of groupedVisits.values()) {
          totalCommission += (group.commissionAmount || 0);
+         if (group.status === "completed") {
+             patientsHandled++;
+         }
       }
 
       return { ...t, patientsHandled, totalCommission };

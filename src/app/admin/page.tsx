@@ -106,7 +106,7 @@ export default function AdminDashboard() {
   
   const [session, setSession] = useState<any>(null);
   const [branches, setBranches] = useState<any[]>([]);
-  const [filterBranch, setFilterBranch] = useState("ALL");
+  const [filterBranch, setFilterBranch] = useState("");
 
   const [targetIncome, setTargetIncome] = useState(0);
   const [targetVisits, setTargetVisits] = useState(0);
@@ -200,7 +200,15 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    fetchData();
+    const match = document.cookie.match(new RegExp('(^| )radja-bekam-selected-branch=([^;]+)'));
+    const currentBranch = match ? match[2] : "ALL";
+    setFilterBranch(currentBranch);
+  }, []);
+
+  useEffect(() => {
+    if (filterBranch) {
+      fetchData();
+    }
   }, [month, filterBranch]);
 
   const handleSaveTarget = async (e: React.FormEvent) => {

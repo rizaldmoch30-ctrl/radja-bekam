@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { therapists, patientVisits, therapistCommissions } from "@/lib/db/schema";
+import { therapists, patientVisits, therapistCommissions, therapistServiceCommissions } from "@/lib/db/schema";
 import { eq, desc, and, like } from "drizzle-orm";
 import { getSession, getActiveBranchFilter } from "@/lib/auth";
 
@@ -28,46 +28,96 @@ export async function GET() {
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
-    // Ambil semua kunjungan bulan ini (untuk patientsHandled)
+    // Ambil semua kunjungan bulan ini (untuk patientsHandled dan komisi)
     const visitsConditions: any[] = [
-      eq(patientVisits.status, "completed"),
       like(patientVisits.visitDate, `${currentMonth}%`),
     ];
     if (branchFilter) {
       visitsConditions.push(eq(patientVisits.branchId, branchFilter));
     }
-    const thisMonthVisits = await db
-      .select()
+    const allVisitsWithCommissions = await db
+      .select({
+        id: patientVisits.id,
+        visitDate: patientVisits.visitDate,
+        visitTime: patientVisits.visitTime,
+        patientId: patientVisits.patientId,
+        serviceId: patientVisits.serviceId,
+        status: patientVisits.status,
+        mainTherapistId: patientVisits.therapistId,
+        commissionAmount: therapistCommissions.amount,
+        commissionTherapistId: therapistCommissions.therapistId,
+      })
       .from(patientVisits)
+      .leftJoin(therapistCommissions, eq(patientVisits.id, therapistCommissions.visitId))
       .where(and(...visitsConditions));
 
-    const commissionsConditions: any[] = [
-      like(patientVisits.visitDate, `${currentMonth}%`)
-    ];
-    if (branchFilter) {
-      commissionsConditions.push(eq(patientVisits.branchId, branchFilter));
-    }
-
-    // Ambil semua komisi bulan ini dari tabel therapistCommissions (join ke patientVisits untuk filter tanggal)
-    const thisMonthCommissions = await db
-      .select({
-        therapistId: therapistCommissions.therapistId,
-        amount: therapistCommissions.amount,
-        visitDate: patientVisits.visitDate,
-      })
-      .from(therapistCommissions)
-      .innerJoin(patientVisits, eq(therapistCommissions.visitId, patientVisits.id))
-      .where(and(...commissionsConditions));
+    const allCustomCommissions = await db.select().from(therapistServiceCommissions);
 
     const enriched = allTherapists.map(t => {
-      // Pasien ditangani bulan ini (hindari duplikasi jika 1 pasien ambil banyak layanan di waktu sama)
-      const tVisits = thisMonthVisits.filter(v => v.therapistId === t.id);
-      const uniqueVisits = new Set(tVisits.map(v => `${v.visitDate}_${v.visitTime}_${v.patientId}`));
+      // Find all rows relevant to this therapist
+      const relevantRows = allVisitsWithCommissions.filter(v => v.mainTherapistId === t.id || v.commissionTherapistId === t.id);
+      
+      const therapistCommissionMap = new Map<string, number>();
+      const globalCommissionMap = new Map<string, number>();
+      
+      for (const cc of allCustomCommissions) {
+        if (cc.commissionAmount !== null) {
+          if (cc.therapistId === t.id) {
+            therapistCommissionMap.set(cc.serviceId, cc.commissionAmount);
+          }
+          if (!globalCommissionMap.has(cc.serviceId)) {
+            globalCommissionMap.set(cc.serviceId, cc.commissionAmount);
+          }
+        }
+      }
+
+      const groupedVisits = new Map<string, any>();
+      
+      for (const v of relevantRows) {
+         if (v.commissionTherapistId !== null && v.commissionTherapistId !== t.id) {
+            continue; // commission belongs to someone else
+         }
+
+         let actualCommission = v.commissionAmount;
+         if (actualCommission === null || actualCommission === undefined) {
+             if (v.mainTherapistId !== t.id) continue;
+             
+             if (therapistCommissionMap.has(v.serviceId)) {
+                 actualCommission = therapistCommissionMap.get(v.serviceId)!;
+             } else if (globalCommissionMap.has(v.serviceId)) {
+                 actualCommission = globalCommissionMap.get(v.serviceId)!;
+             } else {
+                 actualCommission = t.commissionRate || 0;
+             }
+         }
+
+         const key = `${v.visitDate}_${v.visitTime}_${v.patientId}`;
+         if (groupedVisits.has(key)) {
+             const existing = groupedVisits.get(key);
+             if (!existing.visitedIds.has(v.id)) {
+                 existing.commissionAmount = (existing.commissionAmount || 0) + (actualCommission || 0);
+                 existing.visitedIds.add(v.id);
+             } else if (v.commissionAmount !== null) {
+                 existing.commissionAmount = (existing.commissionAmount || 0) + (v.commissionAmount || 0);
+             }
+         } else {
+             groupedVisits.set(key, {
+                 commissionAmount: actualCommission,
+                 visitedIds: new Set([v.id])
+             });
+         }
+      }
+      
+      // patientsHandled should be unique COMPLETED visits where t.id is the main therapist
+      const mainCompletedVisits = relevantRows.filter(v => v.mainTherapistId === t.id && v.status === "completed");
+      const uniqueVisits = new Set(mainCompletedVisits.map(v => `${v.visitDate}_${v.visitTime}_${v.patientId}`));
       const patientsHandled = uniqueVisits.size;
-      // Total komisi bulan ini
-      const totalCommission = thisMonthCommissions
-        .filter(c => c.therapistId === t.id)
-        .reduce((sum, c) => sum + c.amount, 0);
+      
+      let totalCommission = 0;
+      for (const group of groupedVisits.values()) {
+         totalCommission += (group.commissionAmount || 0);
+      }
+
       return { ...t, patientsHandled, totalCommission };
     });
 

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { therapists, patientVisits, patients, services, therapistCommissions, therapistServiceCommissions } from "@/lib/db/schema";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { eq, and, gte, lte, or } from "drizzle-orm";
 import { getSession, checkBranchAccess, getActiveBranchFilter } from "@/lib/auth";
 
 export async function GET(
@@ -52,7 +52,6 @@ export async function GET(
     const branchFilter = await getActiveBranchFilter();
     
     const visitConditions: any[] = [
-      eq(patientVisits.therapistId, id),
       gte(patientVisits.visitDate, filterStartDate),
       lte(patientVisits.visitDate, filterEndDate)
     ];
@@ -79,7 +78,13 @@ export async function GET(
       .leftJoin(patients, eq(patientVisits.patientId, patients.id))
       .leftJoin(services, eq(patientVisits.serviceId, services.id))
       .leftJoin(therapistCommissions, eq(patientVisits.id, therapistCommissions.visitId))
-      .where(and(...visitConditions));
+      .where(and(
+        ...visitConditions,
+        or(
+          eq(patientVisits.therapistId, id),
+          eq(therapistCommissions.therapistId, id)
+        )
+      ));
 
     // Fetch all custom commissions for fallback
     const allCustomCommissions = await db
@@ -110,9 +115,9 @@ export async function GET(
       let actualCommission = v.commissionAmount;
       if (actualCommission === null || actualCommission === undefined) {
         if (therapistCommissionMap.has(v.serviceId)) {
-          actualCommission = therapistCommissionMap.get(v.serviceId);
+          actualCommission = therapistCommissionMap.get(v.serviceId) ?? null;
         } else if (globalCommissionMap.has(v.serviceId)) {
-          actualCommission = globalCommissionMap.get(v.serviceId);
+          actualCommission = globalCommissionMap.get(v.serviceId) ?? null;
         } else {
           actualCommission = therapist.commissionRate || 0;
         }

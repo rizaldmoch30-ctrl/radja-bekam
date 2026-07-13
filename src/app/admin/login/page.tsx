@@ -56,7 +56,11 @@ export default function AdminLoginPage() {
         return;
       }
 
-      router.push("/admin");
+      if (data.user?.role === "SUPER_ADMIN" || data.user?.role === "INVESTOR") {
+        router.push("/admin");
+      } else {
+        router.push("/admin/visits");
+      }
     } catch {
       setError("Terjadi kesalahan jaringan");
       setLoading(false);

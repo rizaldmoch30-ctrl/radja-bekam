@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { TrendingUp, TrendingDown, Users, Target, Save, Edit2, Calendar, Wallet, Package, Activity, Inbox, WalletCards, ArrowRight, LayoutDashboard, Sparkles, Bell, Eye, EyeOff, ChevronRight, Clock, Flame, Receipt, BookOpen, CalendarCheck, Settings, Star } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
@@ -95,6 +96,7 @@ function TherapistStatusWidget({ showBalance, filterBranch }: { showBalance: boo
 }
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [showBalance, setShowBalance] = useState(true);
   const [month, setMonth] = useState(() => {
@@ -184,6 +186,10 @@ export default function AdminDashboard() {
       
       if (sessionRes.ok) {
         const sJson = await sessionRes.json();
+        if (sJson.session?.role !== "SUPER_ADMIN" && sJson.session?.role !== "INVESTOR") {
+          router.replace("/admin/visits");
+          return;
+        }
         setSession(sJson.session);
       }
     } catch (e) {

@@ -39,7 +39,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, description, price, durationMinutes, category, isActive } = body;
+    const { name, description, price, durationMinutes, globalCommission, category, isActive } = body;
 
     if (!name || !description || price === undefined || !durationMinutes) {
       return Response.json({ error: "Data layanan tidak lengkap" }, { status: 400 });
@@ -54,6 +54,7 @@ export async function POST(request: Request) {
       description,
       price: Number(price),
       durationMinutes: Number(durationMinutes),
+      globalCommission: globalCommission !== undefined ? Number(globalCommission) : 0,
       category: category || "Paket Treatment",
       branchId: branchFilter || null,
       isActive: isActive !== undefined ? isActive : true,

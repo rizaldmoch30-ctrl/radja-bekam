@@ -11,6 +11,7 @@ type Service = {
   price: number;
   durationMinutes: number;
   category: string;
+  globalCommission: number;
   isActive: boolean;
 };
 
@@ -40,6 +41,7 @@ export default function AdminServicesPage() {
     description: "",
     price: "",
     durationMinutes: "",
+    globalCommission: "",
     category: "Paket Treatment",
     branchId: "ALL",
     isActive: true,
@@ -85,6 +87,7 @@ export default function AdminServicesPage() {
       description: "",
       price: "",
       durationMinutes: "",
+      globalCommission: "",
       category: "Paket Treatment",
       branchId: filterBranch !== "ALL" ? filterBranch : (branches.length > 0 ? branches[0].id : "ALL"),
       isActive: true,
@@ -104,6 +107,7 @@ export default function AdminServicesPage() {
       description: s.description,
       price: s.price.toString(),
       durationMinutes: s.durationMinutes.toString(),
+      globalCommission: s.globalCommission?.toString() || "0",
       category: s.category || "Paket Treatment",
       branchId: s.branchId || "ALL",
       isActive: s.isActive,
@@ -129,6 +133,7 @@ export default function AdminServicesPage() {
           description: formData.description,
           price: Number(formData.price),
           durationMinutes: Number(formData.durationMinutes),
+          globalCommission: Number(formData.globalCommission),
           category: formData.category,
           branchId: formData.branchId === "ALL" ? null : formData.branchId,
           isActive: formData.isActive,
@@ -219,6 +224,7 @@ export default function AdminServicesPage() {
                           <th className="px-6 py-4 font-semibold">Nama Layanan</th>
                           <th className="px-6 py-4 font-semibold">Harga</th>
                           <th className="px-6 py-4 font-semibold">Durasi</th>
+                          <th className="px-6 py-4 font-semibold">Komisi (Rp)</th>
                           <th className="px-6 py-4 font-semibold">Status</th>
                           <th className="px-6 py-4 font-semibold text-right">Aksi</th>
                         </tr>
@@ -240,6 +246,9 @@ export default function AdminServicesPage() {
                               </td>
                               <td className="px-6 py-4 text-sm text-gray-600">
                                 {s.durationMinutes} Menit
+                              </td>
+                              <td className="px-6 py-4 font-medium text-blue-700">
+                                Rp {(s.globalCommission || 0).toLocaleString('id-ID')}
                               </td>
                               <td className="px-6 py-4">
                                 <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold border ${s.isActive ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
@@ -354,6 +363,18 @@ export default function AdminServicesPage() {
                         onChange={(e) => setFormData({ ...formData, durationMinutes: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                         placeholder="60"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1.5">Komisi Terapis (Rp)</label>
+                      <input
+                        required
+                        type="number"
+                        min="0"
+                        value={formData.globalCommission}
+                        onChange={(e) => setFormData({ ...formData, globalCommission: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                        placeholder="25000"
                       />
                     </div>
                   </div>

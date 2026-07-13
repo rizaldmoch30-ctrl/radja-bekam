@@ -24,6 +24,7 @@ export const services = pgTable("services", {
   description: text("description").notNull(),
   price: integer("price").notNull(),
   durationMinutes: integer("duration_minutes").notNull(),
+  globalCommission: integer("global_commission").notNull().default(0),
   category: text("category", { enum: ["Paket Treatment", "Mcu", "Refleksi", "Bekam", "Adds On"] }).notNull().default("Paket Treatment"),
   branchId: text("branch_id").references(() => branches.id),
   isActive: boolean("is_active").notNull().default(true),

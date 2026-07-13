@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { therapists, patientVisits, therapistCommissions, therapistServiceCommissions } from "@/lib/db/schema";
+import { therapists, patientVisits, therapistCommissions, therapistServiceCommissions, services } from "@/lib/db/schema";
 import { eq, desc, and, like } from "drizzle-orm";
 import { getSession, getActiveBranchFilter } from "@/lib/auth";
 
@@ -46,9 +46,11 @@ export async function GET() {
         mainTherapistId: patientVisits.therapistId,
         commissionAmount: therapistCommissions.amount,
         commissionTherapistId: therapistCommissions.therapistId,
+        serviceGlobalCommission: services.globalCommission,
       })
       .from(patientVisits)
       .leftJoin(therapistCommissions, eq(patientVisits.id, therapistCommissions.visitId))
+      .leftJoin(services, eq(patientVisits.serviceId, services.id))
       .where(and(...visitsConditions));
 
     const allCustomCommissions = await db.select().from(therapistServiceCommissions);
@@ -58,15 +60,11 @@ export async function GET() {
       const relevantRows = allVisitsWithCommissions.filter(v => v.mainTherapistId === t.id || v.commissionTherapistId === t.id);
       
       const therapistCommissionMap = new Map<string, number>();
-      const globalCommissionMap = new Map<string, number>();
       
       for (const cc of allCustomCommissions) {
         if (cc.commissionAmount !== null) {
           if (cc.therapistId === t.id) {
             therapistCommissionMap.set(cc.serviceId, cc.commissionAmount);
-          }
-          if (!globalCommissionMap.has(cc.serviceId)) {
-            globalCommissionMap.set(cc.serviceId, cc.commissionAmount);
           }
         }
       }
@@ -84,8 +82,8 @@ export async function GET() {
              
              if (therapistCommissionMap.has(v.serviceId)) {
                  actualCommission = therapistCommissionMap.get(v.serviceId)!;
-             } else if (globalCommissionMap.has(v.serviceId)) {
-                 actualCommission = globalCommissionMap.get(v.serviceId)!;
+             } else if (v.serviceGlobalCommission) {
+                 actualCommission = v.serviceGlobalCommission;
              } else {
                  actualCommission = t.commissionRate || 0;
              }

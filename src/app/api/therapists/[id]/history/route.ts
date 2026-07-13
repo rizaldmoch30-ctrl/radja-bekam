@@ -73,6 +73,7 @@ export async function GET(
         serviceId: patientVisits.serviceId,
         commissionAmount: therapistCommissions.amount,
         commissionStatus: therapistCommissions.status,
+        serviceGlobalCommission: services.globalCommission,
       })
       .from(patientVisits)
       .leftJoin(patients, eq(patientVisits.patientId, patients.id))
@@ -92,15 +93,11 @@ export async function GET(
       .from(therapistServiceCommissions);
 
     const therapistCommissionMap = new Map<string, number>();
-    const globalCommissionMap = new Map<string, number>();
 
     for (const cc of allCustomCommissions) {
       if (cc.commissionAmount !== null) {
         if (cc.therapistId === id) {
           therapistCommissionMap.set(cc.serviceId, cc.commissionAmount);
-        }
-        if (!globalCommissionMap.has(cc.serviceId)) {
-          globalCommissionMap.set(cc.serviceId, cc.commissionAmount);
         }
       }
     }
@@ -116,8 +113,8 @@ export async function GET(
       if (actualCommission === null || actualCommission === undefined) {
         if (therapistCommissionMap.has(v.serviceId)) {
           actualCommission = therapistCommissionMap.get(v.serviceId) ?? null;
-        } else if (globalCommissionMap.has(v.serviceId)) {
-          actualCommission = globalCommissionMap.get(v.serviceId) ?? null;
+        } else if (v.serviceGlobalCommission) {
+          actualCommission = v.serviceGlobalCommission;
         } else {
           actualCommission = therapist.commissionRate || 0;
         }

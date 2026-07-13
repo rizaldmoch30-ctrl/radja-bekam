@@ -73,17 +73,15 @@ export async function DELETE(
       }
     }
 
-    const result = await db.update(services).set({
-      isActive: false,
-    }).where(eq(services.id, id)).returning();
+    const result = await db.delete(services).where(eq(services.id, id)).returning();
 
     if (result.length === 0) {
       return Response.json({ error: "Layanan tidak ditemukan" }, { status: 404 });
     }
 
-    await logSystemAction("DELETE_SERVICE", "service", id, `Layanan dinonaktifkan: ${existing[0].name}`);
+    await logSystemAction("DELETE_SERVICE", "service", id, `Layanan dihapus secara permanen: ${existing[0].name}`);
 
-    return Response.json({ success: true, message: "Layanan berhasil dinonaktifkan" });
+    return Response.json({ success: true, message: "Layanan berhasil dihapus" });
   } catch (error) {
     console.error("DELETE /api/services/[id] error:", error);
     return Response.json({ error: "Gagal menghapus layanan" }, { status: 500 });

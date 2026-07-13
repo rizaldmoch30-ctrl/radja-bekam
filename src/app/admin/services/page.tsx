@@ -156,7 +156,7 @@ export default function AdminServicesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Apakah Anda yakin ingin menonaktifkan layanan ini?")) return;
+    if (!confirm("Apakah Anda yakin ingin menghapus layanan ini secara permanen?")) return;
 
     try {
       const res = await fetch(`/api/services/${id}`, { method: "DELETE" });
@@ -266,7 +266,7 @@ export default function AdminServicesPage() {
                                 <button
                                   onClick={() => handleDelete(s.id)}
                                   className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                  title="Nonaktifkan"
+                                  title="Hapus Layanan"
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>

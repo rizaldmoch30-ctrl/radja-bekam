@@ -111,6 +111,11 @@ export default function AdminVisitsPage() {
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   };
 
+  const [matchingPatients, setMatchingPatients] = useState<any[]>([]);
+  const [showPatientDropdown, setShowPatientDropdown] = useState(false);
+  const [posMatchingPatients, setPosMatchingPatients] = useState<any[]>([]);
+  const [showPosPatientDropdown, setShowPosPatientDropdown] = useState(false);
+
   const [formData, setFormData] = useState({
     phone: "",
     name: "",
@@ -302,8 +307,9 @@ export default function AdminVisitsPage() {
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
-    const existing = patients.find(p => p.phone === val);
-    if (existing) {
+    const matches = patients.filter(p => p.phone === val);
+    if (matches.length === 1) {
+      const existing = matches[0];
       setFormData(prev => ({
         ...prev,
         phone: val,
@@ -311,9 +317,25 @@ export default function AdminVisitsPage() {
         gender: existing.gender || "L",
         address: existing.address || "",
       }));
+      setShowPatientDropdown(false);
+    } else if (matches.length > 1) {
+      setFormData(prev => ({ ...prev, phone: val, name: "", address: "", gender: "L" }));
+      setMatchingPatients(matches);
+      setShowPatientDropdown(true);
     } else {
       setFormData(prev => ({ ...prev, phone: val }));
+      setShowPatientDropdown(false);
     }
+  };
+
+  const handleSelectPatient = (patient: any) => {
+    setFormData(prev => ({
+      ...prev,
+      name: patient.name,
+      gender: patient.gender || "L",
+      address: patient.address || "",
+    }));
+    setShowPatientDropdown(false);
   };
 
   const fetchData = useCallback(async () => {
@@ -433,10 +455,22 @@ export default function AdminVisitsPage() {
 
   const handlePOSPhoneChange = (val: string) => {
     setPosPhone(val);
-    const existing = patients.find(p => p.phone === val);
-    if (existing) {
-      setPosPatientName(existing.name);
+    const matches = patients.filter(p => p.phone === val);
+    if (matches.length === 1) {
+      setPosPatientName(matches[0].name);
+      setShowPosPatientDropdown(false);
+    } else if (matches.length > 1) {
+      setPosPatientName("");
+      setPosMatchingPatients(matches);
+      setShowPosPatientDropdown(true);
+    } else {
+      setShowPosPatientDropdown(false);
     }
+  };
+
+  const handleSelectPosPatient = (patient: any) => {
+    setPosPatientName(patient.name);
+    setShowPosPatientDropdown(false);
   };
 
   const addPOSItem = (serviceId: string) => {
@@ -867,8 +901,25 @@ export default function AdminVisitsPage() {
                             placeholder="08123..."
                             className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                           />
+                          {showPosPatientDropdown && posMatchingPatients.length > 1 && (
+                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                              <div className="px-3 py-2 bg-amber-50 text-amber-700 text-xs font-bold border-b border-amber-100 flex items-center gap-1">
+                                <AlertCircle className="w-3 h-3" /> Pilih Pasien:
+                              </div>
+                              {posMatchingPatients.map(patient => (
+                                <button
+                                  key={patient.id}
+                                  type="button"
+                                  onClick={() => handleSelectPosPatient(patient)}
+                                  className="w-full text-left px-3 py-2 hover:bg-blue-50 border-b border-gray-50 last:border-0 transition-colors flex flex-col"
+                                >
+                                  <span className="font-bold text-gray-800 text-sm">{patient.name}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                        {patients.find(p => p.phone === posPhone) && (
+                        {patients.find(p => p.phone === posPhone) && !showPosPatientDropdown && (
                           <p className="text-xs text-blue-600 flex items-center gap-1"><Check className="w-3 h-3" /> Pasien terdaftar</p>
                         )}
                       </div>
@@ -1455,13 +1506,33 @@ export default function AdminVisitsPage() {
                     <div className="relative group">
                       <Search className={`w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${formData.phone ? 'text-blue-500' : 'text-gray-400 group-focus-within:text-blue-500'}`} />
                       <input type="text" required value={formData.phone} onChange={handlePhoneChange} placeholder="Cari Pasien (Ketik 08...)" className={`w-full pl-10 pr-10 py-3 bg-white border-2 rounded-xl focus:ring-4 focus:ring-blue-500/20 transition-all font-semibold ${patients.find(p => p.phone === formData.phone) ? 'border-blue-400 focus:border-blue-500 text-blue-900' : 'border-gray-300 focus:border-blue-500 text-gray-900'}`} />
-                      {patients.find(p => p.phone === formData.phone) && (
+                      {patients.find(p => p.phone === formData.phone) && !showPatientDropdown && (
                         <CheckCircle2 className="w-5 h-5 absolute right-3 top-1/2 -translate-y-1/2 text-blue-500" />
                       )}
+                      
+                      {/* Dropdown untuk memilih pasien jika ada nomor WA ganda */}
+                      {showPatientDropdown && matchingPatients.length > 1 && (
+                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                          <div className="px-3 py-2 bg-amber-50 text-amber-700 text-xs font-bold border-b border-amber-100 flex items-center gap-1">
+                            <AlertCircle className="w-3.5 h-3.5" /> Ditemukan {matchingPatients.length} pasien. Pilih salah satu:
+                          </div>
+                          {matchingPatients.map(patient => (
+                            <button
+                              key={patient.id}
+                              type="button"
+                              onClick={() => handleSelectPatient(patient)}
+                              className="w-full text-left px-4 py-2.5 hover:bg-blue-50 border-b border-gray-50 last:border-0 transition-colors flex flex-col"
+                            >
+                              <span className="font-bold text-gray-800">{patient.name}</span>
+                              <span className="text-[10px] text-gray-500">{patient.gender === 'L' ? 'Laki-laki' : 'Perempuan'} {patient.address ? `- ${patient.address}` : ''}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    {patients.find(p => p.phone === formData.phone) ? (
+                    {patients.find(p => p.phone === formData.phone) && !showPatientDropdown ? (
                       <p className="text-[11px] font-bold text-blue-700 mt-1 flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-md w-max border border-blue-100 animate-in fade-in zoom-in duration-300"><UserCheck className="w-3.5 h-3.5"/> ✓ Pasien lama ditemukan (Otomatis terisi)</p>
-                    ) : formData.phone.length > 8 ? (
+                    ) : formData.phone.length > 8 && !showPatientDropdown ? (
                       <p className="text-[11px] font-bold text-blue-700 mt-1 flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-md w-max border border-blue-100 animate-in fade-in zoom-in duration-300"><Plus className="w-3.5 h-3.5"/> + Pasien baru</p>
                     ) : null}
                   </div>

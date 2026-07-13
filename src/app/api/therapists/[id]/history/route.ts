@@ -80,15 +80,39 @@ export async function GET(
       .leftJoin(therapistCommissions, eq(patientVisits.id, therapistCommissions.visitId))
       .where(and(...visitConditions));
 
+    // Group visits by date, time, and patient to avoid duplicate rows for multiple services
+    const groupedVisits = new Map<string, any>();
+    
+    for (const v of visits) {
+      const key = `${v.visitDate}_${v.visitTime}_${v.patientName}`;
+      if (groupedVisits.has(key)) {
+        const existing = groupedVisits.get(key);
+        // Combine service names
+        existing.serviceName += `, ${v.serviceName}`;
+        // Add up prices and commissions
+        existing.servicePrice = (existing.servicePrice || 0) + (v.servicePrice || 0);
+        existing.commissionAmount = (existing.commissionAmount || 0) + (v.commissionAmount || 0);
+        
+        // Use "in_progress" if any part of the visit is still in progress
+        if (v.status === "in_progress") {
+          existing.status = "in_progress";
+        }
+      } else {
+        groupedVisits.set(key, { ...v });
+      }
+    }
+    
+    const combinedVisits = Array.from(groupedVisits.values());
+
     // Sort descending by date and time
-    visits.sort((a, b) => {
+    combinedVisits.sort((a, b) => {
       const dateA = new Date(`${a.visitDate}T${a.visitTime}`);
       const dateB = new Date(`${b.visitDate}T${b.visitTime}`);
       return dateB.getTime() - dateA.getTime();
     });
 
-    const totalTreatments = visits.filter(v => v.status === "completed").length;
-    const totalCommissions = visits.reduce((sum, v) => sum + (v.commissionAmount || 0), 0);
+    const totalTreatments = combinedVisits.filter(v => v.status === "completed").length;
+    const totalCommissions = combinedVisits.reduce((sum, v) => sum + (v.commissionAmount || 0), 0);
 
     return NextResponse.json({
       therapist: {
@@ -105,7 +129,7 @@ export async function GET(
         totalTreatments,
         totalCommissions,
       },
-      data: visits,
+      data: combinedVisits,
     });
   } catch (error) {
     console.error("GET /api/therapists/[id]/history error:", error);

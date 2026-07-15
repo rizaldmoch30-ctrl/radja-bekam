@@ -385,8 +385,8 @@ export async function POST(request: Request) {
       success: true,
       data: txResult
     }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("POST /api/invoices error:", error);
-    return NextResponse.json({ error: "Gagal membuat struk" }, { status: 500 });
+    return NextResponse.json({ error: `Gagal membuat struk: ${error.message}` }, { status: 500 });
   }
 }

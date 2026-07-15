@@ -67,12 +67,14 @@ export async function GET(
         visitDate: patientVisits.visitDate,
         visitTime: patientVisits.visitTime,
         status: patientVisits.status,
+        paymentStatus: patientVisits.paymentStatus,
         patientName: patients.name,
         serviceName: services.name,
         servicePrice: services.price,
         serviceId: patientVisits.serviceId,
         commissionAmount: therapistCommissions.amount,
         commissionStatus: therapistCommissions.status,
+        commissionId: therapistCommissions.id,
         serviceGlobalCommission: services.globalCommission,
       })
       .from(patientVisits)
@@ -108,43 +110,56 @@ export async function GET(
     for (const v of visits) {
       const key = `${v.visitDate}_${v.visitTime}_${v.patientName}`;
       
-      // Calculate missing commission dynamically if it's null
-      let actualCommission = v.commissionAmount;
-      if (actualCommission === null || actualCommission === undefined) {
-        if (therapistCommissionMap.has(v.serviceId)) {
-          actualCommission = therapistCommissionMap.get(v.serviceId) ?? null;
-        } else if (v.serviceGlobalCommission) {
-          actualCommission = v.serviceGlobalCommission;
-        } else {
-          actualCommission = therapist.commissionRate || 0;
-        }
+      if (!groupedVisits.has(key)) {
+        groupedVisits.set(key, {
+          ...v,
+          serviceName: "",
+          servicePrice: 0,
+          commissionAmount: 0,
+          visitedIds: new Set(),
+          dbCommissionIds: new Set(),
+          dynamicCommissionsTotal: 0,
+        });
       }
-
-      if (groupedVisits.has(key)) {
-        const existing = groupedVisits.get(key);
+      
+      const existing = groupedVisits.get(key);
+      
+      if (!existing.visitedIds.has(v.id)) {
+        existing.serviceName += existing.serviceName ? `, ${v.serviceName}` : v.serviceName;
+        existing.servicePrice += (v.servicePrice || 0);
+        existing.visitedIds.add(v.id);
         
-        // Ensure we don't add the same patientVisit's service and price multiple times
-        if (!existing.visitedIds.has(v.id)) {
-          existing.serviceName += `, ${v.serviceName}`;
-          existing.servicePrice = (existing.servicePrice || 0) + (v.servicePrice || 0);
-          
-          // Add dynamically calculated commission for this new service
-          existing.commissionAmount = (existing.commissionAmount || 0) + (actualCommission || 0);
-          
-          existing.visitedIds.add(v.id);
-        } else if (v.commissionAmount !== null) {
-          // If it's the SAME visitId but DIFFERENT commission rows from DB (due to leftJoin)
-          existing.commissionAmount = (existing.commissionAmount || 0) + (v.commissionAmount || 0);
+        let dynamicComm = 0;
+        if (v.paymentStatus !== "PAID") {
+          if (therapistCommissionMap.has(v.serviceId)) {
+            dynamicComm = therapistCommissionMap.get(v.serviceId) ?? 0;
+          } else if (v.serviceGlobalCommission) {
+            dynamicComm = v.serviceGlobalCommission;
+          } else {
+            dynamicComm = therapist.commissionRate || 0;
+          }
         }
+        existing.dynamicCommissionsTotal += dynamicComm;
         
-        // Use "in_progress" if any part of the visit is still in progress
         if (v.status === "in_progress") {
           existing.status = "in_progress";
         }
-      } else {
-        const newGroup = { ...v, commissionAmount: actualCommission, visitedIds: new Set([v.id]) };
-        groupedVisits.set(key, newGroup);
       }
+      
+      if (v.commissionId && !existing.dbCommissionIds.has(v.commissionId)) {
+        existing.dbCommissionIds.add(v.commissionId);
+        existing.commissionAmount += v.commissionAmount;
+      }
+    }
+    
+    for (const group of groupedVisits.values()) {
+      if (group.dbCommissionIds.size === 0) {
+        group.commissionAmount = group.dynamicCommissionsTotal;
+      }
+      delete group.visitedIds;
+      delete group.dbCommissionIds;
+      delete group.dynamicCommissionsTotal;
+      delete group.commissionId;
     }
     
     const combinedVisits = Array.from(groupedVisits.values());

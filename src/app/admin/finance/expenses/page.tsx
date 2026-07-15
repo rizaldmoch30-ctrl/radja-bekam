@@ -61,6 +61,9 @@ export default function AdminExpensesPage() {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  
+  // Table Filter
+  const [tableDateFilter, setTableDateFilter] = useState("");
 
   const getCurrentDateTimeLocal = () => {
     const now = new Date();
@@ -264,6 +267,11 @@ export default function AdminExpensesPage() {
   const totalIncome = transactions.filter(t => t.type === "INCOME").reduce((sum, t) => sum + t.amount, 0);
   const totalExpense = transactions.filter(t => t.type === "EXPENSE").reduce((sum, t) => sum + t.amount, 0);
   const netProfit = totalIncome - totalExpense;
+
+  const filteredTableTransactions = useMemo(() => {
+    if (!tableDateFilter) return transactions;
+    return transactions.filter(t => t.date.startsWith(tableDateFilter));
+  }, [transactions, tableDateFilter]);
 
   const formatRupiah = (amount: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount);
@@ -486,7 +494,18 @@ export default function AdminExpensesPage() {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="px-6 py-5 border-b border-gray-200 bg-gray-50/80 flex items-center justify-between">
             <h3 className="font-bold text-gray-800 text-lg">Riwayat Transaksi</h3>
-            <span className="text-sm font-medium text-gray-500 bg-gray-200 px-3 py-1 rounded-full">{transactions.length} Data</span>
+            <div className="flex items-center gap-3">
+              <input 
+                type="date" 
+                value={tableDateFilter}
+                onChange={(e) => {
+                  setTableDateFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="bg-white border border-gray-200 text-gray-700 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none shadow-sm transition-all"
+              />
+              <span className="text-sm font-medium text-gray-500 bg-gray-200 px-3 py-1 rounded-full">{filteredTableTransactions.length} Data</span>
+            </div>
           </div>
           
           {loading ? (
@@ -515,7 +534,7 @@ export default function AdminExpensesPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {transactions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((t) => {
+                  {filteredTableTransactions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((t) => {
                     const dateObj = new Date(t.date);
                     const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}/${(dateObj.getMonth() + 1).toString().padStart(2, '0')}/${dateObj.getFullYear()}`;
                     const formattedTime = `${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
@@ -561,12 +580,12 @@ export default function AdminExpensesPage() {
             </div>
           )}
           
-          {!loading && transactions.length > 0 && (
+          {!loading && filteredTableTransactions.length > 0 && (
             <Pagination 
               currentPage={currentPage} 
-              totalPages={Math.ceil(transactions.length / itemsPerPage)} 
+              totalPages={Math.ceil(filteredTableTransactions.length / itemsPerPage)} 
               onPageChange={setCurrentPage} 
-              totalItems={transactions.length} 
+              totalItems={filteredTableTransactions.length} 
               itemsPerPage={itemsPerPage} 
             />
           )}

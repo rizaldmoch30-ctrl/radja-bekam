@@ -210,10 +210,17 @@ export default function AdminExpensesPage() {
     e.preventDefault();
     setSaving(true);
     try {
+      const submitData = { ...formData };
+      if (submitData.date) {
+        // Convert the local datetime string from the input to a full UTC ISO string
+        // so the backend doesn't parse it in the wrong timezone.
+        submitData.date = new Date(submitData.date).toISOString();
+      }
+
       await fetch("/api/finance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(submitData),
       });
       setIsFormOpen(false);
       setFormData({ type: "EXPENSE", category: expenseCategories[0] || "", amount: 0, description: "", branchId: "", paymentMethod: "CASH", attachmentUrl: "", date: getCurrentDateTimeLocal() });

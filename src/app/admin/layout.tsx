@@ -315,8 +315,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     { name: "Cabang", href: "/admin/branches", icon: MapPin },
                     { name: "Pengguna Sistem", href: "/admin/settings/users", icon: Users },
                     { name: "System Logs", href: "/admin/system-logs", icon: Activity }
-                  ] : []),
-                  { name: "Sinkronisasi Komisi", href: "/admin/settings/commissions", icon: Award }
+                  ] : [])
                 ]
               },
             ];
@@ -361,7 +360,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   if (sub.name === "Info Perusahaan") return session?.role === "SUPER_ADMIN";
                   if (sub.name === "Cabang") return perms.includes("PENGATURAN_CABANG");
                   if (sub.name === "Pengguna Sistem") return perms.includes("PENGATURAN_PENGGUNA");
-                  if (sub.name === "Sinkronisasi Komisi") return perms.includes("PENGATURAN_KOMISI");
                   return false;
                 });
                 return (link.subItems && link.subItems.length > 0);

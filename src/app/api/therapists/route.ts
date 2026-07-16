@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { therapists, patientVisits, therapistCommissions, therapistServiceCommissions, services } from "@/lib/db/schema";
+import { therapists, patientVisits, therapistCommissions, services } from "@/lib/db/schema";
 import { eq, desc, and, like } from "drizzle-orm";
 import { getSession, getActiveBranchFilter } from "@/lib/auth";
 import { calculateCommissionAmount } from "@/lib/commission";
@@ -53,22 +53,10 @@ export async function GET() {
       .leftJoin(services, eq(patientVisits.serviceId, services.id))
       .where(and(...visitsConditions));
 
-    const allCustomCommissions = await db.select().from(therapistServiceCommissions);
-
     const enriched = allTherapists.map(t => {
       // Find all rows relevant to this therapist
       const relevantRows = allVisitsWithCommissions.filter(v => v.mainTherapistId === t.id || v.commissionTherapistId === t.id);
       
-      const therapistCommissionMap = new Map<string, number>();
-      
-      for (const cc of allCustomCommissions) {
-        if (cc.commissionAmount !== null) {
-          if (cc.therapistId === t.id) {
-            therapistCommissionMap.set(cc.serviceId, cc.commissionAmount);
-          }
-        }
-      }
-
       const groupedVisits = new Map<string, any>();
       
       for (const v of relevantRows) {
@@ -81,9 +69,7 @@ export async function GET() {
              if (v.mainTherapistId !== t.id) continue;
              
              actualCommission = calculateCommissionAmount({
-               customOverrideAmount: therapistCommissionMap.has(v.serviceId) ? (therapistCommissionMap.get(v.serviceId) ?? null) : null,
                serviceGlobalCommission: v.serviceGlobalCommission || 0,
-               therapistFlatRate: t.commissionRate || 0,
                qty: 1
              });
          }

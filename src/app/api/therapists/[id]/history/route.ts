@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { therapists, patientVisits, patients, services, therapistCommissions, therapistServiceCommissions } from "@/lib/db/schema";
+import { therapists, patientVisits, patients, services, therapistCommissions } from "@/lib/db/schema";
 import { eq, and, gte, lte, or } from "drizzle-orm";
 import { getSession, checkBranchAccess, getActiveBranchFilter } from "@/lib/auth";
 import { calculateCommissionAmount } from "@/lib/commission";
@@ -91,21 +91,6 @@ export async function GET(
         )
       ));
 
-    // Fetch all custom commissions for fallback
-    const allCustomCommissions = await db
-      .select()
-      .from(therapistServiceCommissions);
-
-    const therapistCommissionMap = new Map<string, number>();
-
-    for (const cc of allCustomCommissions) {
-      if (cc.commissionAmount !== null) {
-        if (cc.therapistId === id) {
-          therapistCommissionMap.set(cc.serviceId, cc.commissionAmount);
-        }
-      }
-    }
-
     // Group visits by date, time, and patient to avoid duplicate rows for multiple services
     const groupedVisits = new Map<string, any>();
     
@@ -138,9 +123,7 @@ export async function GET(
         let dynamicComm = 0;
         if (v.paymentStatus !== "PAID" && v.mainTherapistId === id) {
           dynamicComm = calculateCommissionAmount({
-            customOverrideAmount: therapistCommissionMap.has(v.serviceId) ? (therapistCommissionMap.get(v.serviceId) ?? null) : null,
             serviceGlobalCommission: v.serviceGlobalCommission || 0,
-            therapistFlatRate: therapist.commissionRate || 0,
             qty: 1
           });
         }

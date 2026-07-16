@@ -187,10 +187,6 @@ export default function AdminDashboard() {
       
       if (sessionRes.ok) {
         const sJson = await sessionRes.json();
-        if (sJson.session?.role !== "SUPER_ADMIN" && sJson.session?.role !== "INVESTOR") {
-          router.replace("/admin/visits");
-          return;
-        }
         setSession(sJson.session);
       }
     } catch (e) {

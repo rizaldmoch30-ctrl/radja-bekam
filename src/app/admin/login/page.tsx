@@ -56,7 +56,7 @@ export default function AdminLoginPage() {
         return;
       }
 
-      if (data.user?.role === "SUPER_ADMIN" || data.user?.role === "INVESTOR") {
+      if (data.user?.role === "SUPER_ADMIN" || data.user?.role === "INVESTOR" || data.user?.role === "BRANCH_ADMIN") {
         router.push("/admin");
       } else {
         router.push("/admin/visits");

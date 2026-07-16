@@ -130,7 +130,7 @@ export async function POST(request: Request) {
         const amt = parseInt(commissionAmount);
         if (!isNaN(amt) && amt >= 0) {
           const insertData = activeTherapists.map(t => ({
-            id: `TC-${Date.now()}-${Math.random().toString(36).substring(2, 5)}-${t.id.substring(0,4)}`,
+            id: crypto.randomUUID(),
             therapistId: t.id,
             serviceId: serviceId,
             commissionAmount: amt

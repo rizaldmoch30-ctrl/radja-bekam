@@ -8,6 +8,7 @@ import { createJournalEntry, COA } from "@/lib/accounting";
 import { financeTransactions, therapistCommissions, therapistServiceCommissions } from "@/lib/db/schema";
 import crypto from "crypto";
 import { logSystemAction } from "@/lib/logger";
+import { calculateTherapistCommission } from "@/lib/commission";
 
 // Helper: Generate invoice number format INV-BRANCH_CODE-YYYYMMDD-SEQ
 async function generateInvoiceNumber(branchId: string, tx?: any): Promise<string> {
@@ -301,39 +302,22 @@ export async function POST(request: Request) {
             const serviceId = item.serviceId;
             if (!serviceId) continue;
   
-            const customOverride = await db
-              .select()
-              .from(therapistServiceCommissions)
-              .where(
-                and(
-                  eq(therapistServiceCommissions.therapistId, therapistId),
-                  eq(therapistServiceCommissions.serviceId, serviceId)
-                )
-              )
-              .limit(1);
-  
-            let commissionAmount = therapist.commissionRate || 0;
-            if (customOverride.length > 0 && customOverride[0].commissionAmount !== null) {
-              commissionAmount = customOverride[0].commissionAmount * (item.qty || 1);
-            } else {
-              // Fallback to global commission
-              const globalComm = await db
-                .select({ amount: therapistServiceCommissions.commissionAmount })
-                .from(therapistServiceCommissions)
-                .where(eq(therapistServiceCommissions.serviceId, serviceId))
-                .limit(1);
-              if (globalComm.length > 0 && globalComm[0].amount !== null) {
-                commissionAmount = globalComm[0].amount * (item.qty || 1);
-              }
-            }
+            const commissionAmount = await calculateTherapistCommission(
+              tx,
+              therapistId,
+              serviceId,
+              item.qty || 1
+            );
   
             if (commissionAmount > 0) {
+              // BUG-03 FIX: Status komisi PAID (konsisten dengan pay/route.ts)
               await tx.insert(therapistCommissions).values({
                 id: crypto.randomUUID(),
                 therapistId,
                 visitId: finalVisitId,
                 amount: commissionAmount,
-                status: "PENDING",
+                status: "PAID",
+                paidAt: now,
               });
   
               // Langsung catat komisi sebagai pengeluaran / beban di sistem keuangan

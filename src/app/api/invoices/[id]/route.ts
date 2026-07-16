@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { invoices, financeTransactions } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { invoices, financeTransactions, therapistCommissions, therapistMonthlyReports, patientVisits, journalEntries, journalLines } from "@/lib/db/schema";
+import { eq, and, inArray } from "drizzle-orm";
 import { logSystemAction } from "@/lib/logger";
 import { getSession } from "@/lib/auth";
 
@@ -135,17 +135,97 @@ export async function DELETE(
       return NextResponse.json({ error: "Struk tidak ditemukan" }, { status: 404 });
     }
 
-    // Delete the linked finance transaction first (foreign key safety)
-    await db.delete(financeTransactions).where(eq(financeTransactions.referenceId, id));
+    const invoice = existing[0];
+    const visitId = invoice.visitId;
 
-    // Delete the invoice
+    // BUG-05 FIX: Hapus semua data terkait secara lengkap (cascade)
+    // Kumpulkan semua referenceId yang perlu dihapus
+    const referenceIdsToSearch = [id]; // invoiceId
+    if (visitId) referenceIdsToSearch.push(visitId);
+
+    // 1. Hapus komisi terapis terkait dan update laporan bulanan
+    if (visitId) {
+      const commissions = await db.select().from(therapistCommissions).where(eq(therapistCommissions.visitId, visitId));
+      
+      if (commissions.length > 0) {
+        // Update laporan bulanan terapis (kurangi komisi yang dibatalkan)
+        const therapistIds = [...new Set(commissions.map(c => c.therapistId))];
+        
+        for (const tId of therapistIds) {
+          const totalCommissionToRemove = commissions
+            .filter(c => c.therapistId === tId)
+            .reduce((sum, c) => sum + c.amount, 0);
+          
+          // Cari visit untuk mendapatkan bulan
+          const visitRecords = await db.select().from(patientVisits).where(eq(patientVisits.id, visitId)).limit(1);
+          if (visitRecords.length > 0) {
+            const visitMonth = visitRecords[0].visitDate.substring(0, 7);
+            const reports = await db
+              .select()
+              .from(therapistMonthlyReports)
+              .where(
+                and(
+                  eq(therapistMonthlyReports.therapistId, tId),
+                  eq(therapistMonthlyReports.month, visitMonth)
+                )
+              )
+              .limit(1);
+
+            if (reports.length > 0) {
+              const report = reports[0];
+              const newCommissions = Math.max(0, report.commissions - totalCommissionToRemove);
+              const newTakeHomePay = Math.max(0, report.baseSalary + newCommissions + report.allowances + report.bonuses - report.deductions);
+
+              await db
+                .update(therapistMonthlyReports)
+                .set({
+                  commissions: newCommissions,
+                  takeHomePay: newTakeHomePay,
+                  updatedAt: new Date().toISOString(),
+                })
+                .where(eq(therapistMonthlyReports.id, report.id));
+            }
+          }
+        }
+
+        // Hapus record komisi
+        await db.delete(therapistCommissions).where(eq(therapistCommissions.visitId, visitId));
+      }
+    }
+
+    // 2. Hapus transaksi keuangan dan jurnal terkait
+    const relatedFinanceTxs = await db.select({ id: financeTransactions.id })
+      .from(financeTransactions)
+      .where(inArray(financeTransactions.referenceId, referenceIdsToSearch));
+
+    const financeTxIds = relatedFinanceTxs.map(tx => tx.id);
+
+    if (financeTxIds.length > 0) {
+      // Hapus jurnal terkait
+      const relatedJournals = await db.select({ id: journalEntries.id })
+        .from(journalEntries)
+        .where(inArray(journalEntries.referenceId, financeTxIds));
+
+      const journalIds = relatedJournals.map(j => j.id);
+
+      if (journalIds.length > 0) {
+        await db.delete(journalLines).where(inArray(journalLines.entryId, journalIds));
+        await db.delete(journalEntries).where(inArray(journalEntries.id, journalIds));
+      }
+
+      // Hapus transaksi keuangan
+      await db.delete(financeTransactions).where(inArray(financeTransactions.id, financeTxIds));
+    }
+
+    // 3. Delete the invoice
     await db.delete(invoices).where(eq(invoices.id, id));
 
-    await logSystemAction("DELETE_INVOICE", "invoice", id, `Struk dihapus: ${existing[0].invoiceNumber} - ${existing[0].patientName} (${existing[0].grandTotal})`);
+    await logSystemAction("DELETE_INVOICE", "invoice", id, `Struk dihapus: ${invoice.invoiceNumber} - ${invoice.patientName} (${invoice.grandTotal}) beserta komisi dan jurnal terkait`);
 
-    return NextResponse.json({ success: true, message: "Transaksi berhasil dihapus" });
+    return NextResponse.json({ success: true, message: "Transaksi berhasil dihapus beserta data keuangan terkait" });
   } catch (error) {
     console.error("DELETE /api/invoices/[id] error:", error);
     return NextResponse.json({ error: "Gagal menghapus transaksi" }, { status: 500 });
   }
 }
+

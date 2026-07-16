@@ -97,7 +97,7 @@ function TherapistCommissionsContent() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filterBranch]);
 
   useEffect(() => {
     fetchData();

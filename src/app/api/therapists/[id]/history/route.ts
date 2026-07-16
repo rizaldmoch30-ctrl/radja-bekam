@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { therapists, patientVisits, patients, services, therapistCommissions, therapistServiceCommissions } from "@/lib/db/schema";
 import { eq, and, gte, lte, or } from "drizzle-orm";
 import { getSession, checkBranchAccess, getActiveBranchFilter } from "@/lib/auth";
-
+import { calculateCommissionAmount } from "@/lib/commission";
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -131,13 +131,12 @@ export async function GET(
         
         let dynamicComm = 0;
         if (v.paymentStatus !== "PAID") {
-          if (therapistCommissionMap.has(v.serviceId)) {
-            dynamicComm = therapistCommissionMap.get(v.serviceId) ?? 0;
-          } else if (v.serviceGlobalCommission) {
-            dynamicComm = v.serviceGlobalCommission;
-          } else {
-            dynamicComm = therapist.commissionRate || 0;
-          }
+          dynamicComm = calculateCommissionAmount({
+            customOverrideAmount: therapistCommissionMap.has(v.serviceId) ? (therapistCommissionMap.get(v.serviceId) ?? null) : null,
+            serviceGlobalCommission: v.serviceGlobalCommission || 0,
+            therapistFlatRate: therapist.commissionRate || 0,
+            qty: 1
+          });
         }
         existing.dynamicCommissionsTotal += dynamicComm;
         

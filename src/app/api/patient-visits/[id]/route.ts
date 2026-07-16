@@ -146,7 +146,7 @@ export async function PATCH(
       if (visit[0].therapistId) {
         await db
           .update(therapists)
-          .set({ availabilityStatus: "AVAILABLE", updatedAt: new Date().toISOString() })
+          .set({ availabilityStatus: "AVAILABLE" })
           .where(eq(therapists.id, visit[0].therapistId));
       }
 

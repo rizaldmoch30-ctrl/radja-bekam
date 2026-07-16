@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { therapists, patientVisits, therapistCommissions, therapistServiceCommissions, services } from "@/lib/db/schema";
 import { eq, desc, and, like } from "drizzle-orm";
 import { getSession, getActiveBranchFilter } from "@/lib/auth";
-
+import { calculateCommissionAmount } from "@/lib/commission";
 export async function GET() {
   try {
     const session = await getSession();
@@ -80,13 +80,12 @@ export async function GET() {
          if (actualCommission === null || actualCommission === undefined) {
              if (v.mainTherapistId !== t.id) continue;
              
-             if (therapistCommissionMap.has(v.serviceId)) {
-                 actualCommission = therapistCommissionMap.get(v.serviceId)!;
-             } else if (v.serviceGlobalCommission) {
-                 actualCommission = v.serviceGlobalCommission;
-             } else {
-                 actualCommission = t.commissionRate || 0;
-             }
+             actualCommission = calculateCommissionAmount({
+               customOverrideAmount: therapistCommissionMap.has(v.serviceId) ? (therapistCommissionMap.get(v.serviceId) ?? null) : null,
+               serviceGlobalCommission: v.serviceGlobalCommission || 0,
+               therapistFlatRate: t.commissionRate || 0,
+               qty: 1
+             });
          }
 
          const key = `${v.visitDate}_${v.visitTime}_${v.patientId}`;

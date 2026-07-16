@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { calculateCommissionAmount } from "../src/lib/commission.ts";
+import { calculateCommissionAmount } from "../src/lib/commission";
 
 // Test suite for Commission Logic
 test("Sistem Komisi Terapis - Hierarki & Prioritas", async (t) => {

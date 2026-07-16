@@ -48,6 +48,7 @@ export default function AdminFinancePage() {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [branches, setBranches] = useState<any[]>([]);
+  const [session, setSession] = useState<any>(null);
   
   // Filters
   const [filterBranch, setFilterBranch] = useState("");
@@ -197,6 +198,18 @@ export default function AdminFinancePage() {
   };
 
   useEffect(() => {
+    const fetchSession = async () => {
+      try {
+        const res = await fetch("/api/auth/session");
+        if (res.ok) {
+          const data = await res.json();
+          setSession(data.session);
+        }
+      } catch (err) {
+        console.error("Failed to load session:", err);
+      }
+    };
+    fetchSession();
     fetchCategories();
     fetchBranches();
   }, []);
@@ -352,12 +365,14 @@ export default function AdminFinancePage() {
           </div>
           
           <div className="flex flex-wrap items-center gap-3">
-            <Link 
-              href="/admin/finance/accounting"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors mr-2"
-            >
-              <BookOpen className="h-5 w-5" /> Buku Besar & Laporan Akuntansi
-            </Link>
+            {(session?.role === "SUPER_ADMIN" || session?.role === "INVESTOR") && (
+              <Link 
+                href="/admin/finance/accounting"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors mr-2"
+              >
+                <BookOpen className="h-5 w-5" /> Buku Besar & Laporan Akuntansi
+              </Link>
+            )}
             
             <select
               value={filterBranch}
@@ -400,187 +415,195 @@ export default function AdminFinancePage() {
               </div>
             )}
 
-            <button 
-              onClick={() => setIsCategoryModalOpen(true)}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm"
-              title="Kelola Kategori"
-            >
-              <Settings className="h-5 w-5" />
-            </button>
+            {(session?.role === "SUPER_ADMIN" || session?.role === "INVESTOR") && (
+              <>
+                <button 
+                  onClick={() => setIsCategoryModalOpen(true)}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm"
+                  title="Kelola Kategori"
+                >
+                  <Settings className="h-5 w-5" />
+                </button>
 
-            <button 
-              onClick={handleExportCSV}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors"
-            >
-              <Download className="h-5 w-5" /> Export CSV
-            </button>
+                <button 
+                  onClick={handleExportCSV}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors"
+                >
+                  <Download className="h-5 w-5" /> Export CSV
+                </button>
 
-            <Link 
-              href="/admin/finance/expenses"
-              className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors"
-            >
-              <TrendingDown className="h-5 w-5" /> Kelola Pengeluaran
-            </Link>
+                <Link 
+                  href="/admin/finance/expenses"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors"
+                >
+                  <TrendingDown className="h-5 w-5" /> Kelola Pengeluaran
+                </Link>
+              </>
+            )}
           </div>
         </div>
 
         {/* Dashboard Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 relative overflow-hidden group hover:shadow-md transition-shadow">
-            <div className="absolute right-0 top-0 opacity-5 p-4 group-hover:scale-110 transition-transform">
-              <TrendingUp className="h-24 w-24" />
+        {(session?.role === "SUPER_ADMIN" || session?.role === "INVESTOR") && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 relative overflow-hidden group hover:shadow-md transition-shadow">
+                <div className="absolute right-0 top-0 opacity-5 p-4 group-hover:scale-110 transition-transform">
+                  <TrendingUp className="h-24 w-24" />
+                </div>
+                <div className="flex items-center gap-2 text-gray-500 font-medium mb-2 relative z-10">
+                  <div className="p-2 bg-blue-100 rounded-lg text-blue-600"><TrendingUp className="h-5 w-5" /></div>
+                  Pemasukan
+                </div>
+                <div className="text-3xl font-bold text-gray-900 relative z-10">{formatRupiah(totalIncome)}</div>
+              </div>
+              
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 relative overflow-hidden group hover:shadow-md transition-shadow">
+                <div className="absolute right-0 top-0 opacity-5 p-4 group-hover:scale-110 transition-transform">
+                  <TrendingDown className="h-24 w-24" />
+                </div>
+                <div className="flex items-center gap-2 text-gray-500 font-medium mb-2 relative z-10">
+                  <div className="p-2 bg-red-100 rounded-lg text-red-600"><TrendingDown className="h-5 w-5" /></div>
+                  Total Pengeluaran
+                </div>
+                <div className="text-3xl font-bold text-gray-900 relative z-10">{formatRupiah(totalExpense)}</div>
+              </div>
+              
+              <div className="bg-gradient-to-br from-primary to-blue-700 rounded-xl shadow-md p-6 text-white relative overflow-hidden group hover:shadow-lg transition-shadow">
+                <div className="absolute right-0 top-0 opacity-10 p-4 group-hover:scale-110 transition-transform">
+                  <DollarSign className="h-32 w-32" />
+                </div>
+                <div className="flex items-center gap-2 text-blue-100 font-medium mb-2 relative z-10">
+                  <div className="p-2 bg-white/20 rounded-lg text-white backdrop-blur-sm"><Wallet className="h-5 w-5" /></div>
+                  Laba Bersih
+                </div>
+                <div className="text-4xl font-bold relative z-10">{formatRupiah(netProfit)}</div>
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-gray-500 font-medium mb-2 relative z-10">
-              <div className="p-2 bg-blue-100 rounded-lg text-blue-600"><TrendingUp className="h-5 w-5" /></div>
-              Pemasukan
-            </div>
-            <div className="text-3xl font-bold text-gray-900 relative z-10">{formatRupiah(totalIncome)}</div>
-          </div>
-          
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 relative overflow-hidden group hover:shadow-md transition-shadow">
-            <div className="absolute right-0 top-0 opacity-5 p-4 group-hover:scale-110 transition-transform">
-              <TrendingDown className="h-24 w-24" />
-            </div>
-            <div className="flex items-center gap-2 text-gray-500 font-medium mb-2 relative z-10">
-              <div className="p-2 bg-red-100 rounded-lg text-red-600"><TrendingDown className="h-5 w-5" /></div>
-              Total Pengeluaran
-            </div>
-            <div className="text-3xl font-bold text-gray-900 relative z-10">{formatRupiah(totalExpense)}</div>
-          </div>
-          
-          <div className="bg-gradient-to-br from-primary to-blue-700 rounded-xl shadow-md p-6 text-white relative overflow-hidden group hover:shadow-lg transition-shadow">
-            <div className="absolute right-0 top-0 opacity-10 p-4 group-hover:scale-110 transition-transform">
-              <DollarSign className="h-32 w-32" />
-            </div>
-            <div className="flex items-center gap-2 text-blue-100 font-medium mb-2 relative z-10">
-              <div className="p-2 bg-white/20 rounded-lg text-white backdrop-blur-sm"><Wallet className="h-5 w-5" /></div>
-              Laba Bersih
-            </div>
-            <div className="text-4xl font-bold relative z-10">{formatRupiah(netProfit)}</div>
-          </div>
-        </div>
 
-        {/* Charts Section */}
-        <div className="flex flex-col gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm w-full">
-            <h3 className="text-lg font-semibold mb-6 flex items-center gap-2"><TrendingUp className="w-5 h-5 text-gray-400" /> Tren Keuangan</h3>
-            <div className="h-72 w-full">
-              {chartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                  <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorPemasukan" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                      </linearGradient>
-                      <linearGradient id="colorPengeluaran" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                    <XAxis 
-                      dataKey="date" 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{fill: '#9ca3af', fontSize: 12}} 
-                      dy={10} 
-                    />
-                    <YAxis 
-                      tickFormatter={(value) => `Rp ${value / 1000}k`} 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{fill: '#9ca3af', fontSize: 12}}
-                      width={80}
-                      dx={-10}
-                    />
-                    <Tooltip 
-                      formatter={(value: any) => formatRupiah(Number(value))}
-                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)', padding: '12px' }}
-                      itemStyle={{ fontWeight: 600 }}
-                    />
-                    <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                    <Area type="monotone" dataKey="Pemasukan" stroke="#10b981" fillOpacity={1} fill="url(#colorPemasukan)" strokeWidth={3} activeDot={{r: 8, strokeWidth: 0}} />
-                    <Area type="monotone" dataKey="Pengeluaran" stroke="#f43f5e" fillOpacity={1} fill="url(#colorPengeluaran)" strokeWidth={3} activeDot={{r: 8, strokeWidth: 0}} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-gray-400">Belum ada data untuk dirender grafik</div>
-              )}
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-              <h3 className="text-lg font-semibold mb-6 flex items-center gap-2"><PieChart className="w-5 h-5 text-gray-400" /> Proporsi Pemasukan</h3>
-              <div className="h-[450px] w-full">
-                {pieData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                    <PieChart>
-                      <Pie
-                        data={pieData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={65}
-                        outerRadius={85}
-                        paddingAngle={4}
-                        dataKey="value"
-                        stroke="none"
-                        cornerRadius={6}
-                      >
-                        {pieData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} style={{ filter: 'drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.1))' }} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        formatter={(value: any) => formatRupiah(Number(value))}
-                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                        itemStyle={{ fontWeight: 600 }}
-                      />
-                      <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px' }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-full flex items-center justify-center text-gray-400 text-sm text-center">Belum ada data<br/>pemasukan</div>
-                )}
+            {/* Charts Section */}
+            <div className="flex flex-col gap-6 mb-8">
+              <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm w-full">
+                <h3 className="text-lg font-semibold mb-6 flex items-center gap-2"><TrendingUp className="w-5 h-5 text-gray-400" /> Tren Keuangan</h3>
+                <div className="h-72 w-full">
+                  {chartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                      <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="colorPemasukan" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                          </linearGradient>
+                          <linearGradient id="colorPengeluaran" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                        <XAxis 
+                          dataKey="date" 
+                          axisLine={false} 
+                          tickLine={false} 
+                          tick={{fill: '#9ca3af', fontSize: 12}} 
+                          dy={10} 
+                        />
+                        <YAxis 
+                          tickFormatter={(value) => `Rp ${value / 1000}k`} 
+                          axisLine={false} 
+                          tickLine={false} 
+                          tick={{fill: '#9ca3af', fontSize: 12}}
+                          width={80}
+                          dx={-10}
+                        />
+                        <Tooltip 
+                          formatter={(value: any) => formatRupiah(Number(value))}
+                          contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)', padding: '12px' }}
+                          itemStyle={{ fontWeight: 600 }}
+                        />
+                        <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
+                        <Area type="monotone" dataKey="Pemasukan" stroke="#10b981" fillOpacity={1} fill="url(#colorPemasukan)" strokeWidth={3} activeDot={{r: 8, strokeWidth: 0}} />
+                        <Area type="monotone" dataKey="Pengeluaran" stroke="#f43f5e" fillOpacity={1} fill="url(#colorPengeluaran)" strokeWidth={3} activeDot={{r: 8, strokeWidth: 0}} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-gray-400">Belum ada data untuk dirender grafik</div>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                  <h3 className="text-lg font-semibold mb-6 flex items-center gap-2"><PieChart className="w-5 h-5 text-gray-400" /> Proporsi Pemasukan</h3>
+                  <div className="h-[450px] w-full">
+                    {pieData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                        <PieChart>
+                          <Pie
+                            data={pieData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={65}
+                            outerRadius={85}
+                            paddingAngle={4}
+                            dataKey="value"
+                            stroke="none"
+                            cornerRadius={6}
+                          >
+                            {pieData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} style={{ filter: 'drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.1))' }} />
+                            ))}
+                          </Pie>
+                          <Tooltip 
+                            formatter={(value: any) => formatRupiah(Number(value))}
+                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                            itemStyle={{ fontWeight: 600 }}
+                          />
+                          <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-full flex items-center justify-center text-gray-400 text-sm text-center">Belum ada data<br/>pemasukan</div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                  <h3 className="text-lg font-semibold mb-6 flex items-center gap-2"><TrendingDown className="w-5 h-5 text-gray-400" /> Proporsi Pengeluaran</h3>
+                  <div className="h-[450px] w-full">
+                    {expensePieData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                        <PieChart>
+                          <Pie
+                            data={expensePieData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={65}
+                            outerRadius={85}
+                            paddingAngle={4}
+                            dataKey="value"
+                            stroke="none"
+                            cornerRadius={6}
+                          >
+                            {expensePieData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[(index + 3) % COLORS.length]} style={{ filter: 'drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.1))' }} />
+                            ))}
+                          </Pie>
+                          <Tooltip 
+                            formatter={(value: any) => formatRupiah(Number(value))}
+                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                            itemStyle={{ fontWeight: 600 }}
+                          />
+                          <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-full flex items-center justify-center text-gray-400 text-sm text-center">Belum ada data<br/>pengeluaran</div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-            
-            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-              <h3 className="text-lg font-semibold mb-6 flex items-center gap-2"><TrendingDown className="w-5 h-5 text-gray-400" /> Proporsi Pengeluaran</h3>
-              <div className="h-[450px] w-full">
-                {expensePieData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                    <PieChart>
-                      <Pie
-                        data={expensePieData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={65}
-                        outerRadius={85}
-                        paddingAngle={4}
-                        dataKey="value"
-                        stroke="none"
-                        cornerRadius={6}
-                      >
-                        {expensePieData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[(index + 3) % COLORS.length]} style={{ filter: 'drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.1))' }} />
-                        ))}
-                      </Pie>
-                      <Tooltip 
-                        formatter={(value: any) => formatRupiah(Number(value))}
-                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                        itemStyle={{ fontWeight: 600 }}
-                      />
-                      <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px' }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-full flex items-center justify-center text-gray-400 text-sm text-center">Belum ada data<br/>pengeluaran</div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+          </>
+        )}
 
 
 

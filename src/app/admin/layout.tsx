@@ -144,7 +144,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const bottomNavLinks = bottomNavLinksRaw.filter(link => {
     const perms = session?.permissions || [];
-    if (link.name === "Dashboard") return perms.includes("DASHBOARD_ANALITIK");
+    if (link.name === "Dashboard") return perms.includes("DASHBOARD_ANALITIK") || session?.role === "BRANCH_ADMIN";
     if (link.name === "Visits") return perms.includes("BUKUPASIEN_REKAMMEDIS");
     if (link.name === "Reservasi") return perms.includes("RESERVASI_ONLINE");
     if (link.name === "Finance") return perms.includes("KEUANGAN_PEMASUKAN") || perms.includes("KEUANGAN_PENGELUARAN") || perms.includes("KEUANGAN_MUTASI") || perms.includes("KEUANGAN_LABARUGI");
@@ -324,7 +324,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             const filteredNavLinks = navLinks.filter(link => {
               const perms = session?.permissions || [];
 
-              if (link.name === "Dashboard") return perms.includes("DASHBOARD_ANALITIK");
+              if (link.name === "Dashboard") return perms.includes("DASHBOARD_ANALITIK") || session?.role === "BRANCH_ADMIN";
               if (link.name === "Reservasi Online") return perms.includes("RESERVASI_ONLINE");
               if (link.name === "Buku Pasien") return perms.includes("BUKUPASIEN_REKAMMEDIS");
               if (link.name === "Transaksi Pelanggan") return perms.includes("KEUANGAN_PEMASUKAN") || perms.includes("BUKUPASIEN_REKAMMEDIS");

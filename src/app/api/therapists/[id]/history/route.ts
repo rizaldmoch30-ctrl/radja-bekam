@@ -72,9 +72,11 @@ export async function GET(
         serviceName: services.name,
         servicePrice: services.price,
         serviceId: patientVisits.serviceId,
+        mainTherapistId: patientVisits.therapistId,
         commissionAmount: therapistCommissions.amount,
         commissionStatus: therapistCommissions.status,
         commissionId: therapistCommissions.id,
+        commissionTherapistId: therapistCommissions.therapistId,
         serviceGlobalCommission: services.globalCommission,
       })
       .from(patientVisits)
@@ -108,6 +110,10 @@ export async function GET(
     const groupedVisits = new Map<string, any>();
     
     for (const v of visits) {
+      if (v.commissionTherapistId !== null && v.commissionTherapistId !== id) {
+        continue;
+      }
+      
       const key = `${v.visitDate}_${v.visitTime}_${v.patientName}`;
       
       if (!groupedVisits.has(key)) {
@@ -130,7 +136,7 @@ export async function GET(
         existing.visitedIds.add(v.id);
         
         let dynamicComm = 0;
-        if (v.paymentStatus !== "PAID") {
+        if (v.paymentStatus !== "PAID" && v.mainTherapistId === id) {
           dynamicComm = calculateCommissionAmount({
             customOverrideAmount: therapistCommissionMap.has(v.serviceId) ? (therapistCommissionMap.get(v.serviceId) ?? null) : null,
             serviceGlobalCommission: v.serviceGlobalCommission || 0,

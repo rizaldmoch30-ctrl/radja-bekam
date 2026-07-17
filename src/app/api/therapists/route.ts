@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { therapists, patientVisits, therapistCommissions, services } from "@/lib/db/schema";
 import { eq, desc, and, like } from "drizzle-orm";
 import { getSession, getActiveBranchFilter } from "@/lib/auth";
-import { calculateCommissionAmount } from "@/lib/commission";
+import { calculateTherapistCommission } from "@/lib/commission";
 export async function GET() {
   try {
     const session = await getSession();
@@ -53,7 +53,7 @@ export async function GET() {
       .leftJoin(services, eq(patientVisits.serviceId, services.id))
       .where(and(...visitsConditions));
 
-    const enriched = allTherapists.map(t => {
+    const enriched = await Promise.all(allTherapists.map(async t => {
       // Find all rows relevant to this therapist
       const relevantRows = allVisitsWithCommissions.filter(v => v.mainTherapistId === t.id || v.commissionTherapistId === t.id);
       
@@ -68,10 +68,13 @@ export async function GET() {
          if (actualCommission === null || actualCommission === undefined) {
              if (v.mainTherapistId !== t.id) continue;
              
-             actualCommission = calculateCommissionAmount({
-               serviceGlobalCommission: v.serviceGlobalCommission || 0,
-               qty: 1
-             });
+             // BUG-05 FIX: Using the strict rule function!
+             actualCommission = await calculateTherapistCommission(
+               db,
+               t.id,
+               v.serviceId,
+               1
+             );
          }
 
          const key = `${v.visitDate}_${v.visitTime}_${v.patientId}`;
@@ -106,7 +109,7 @@ export async function GET() {
       }
 
       return { ...t, patientsHandled, totalCommission };
-    });
+    }));
 
     return NextResponse.json(enriched);
   } catch (error) {

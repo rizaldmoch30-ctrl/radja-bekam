@@ -34,7 +34,6 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Radja Bekam",
   },
-  manifest: "/manifest.json",
   formatDetection: {
     telephone: false,
   },

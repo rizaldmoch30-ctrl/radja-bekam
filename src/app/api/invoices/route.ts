@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { invoices, branches, patients, therapists, services, patientVisits } from "@/lib/db/schema";
-import { eq, and, like, desc } from "drizzle-orm";
+import { eq, and, like, desc, inArray } from "drizzle-orm";
 import { getSession, getActiveBranchFilter } from "@/lib/auth";
 import { getServicePrice, SERVICES_LIST } from "@/lib/pricing";
 import { createJournalEntry, COA } from "@/lib/accounting";
-import { financeTransactions, therapistCommissions, therapistServiceCommissions } from "@/lib/db/schema";
+import { financeTransactions, therapistCommissions, therapistServiceCommissions, journalEntries, journalLines } from "@/lib/db/schema";
 import crypto from "crypto";
 import { logSystemAction } from "@/lib/logger";
 import { calculateTherapistCommission } from "@/lib/commission";
@@ -192,6 +192,50 @@ export async function POST(request: Request) {
       const invoiceId = crypto.randomUUID();
       const now = transactionDate; // Gunakan transactionDate sebagai acuan waktu
   
+      // CLEANUP LAMA (Mencegah Duplikasi Data):
+      // Jika resubmit dari POS, hapus komisi dan invoice lama yang terkait dengan kunjungan ini.
+      const visitsToCheck = visitIds && visitIds.length > 0 ? visitIds : (visitId ? [visitId] : []);
+      
+      if (visitId) {
+        // Hapus invoice lama
+        const oldInvs = await tx.select().from(invoices).where(eq(invoices.visitId, visitId));
+        if (oldInvs.length > 0) {
+          const oldInvIds = oldInvs.map(i => i.id);
+          const fTxs = await tx.select().from(financeTransactions).where(inArray(financeTransactions.referenceId, oldInvIds));
+          if (fTxs.length > 0) {
+            const fTxIds = fTxs.map(t => t.id);
+            const jEntries = await tx.select().from(journalEntries).where(inArray(journalEntries.referenceId, fTxIds));
+            if (jEntries.length > 0) {
+              const jEntryIds = jEntries.map(j => j.id);
+              await tx.delete(journalLines).where(inArray(journalLines.entryId, jEntryIds));
+              await tx.delete(journalEntries).where(inArray(journalEntries.id, jEntryIds));
+            }
+            await tx.delete(financeTransactions).where(inArray(financeTransactions.id, fTxIds));
+          }
+          await tx.delete(invoices).where(inArray(invoices.id, oldInvIds));
+        }
+      }
+
+      if (visitsToCheck.length > 0) {
+        // Hapus komisi lama
+        const oldComms = await tx.select().from(therapistCommissions).where(inArray(therapistCommissions.visitId, visitsToCheck));
+        if (oldComms.length > 0) {
+          const commIds = oldComms.map(c => c.id);
+          const commFTxs = await tx.select().from(financeTransactions).where(inArray(financeTransactions.referenceId, visitsToCheck));
+          const fTxsToDelete = commFTxs.filter(tx => tx.category === "Bagi Hasil Terapis" || tx.type === "EXPENSE").map(tx => tx.id);
+          
+          if (fTxsToDelete.length > 0) {
+            const jEntries = await tx.select().from(journalEntries).where(inArray(journalEntries.referenceId, fTxsToDelete));
+            if (jEntries.length > 0) {
+              const entryIds = jEntries.map(e => e.id);
+              await tx.delete(journalLines).where(inArray(journalLines.entryId, entryIds));
+              await tx.delete(journalEntries).where(inArray(journalEntries.id, entryIds));
+            }
+            await tx.delete(financeTransactions).where(inArray(financeTransactions.id, fTxsToDelete));
+          }
+          await tx.delete(therapistCommissions).where(inArray(therapistCommissions.id, commIds));
+        }
+      }
   
       await tx.insert(invoices).values({
         id: invoiceId,

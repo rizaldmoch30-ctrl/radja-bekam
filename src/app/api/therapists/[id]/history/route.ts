@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { therapists, patientVisits, patients, services, therapistCommissions } from "@/lib/db/schema";
-import { eq, and, gte, lte, or } from "drizzle-orm";
+import { eq, and, gte, lte, or, inArray } from "drizzle-orm";
 import { getSession, checkBranchAccess, getActiveBranchFilter } from "@/lib/auth";
 import { calculateTherapistCommission } from "@/lib/commission";
 export async function GET(
@@ -60,8 +60,8 @@ export async function GET(
       visitConditions.push(eq(patientVisits.branchId, branchFilter));
     }
 
-    // Fetch visits for this therapist in the specified month
-    const visits = await db
+    // Fetch all visits in this month for this branch first
+    const allVisits = await db
       .select({
         id: patientVisits.id,
         visitDate: patientVisits.visitDate,
@@ -73,23 +73,49 @@ export async function GET(
         servicePrice: services.price,
         serviceId: patientVisits.serviceId,
         mainTherapistId: patientVisits.therapistId,
-        commissionAmount: therapistCommissions.amount,
-        commissionStatus: therapistCommissions.status,
-        commissionId: therapistCommissions.id,
-        commissionTherapistId: therapistCommissions.therapistId,
         serviceGlobalCommission: services.globalCommission,
       })
       .from(patientVisits)
       .leftJoin(patients, eq(patientVisits.patientId, patients.id))
       .leftJoin(services, eq(patientVisits.serviceId, services.id))
-      .leftJoin(therapistCommissions, eq(patientVisits.id, therapistCommissions.visitId))
-      .where(and(
-        ...visitConditions,
-        or(
-          eq(patientVisits.therapistId, id),
-          eq(therapistCommissions.therapistId, id)
-        )
-      ));
+      .where(and(...visitConditions));
+
+    const visitIds = allVisits.map((v) => v.id);
+
+    let comms: any[] = [];
+    if (visitIds.length > 0) {
+      comms = await db
+        .select()
+        .from(therapistCommissions)
+        .where(
+          and(
+            inArray(therapistCommissions.visitId, visitIds),
+            eq(therapistCommissions.therapistId, id)
+          )
+        );
+    }
+
+    const commByVisitId = new Map();
+    for (const c of comms) {
+      // Map komisi ke visitId (hanya ambil satu jika ada duplikat untuk visit yang sama agar aman dari perkalian ganda)
+      if (!commByVisitId.has(c.visitId)) {
+        commByVisitId.set(c.visitId, c);
+      }
+    }
+
+    // Filter visits only for this therapist (either main therapist or has commission)
+    const visits = allVisits
+      .filter((v) => v.mainTherapistId === id || commByVisitId.has(v.id))
+      .map((v) => {
+        const c = commByVisitId.get(v.id);
+        return {
+          ...v,
+          commissionAmount: c ? c.amount : null,
+          commissionStatus: c ? c.status : null,
+          commissionId: c ? c.id : null,
+          commissionTherapistId: c ? c.therapistId : null,
+        };
+      });
 
     // Group visits by date, time, and patient to avoid duplicate rows for multiple services
     const groupedVisits = new Map<string, any>();

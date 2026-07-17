@@ -351,7 +351,6 @@ export async function POST(request: Request) {
           assignedCount++;
         }
 
-        finalVisitIds.push(mainVisitIdForComm as string);
       }
 
       // Mark all used visits as PAID

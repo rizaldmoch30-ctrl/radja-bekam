@@ -24,8 +24,15 @@ type FinanceTransaction = {
 export default function AdminLabaRugiPage() {
   const [transactions, setTransactions] = useState<FinanceTransaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState<string>("ALL");
+  const [startDate, setStartDate] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(1);
+    return d.toISOString().split("T")[0];
+  });
+  const [endDate, setEndDate] = useState<string>(() => {
+    const d = new Date();
+    return d.toISOString().split("T")[0];
+  });
   const [investorPercentage, setInvestorPercentage] = useState<number>(0);
   const [managementPercentage, setManagementPercentage] = useState<number>(0);
   const [penyusutanModalInvestor, setPenyusutanModalInvestor] = useState<number>(0);
@@ -45,7 +52,7 @@ export default function AdminLabaRugiPage() {
   const fetchTransactions = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/finance?startDate=${selectedYear}-01-01&endDate=${selectedYear}-12-31`);
+      const res = await fetch(`/api/finance?startDate=${startDate}&endDate=${endDate}`);
       if (res.ok) setTransactions(await res.json());
     } catch (err) {
       console.error(err);
@@ -55,19 +62,15 @@ export default function AdminLabaRugiPage() {
   };
 
   useEffect(() => {
-    fetchTransactions();
-  }, [selectedYear]);
+    if (startDate && endDate) {
+      fetchTransactions();
+    }
+  }, [startDate, endDate]);
 
   const formatRupiah = (val: number) =>
     new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(val);
 
-  const filteredTransactions = useMemo(() => {
-    if (selectedMonth === "ALL") return transactions;
-    return transactions.filter(t => {
-      const d = new Date(t.date);
-      return d.getMonth() + 1 === parseInt(selectedMonth);
-    });
-  }, [transactions, selectedMonth]);
+
 
   // ──────────────────────────────────────────────────────────────────────────
   // LOGIKA SESUAI FOTO:
@@ -92,7 +95,7 @@ export default function AdminLabaRugiPage() {
     let totalPendapatan = 0;
     let totalBiayaUsaha = 0;
 
-    filteredTransactions.forEach(t => {
+    transactions.forEach(t => {
       if (t.type === "INCOME") {
         totalPendapatan += t.amount;
         incomeCategories[t.category] = (incomeCategories[t.category] || 0) + t.amount;
@@ -130,7 +133,7 @@ export default function AdminLabaRugiPage() {
       investorPercentage,
       managementPercentage,
     };
-  }, [filteredTransactions, investorPercentage, managementPercentage, penyusutanModalInvestor]);
+  }, [transactions, investorPercentage, managementPercentage, penyusutanModalInvestor]);
 
   // ── Chart data ────────────────────────────────────────────────────────────
   const monthlyChartData = useMemo(() => {
@@ -156,7 +159,7 @@ export default function AdminLabaRugiPage() {
   // ── Export ────────────────────────────────────────────────────────────────
   const getExportData = () => [
     ["Laporan Laba Rugi"],
-    [`Tahun: ${selectedYear}`, `Bulan: ${selectedMonth === "ALL" ? "Semua Bulan" : selectedMonth}`],
+    [`Periode: ${startDate} s/d ${endDate}`],
     [""],
     ["Keterangan", "Nominal"],
     ["PENDAPATAN USAHA", ""],
@@ -181,7 +184,7 @@ export default function AdminLabaRugiPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `Laba_Rugi_${selectedYear}_${selectedMonth}.csv`);
+    link.setAttribute("download", `Laba_Rugi_${startDate}_${endDate}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -192,7 +195,7 @@ export default function AdminLabaRugiPage() {
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(getExportData());
     XLSX.utils.book_append_sheet(wb, ws, "Laba Rugi");
-    XLSX.writeFile(wb, `Laba_Rugi_${selectedYear}_${selectedMonth}.xlsx`);
+    XLSX.writeFile(wb, `Laba_Rugi_${startDate}_${endDate}.xlsx`);
     setIsExportMenuOpen(false);
   };
 
@@ -201,7 +204,7 @@ export default function AdminLabaRugiPage() {
     doc.setFontSize(16);
     doc.text("Laporan Laba Rugi", 14, 20);
     doc.setFontSize(11);
-    doc.text(`Tahun: ${selectedYear} | Bulan: ${selectedMonth === "ALL" ? "Semua Bulan" : selectedMonth}`, 14, 28);
+    doc.text(`Periode: ${startDate} s/d ${endDate}`, 14, 28);
 
     const rows = getExportData().slice(4);
     const tableBody = rows
@@ -225,7 +228,7 @@ export default function AdminLabaRugiPage() {
       columnStyles: { 0: { cellWidth: 120 }, 1: { cellWidth: 60, halign: "right" } },
     });
 
-    doc.save(`Laba_Rugi_${selectedYear}_${selectedMonth}.pdf`);
+    doc.save(`Laba_Rugi_${startDate}_${endDate}.pdf`);
     setIsExportMenuOpen(false);
   };
 
@@ -239,34 +242,21 @@ export default function AdminLabaRugiPage() {
           icon={FileText}
           rightContent={
             <div className="flex gap-3 flex-wrap items-center justify-end">
-              {/* Filter Tahun */}
-              <div className="relative group">
-                <select
-                  value={selectedYear}
-                  onChange={e => setSelectedYear(parseInt(e.target.value))}
-                  className="pl-4 pr-10 py-2.5 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-700 font-bold text-sm transition-all cursor-pointer appearance-none hover:border-blue-300"
-                >
-                  {[...Array(5)].map((_, i) => {
-                    const y = new Date().getFullYear() - i;
-                    return <option key={y} value={y}>{y}</option>;
-                  })}
-                </select>
-                <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-blue-500 transition-colors" />
-              </div>
-
-              {/* Filter Bulan */}
-              <div className="relative group">
-                <select
-                  value={selectedMonth}
-                  onChange={e => setSelectedMonth(e.target.value)}
-                  className="pl-4 pr-10 py-2.5 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-gray-700 font-bold text-sm transition-all cursor-pointer appearance-none hover:border-blue-300"
-                >
-                  <option value="ALL">Semua Bulan</option>
-                  {["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"].map((m, i) => (
-                    <option key={i + 1} value={String(i + 1)}>{m}</option>
-                  ))}
-                </select>
-                <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-blue-500 transition-colors" />
+              {/* Filter Rentang Tanggal */}
+              <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl px-2 py-1.5 hover:border-blue-200 transition-colors">
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={e => setStartDate(e.target.value)}
+                  className="bg-transparent border-none focus:outline-none text-gray-700 font-bold text-sm cursor-pointer"
+                />
+                <span className="text-gray-400 font-bold px-1">s/d</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={e => setEndDate(e.target.value)}
+                  className="bg-transparent border-none focus:outline-none text-gray-700 font-bold text-sm cursor-pointer"
+                />
               </div>
 
               {/* Bagi Hasil Investor */}
@@ -491,7 +481,7 @@ export default function AdminLabaRugiPage() {
                 <div className="p-6 lg:p-8 border-b border-gray-100/50 bg-gradient-to-r from-indigo-50/30 to-transparent">
                   <h3 className="font-black text-xl text-gray-800 flex items-center gap-3">
                     <div className="bg-indigo-100 p-2 rounded-xl"><TrendingUp className="w-5 h-5 text-indigo-600" /></div>
-                    Analitik Laba Rugi {selectedYear}
+                    Analitik Laba Rugi
                   </h3>
                 </div>
                 <div className="p-6 lg:p-8 flex-1 min-h-[400px]">

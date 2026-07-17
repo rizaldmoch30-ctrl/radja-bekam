@@ -339,25 +339,33 @@ export async function POST(request: Request) {
           finalVisitIds.push(newVisitId);
           await tx.insert(patientVisits).values({
             id: newVisitId,
-            patientId,
-            serviceId: item.serviceId || item.name,
+            patientId: patientId,
+            serviceId: item.serviceId || "MANUAL",
             branchId: finalBranchId,
             therapistId: therapistId || null,
-            visitDate: now.split("T")[0],
-            visitTime: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Jakarta" }),
-            notes: `POS Struk ${invoiceNumber}`,
+            visitDate: todayDate,
+            visitTime: currentTime,
             status: "completed",
             paymentStatus: "PAID",
           });
+          assignedCount++;
         }
+
+        finalVisitIds.push(mainVisitIdForComm as string);
       }
 
-      // If there were more original visits than items paid for, remove the excess unpaid visits
-      if (visitsToMark.length > items.length) {
-        const excessIds = visitsToMark.slice(items.length);
-        for (const excessId of excessIds) {
-          await tx.delete(patientVisits).where(eq(patientVisits.id, excessId));
-        }
+      // Mark all used visits as PAID
+      if (existingUsedVisitIds.size > 0) {
+        await tx.update(patientVisits).set({
+          paymentStatus: "PAID",
+          status: "completed"
+        }).where(inArray(patientVisits.id, Array.from(existingUsedVisitIds)));
+      }
+
+      // Any provided visit that was NOT used means the admin removed it or decreased qty. Delete it.
+      const unusedVisitIds = providedVisitIds.filter(id => !existingUsedVisitIds.has(id));
+      if (unusedVisitIds.length > 0) {
+        await tx.delete(patientVisits).where(inArray(patientVisits.id, unusedVisitIds));
       }
   
       // 10. Create therapist commission if applicable

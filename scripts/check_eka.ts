@@ -1,6 +1,6 @@
 import "dotenv/config";
-import { db } from "./src/lib/db";
-import { therapists, therapistCommissions, patientVisits, services, patients } from "./src/lib/db/schema";
+import { db } from "../src/lib/db";
+import { therapists, therapistCommissions, patientVisits, services, patients } from "../src/lib/db/schema";
 import { eq, like } from "drizzle-orm";
 
 async function check() {

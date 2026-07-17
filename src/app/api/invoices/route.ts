@@ -343,30 +343,16 @@ export async function POST(request: Request) {
             serviceId: item.serviceId || "MANUAL",
             branchId: finalBranchId,
             therapistId: therapistId || null,
-            visitDate: todayDate,
-            visitTime: currentTime,
+            visitDate: visitDateStr,
+            visitTime: transactionDate.split("T")[1]?.substring(0, 5) || "00:00",
             status: "completed",
             paymentStatus: "PAID",
           });
-          assignedCount++;
         }
 
       }
 
-      // Mark all used visits as PAID
-      if (existingUsedVisitIds.size > 0) {
-        await tx.update(patientVisits).set({
-          paymentStatus: "PAID",
-          status: "completed"
-        }).where(inArray(patientVisits.id, Array.from(existingUsedVisitIds)));
-      }
 
-      // Any provided visit that was NOT used means the admin removed it or decreased qty. Delete it.
-      const unusedVisitIds = providedVisitIds.filter(id => !existingUsedVisitIds.has(id));
-      if (unusedVisitIds.length > 0) {
-        await tx.delete(patientVisits).where(inArray(patientVisits.id, unusedVisitIds));
-      }
-  
       // 10. Create therapist commission if applicable
       if (therapistId && finalVisitIds.length > 0) {
         const therapistRecords = await tx.select().from(therapists).where(eq(therapists.id, therapistId)).limit(1);

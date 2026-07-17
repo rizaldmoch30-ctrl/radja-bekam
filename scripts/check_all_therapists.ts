@@ -1,8 +1,8 @@
 import "dotenv/config";
-import { db } from "./src/lib/db";
-import { patientVisits, therapistCommissions } from "./src/lib/db/schema";
+import { db } from "../src/lib/db";
+import { patientVisits, therapistCommissions } from "../src/lib/db/schema";
 import { eq, and, isNotNull } from "drizzle-orm";
-import { calculateTherapistCommission } from "./src/lib/commission";
+import { calculateTherapistCommission } from "../src/lib/commission";
 import crypto from "crypto";
 
 async function run() {

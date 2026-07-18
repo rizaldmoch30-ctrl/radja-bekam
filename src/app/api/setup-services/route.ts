@@ -29,7 +29,7 @@ export async function GET() {
     }
 
     return NextResponse.json({ success: true, message: "Services categorized successfully!" });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Migration error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

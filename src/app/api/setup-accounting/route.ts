@@ -87,7 +87,7 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ success: true, message: "Accounting Setup Complete" });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Accounting setup error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

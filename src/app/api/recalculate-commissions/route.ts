@@ -108,8 +108,8 @@ export async function GET(request: Request) {
       details: fixedDetails
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Gagal sinkronisasi komisi:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, { status: 500 });
   }
 }

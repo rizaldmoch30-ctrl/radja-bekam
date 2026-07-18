@@ -11,6 +11,7 @@ import { logSystemAction } from "@/lib/logger";
 import { calculateTherapistCommission } from "@/lib/commission";
 
 // Helper: Generate invoice number format INV-BRANCH_CODE-YYYYMMDD-SEQ
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function generateInvoiceNumber(branchId: string, tx?: any): Promise<string> {
   const now = new Date();
   const dateStr = now.toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }).replace(/-/g, "");
@@ -78,7 +79,7 @@ export async function GET(request: Request) {
     }));
 
     return NextResponse.json({ data: formatted });
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (error.message === "Cabang tidak ditemukan") {
       return NextResponse.json({ error: error.message }, { status: 404 });
     }
@@ -166,6 +167,7 @@ export async function POST(request: Request) {
       }
   
       // 4. Calculate totals
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const subtotal = items.reduce((sum: number, item: any) => sum + (item.subtotal || item.price * item.qty), 0);
       const grandTotal = subtotal - discount + tax;
   
@@ -426,7 +428,7 @@ export async function POST(request: Request) {
       success: true,
       data: txResult
     }, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("POST /api/invoices error:", error);
     return NextResponse.json({ error: `Gagal membuat struk: ${error.message}` }, { status: 500 });
   }

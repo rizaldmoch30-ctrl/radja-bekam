@@ -22,6 +22,7 @@ export async function GET(request: Request) {
     const currentTime = `${String(nowJkt.getHours()).padStart(2, "0")}:${String(nowJkt.getMinutes()).padStart(2, "0")}`;
 
     // Ambil terapis aktif di cabang ini
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const conditions: any[] = [eq(therapists.isActive, true)];
     if (branchFilter) {
       conditions.push(eq(therapists.branchId, branchFilter));

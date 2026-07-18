@@ -13,6 +13,7 @@ export async function GET() {
 
     const branchFilter = await getActiveBranchFilter();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const therapistsConditions: any[] = [];
     if (branchFilter) {
       therapistsConditions.push(eq(therapists.branchId, branchFilter));
@@ -29,6 +30,7 @@ export async function GET() {
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
     // Ambil semua kunjungan bulan ini (untuk patientsHandled dan komisi)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const visitsConditions: any[] = [
       like(patientVisits.visitDate, `${currentMonth}%`),
     ];

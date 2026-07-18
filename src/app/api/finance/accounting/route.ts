@@ -90,6 +90,7 @@ export async function GET(request: Request) {
       
     // Fetch lines for these journals
     const recentJournalIds = recentJournalsRaw.map(j => j.id);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let recentLines: any[] = [];
     if (recentJournalIds.length > 0) {
        recentLines = await db.select({
@@ -131,7 +132,7 @@ export async function GET(request: Request) {
       }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Accounting API Error:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

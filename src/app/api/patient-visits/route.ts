@@ -141,6 +141,7 @@ export async function POST(request: Request) {
 
     // 3. ISS-011: Cek duplikasi kunjungan (pasien + layanan + tanggal sama)
     for (const sId of finalServiceIds) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const duplicateConditions: any[] = [
         eq(patientVisits.patientId, patientId),
         eq(patientVisits.serviceId, sId),

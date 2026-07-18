@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ success: true, message: "Reservation saved successfully." });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error saving reservation:", error);
     return NextResponse.json({ success: false, error: "Failed to save reservation.", details: error.message }, { status: 500 });
   }

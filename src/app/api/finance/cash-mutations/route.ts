@@ -16,6 +16,7 @@ export async function GET(request: Request) {
     const branchFilter = await getActiveBranchFilter();
     const branch = branchFilter || searchParams.get("branchId");
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const conditions: any[] = [
       eq(financeTransactions.paymentMethod, "CASH"),
       ne(financeTransactions.category, "Bagi Hasil Terapis")

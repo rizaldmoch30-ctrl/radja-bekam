@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
     const dailyTargetVisits = targetVisits / numDays;
 
     // 2. Fetch Actual Income
-    let incomeConditions = [
+    const incomeConditions = [
       eq(financeTransactions.type, "INCOME"),
       gte(financeTransactions.date, startDate + "T00:00:00.000Z"),
       lte(financeTransactions.date, endDate + "T23:59:59.999Z")
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
     });
 
     // 3. Fetch Actual Visits
-    let visitConditions = [
+    const visitConditions = [
       eq(patientVisits.status, "completed"),
       gte(patientVisits.visitDate, startDate),
       lte(patientVisits.visitDate, endDate)

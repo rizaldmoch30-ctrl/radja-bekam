@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     const startDate = searchParams.get("startDate"); // YYYY-MM-DD
     const endDate = searchParams.get("endDate"); // YYYY-MM-DD
 
-    let filterMonth = month;
+    const filterMonth = month;
     let filterStartDate = startDate;
     let filterEndDate = endDate;
 

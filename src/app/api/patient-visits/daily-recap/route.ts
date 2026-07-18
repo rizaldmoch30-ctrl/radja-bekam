@@ -73,13 +73,13 @@ export async function GET(request: NextRequest) {
       .orderBy(desc(patientVisits.visitTime));
 
     // 3. Aggregate statistics
-    let totalVisits = result.length;
+    const totalVisits = result.length;
     let totalCompleted = 0;
     let totalCancelled = 0;
     let totalPaid = 0;
     let totalUnpaid = 0;
     let totalRevenue = 0;
-    let genderStats = { L: 0, P: 0 };
+    const genderStats = { L: 0, P: 0 };
     const serviceBreakdown: Record<string, number> = {};
 
     result.forEach((v) => {

@@ -42,6 +42,7 @@ export function calculateCommissionAmount(params: {
 }
 
 export async function calculateTherapistCommission(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   dbInstance: any,
   therapistId: string,
   serviceId: string,

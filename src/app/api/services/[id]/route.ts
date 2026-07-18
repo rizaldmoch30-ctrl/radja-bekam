@@ -77,6 +77,7 @@ export async function DELETE(
       await db.delete(services).where(eq(services.id, id));
       await logSystemAction("DELETE_SERVICE", "service", id, `Layanan dihapus permanen: ${existing[0].name}`);
       return Response.json({ success: true, message: "Layanan berhasil dihapus" });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (dbError: any) {
       // If it fails (likely due to foreign key constraint from patientVisits/reservations),
       // fallback to soft delete

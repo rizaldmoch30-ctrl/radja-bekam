@@ -90,8 +90,8 @@ export async function getSession(): Promise<AdminSession | null> {
 
     const dataStr = Buffer.from(dataBase64, "base64").toString("utf-8");
     return JSON.parse(dataStr) as AdminSession;
-  } catch (error: any) {
-    if (error && typeof error === "object" && error.digest === "DYNAMIC_SERVER_USAGE") {
+  } catch (error: unknown) {
+    if (error && typeof error === "object" && "digest" in error && error.digest === "DYNAMIC_SERVER_USAGE") {
       throw error;
     }
     console.error("Error retrieving admin session:", error);

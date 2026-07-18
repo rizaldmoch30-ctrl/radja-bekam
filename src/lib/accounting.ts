@@ -1,6 +1,5 @@
 import { db } from "@/lib/db";
-import { journalEntries, journalLines, accounts } from "@/lib/db/schema";
-import { sql } from "drizzle-orm";
+import { journalEntries, journalLines } from "@/lib/db/schema";
 
 /**
  * Helper to automatically create a double-entry journal record
@@ -20,6 +19,7 @@ export async function createJournalEntry({
   debitAccountId: string; // Akun yang di-debet (bertambah jika Aset/Beban)
   creditAccountId: string; // Akun yang di-kredit (bertambah jika Kewajiban/Modal/Pendapatan)
   amount: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   tx?: any; // Drizzle transaction instance
 }) {
   const jId = "jrn_" + Math.random().toString(36).substr(2, 9);

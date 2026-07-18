@@ -51,6 +51,7 @@ export async function GET(
 
     const branchFilter = await getActiveBranchFilter();
     
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const visitConditions: any[] = [
       gte(patientVisits.visitDate, filterStartDate),
       lte(patientVisits.visitDate, filterEndDate)
@@ -82,6 +83,7 @@ export async function GET(
 
     const visitIds = allVisits.map((v) => v.id);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let comms: any[] = [];
     if (visitIds.length > 0) {
       comms = await db

@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     }).from(admins);
 
     return NextResponse.json({ data: allAdmins });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Fetch users error:", error);
     return NextResponse.json({ error: "Gagal mengambil data pengguna" }, { status: 500 });
   }
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ success: true, message: "Pengguna berhasil dibuat" });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Create user error:", error);
     return NextResponse.json({ error: "Gagal membuat pengguna" }, { status: 500 });
   }

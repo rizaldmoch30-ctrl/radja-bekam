@@ -15,6 +15,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const body = await request.json();
     const { name, role, branchId, isActive, password, permissions } = body;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = {
       name,
       role,
@@ -33,7 +34,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     await db.update(admins).set(updateData).where(eq(admins.id, id));
 
     return NextResponse.json({ success: true, message: "Pengguna berhasil diperbarui" });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Update user error:", error);
     return NextResponse.json({ error: "Gagal memperbarui pengguna" }, { status: 500 });
   }
@@ -50,7 +51,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     await db.delete(admins).where(eq(admins.id, id));
 
     return NextResponse.json({ success: true, message: "Pengguna berhasil dihapus" });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Delete user error:", error);
     return NextResponse.json({ error: "Gagal menghapus pengguna" }, { status: 500 });
   }

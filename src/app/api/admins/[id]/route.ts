@@ -33,6 +33,7 @@ export async function PUT(
       }
     }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
     if (username !== undefined) updateData.username = username.toLowerCase();

@@ -10,7 +10,7 @@ export async function GET(request: Request) {
     const all = searchParams.get("all") === "true";
     const branchFilter = await getActiveBranchFilter();
 
-    let conditions = [];
+    const conditions = [];
 
     if (!all) {
       conditions.push(eq(services.isActive, true));

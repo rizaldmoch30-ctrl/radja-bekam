@@ -53,6 +53,7 @@ export async function GET(request: Request) {
       let itemsSummary = "";
       try {
         const parsedItems = JSON.parse(inv.items);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
         itemsSummary = parsedItems.map((i: any) => `${i.name} x${i.qty}`).join("; ");
       } catch {
         itemsSummary = inv.items;

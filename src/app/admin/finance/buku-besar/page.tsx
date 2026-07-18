@@ -33,6 +33,11 @@ const fmtDate = (iso: string) => {
   return `${String(d.getDate()).padStart(2,"0")}-${months[d.getMonth()]}-${yy}`;
 };
 
+const toTitleCase = (str: string) => {
+  if (!str) return "";
+  return str.toLowerCase().replace(/\b\w/g, s => s.toUpperCase());
+};
+
 export default function BukuBesarPage() {
   const [transactions, setTransactions] = useState<FinanceTransaction[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -159,16 +164,16 @@ export default function BukuBesarPage() {
   // ── Export helpers ─────────────────────────────────────────────────────────
   const buildExportRows = () => {
     const rows: (string | number)[][] = [
-      ["LAPORAN BUKU BESAR"],
-      ["Cabang:", branchName],
+      ["Laporan Buku Besar"],
+      ["Cabang:", toTitleCase(branchName)],
       ["Periode:", periodLabel()],
       [""],
     ];
     grouped.forEach((items, cat) => {
-      rows.push([cat]);
-      rows.push(["TANGGAL", "KETERANGAN", "DEBIT", "KREDIT"]);
+      rows.push([toTitleCase(cat)]);
+      rows.push(["Tanggal", "Keterangan", "Debit", "Kredit"]);
       items.forEach(t => {
-        rows.push([fmtDate(t.date), t.description, t.amount, 0]);
+        rows.push([fmtDate(t.date), toTitleCase(t.description), t.amount, 0]);
       });
       const jumlah = items.reduce((s, t) => s + t.amount, 0);
       rows.push(["", "Jumlah", jumlah, 0]);
@@ -191,9 +196,9 @@ export default function BukuBesarPage() {
     // Header
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
-    doc.text("LAPORAN BUKU BESAR", 105, 15, { align: "center" });
+    doc.text("Laporan Buku Besar", 105, 15, { align: "center" });
     doc.setFontSize(10);
-    doc.text(`Cabang: ${branchName}`, 105, 22, { align: "center" });
+    doc.text(`Cabang: ${toTitleCase(branchName)}`, 105, 22, { align: "center" });
     doc.text(`Periode: ${periodLabel()}`, 105, 28, { align: "center" });
 
     let y = 36;
@@ -205,16 +210,16 @@ export default function BukuBesarPage() {
       doc.setFillColor(255, 255, 0);
       doc.rect(14, y, 182, 7, "F");
       doc.setTextColor(0, 0, 0);
-      doc.text(cat, 15, y + 5);
+      doc.text(toTitleCase(cat), 15, y + 5);
       y += 9;
 
-      const tableRows = items.map(t => [fmtDate(t.date), t.description, fmtNum(t.amount), "0"]);
+      const tableRows = items.map(t => [fmtDate(t.date), toTitleCase(t.description), fmtNum(t.amount), "0"]);
       const jumlah = items.reduce((s, t) => s + t.amount, 0);
       tableRows.push(["", "Jumlah", fmtNum(jumlah), "0"]);
 
       autoTable(doc, {
         startY: y,
-        head: [["TANGGAL", "KETERANGAN", "DEBIT", "KREDIT"]],
+        head: [["Tanggal", "Keterangan", "Debit", "Kredit"]],
         body: tableRows,
         theme: "grid",
         styles: { fontSize: 8, cellPadding: 2 },
@@ -319,9 +324,9 @@ export default function BukuBesarPage() {
 
           {/* Header Laporan (terlihat saat print) */}
           <div className="hidden print:block text-center mb-6">
-            <h1 className="text-xl font-black underline">LAPORAN BUKU BESAR</h1>
-            <p className="font-bold">{branchName}</p>
-            <p className="font-semibold">PERIODE {periodLabel().toUpperCase()}</p>
+            <h1 className="text-xl font-black underline">Laporan Buku Besar</h1>
+            <p className="font-bold">{toTitleCase(branchName)}</p>
+            <p className="font-semibold">Periode {periodLabel()}</p>
           </div>
 
           {/* Info periode (layar) */}
@@ -351,7 +356,7 @@ export default function BukuBesarPage() {
                   <div key={category} className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm print:rounded-none print:shadow-none print:border-0 print:break-inside-avoid">
                     {/* Kategori header (kuning seperti foto) */}
                     <div className="bg-yellow-300 px-4 py-2 print:bg-yellow-200">
-                      <span className="font-bold text-gray-900 text-sm">{category}</span>
+                      <span className="font-bold text-gray-900 text-sm">{toTitleCase(category)}</span>
                     </div>
 
                     {/* Tabel */}
@@ -359,10 +364,10 @@ export default function BukuBesarPage() {
                       <table className="w-full text-sm border-collapse">
                         <thead>
                           <tr className="bg-gray-100 border-b border-gray-300">
-                            <th className="px-4 py-2 text-left font-bold text-gray-700 border border-gray-300 w-28">TANGGAL</th>
-                            <th className="px-4 py-2 text-left font-bold text-gray-700 border border-gray-300">KETERANGAN</th>
-                            <th className="px-4 py-2 text-right font-bold text-gray-700 border border-gray-300 w-36">DEBIT</th>
-                            <th className="px-4 py-2 text-right font-bold text-gray-700 border border-gray-300 w-28">KREDIT</th>
+                            <th className="px-4 py-2 text-left font-bold text-gray-700 border border-gray-300 w-28">Tanggal</th>
+                            <th className="px-4 py-2 text-left font-bold text-gray-700 border border-gray-300">Keterangan</th>
+                            <th className="px-4 py-2 text-right font-bold text-gray-700 border border-gray-300 w-36">Debit</th>
+                            <th className="px-4 py-2 text-right font-bold text-gray-700 border border-gray-300 w-28">Kredit</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -377,7 +382,7 @@ export default function BukuBesarPage() {
                               return Array.from(therapistTotals.entries()).map(([name, amount], idx) => (
                                 <tr key={name} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
                                   <td className="px-4 py-2 border border-gray-200 text-gray-700 whitespace-nowrap font-mono text-xs text-center">-</td>
-                                  <td className="px-4 py-2 border border-gray-200 text-gray-800 font-bold">Total Gaji: {name}</td>
+                                  <td className="px-4 py-2 border border-gray-200 text-gray-800 font-bold">Total Gaji: {toTitleCase(name)}</td>
                                   <td className="px-4 py-2 border border-gray-200 text-right text-gray-900 font-medium">{fmtNum(amount)}</td>
                                   <td className="px-4 py-2 border border-gray-200 text-right text-gray-500">0</td>
                                 </tr>
@@ -393,7 +398,7 @@ export default function BukuBesarPage() {
                                   {fmtDate(t.date)}
                                 </td>
                                 <td className="px-4 py-2 border border-gray-200 text-gray-800">
-                                  {t.description}
+                                  {toTitleCase(t.description)}
                                 </td>
                                 <td className="px-4 py-2 border border-gray-200 text-right text-gray-900 font-medium">
                                   {fmtNum(t.amount)}
@@ -431,7 +436,7 @@ export default function BukuBesarPage() {
 
               {/* TOTAL SEMUA KATEGORI */}
               <div className="bg-gray-900 text-white rounded-2xl px-6 py-4 flex justify-between items-center print:bg-gray-800">
-                <span className="font-black text-lg">TOTAL SELURUH BIAYA USAHA</span>
+                <span className="font-black text-lg">Total Seluruh Biaya Usaha</span>
                 <span className="font-black text-xl tabular-nums">
                   {fmtNum(transactions.reduce((s, t) => s + t.amount, 0))}
                 </span>

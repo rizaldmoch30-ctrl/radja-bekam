@@ -104,6 +104,16 @@ export async function POST(
             );
 
             if (commissionAmount > 0) {
+              // Hapus komisi lama jika ada untuk mencegah duplikasi
+              await tx.delete(therapistCommissions).where(eq(therapistCommissions.visitId, visitId));
+              await tx.delete(financeTransactions).where(
+                and(
+                  eq(financeTransactions.referenceId, visitId),
+                  eq(financeTransactions.type, "EXPENSE"),
+                  like(financeTransactions.description, "%Bagi Hasil Terapis%")
+                )
+              );
+
               // C. Sinkronisasi ke Laporan Bulanan Terapis — ambil data SEBELUM INSERT
               // agar query DB tidak menyertakan komisi yang baru saja di-INSERT (cegah double-count)
               const visitMonth = visit.visitDate.substring(0, 7); // YYYY-MM

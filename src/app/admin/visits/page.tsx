@@ -825,9 +825,11 @@ export default function AdminVisitsPage() {
       if (!groups[key]) groups[key] = [];
       groups[key].push(v);
     }
-    const sortedGroups = Object.values(groups).sort((a, b) => 
-      new Date(b[0].createdAt).getTime() - new Date(a[0].createdAt).getTime()
-    );
+    const sortedGroups = Object.values(groups).sort((a, b) => {
+      const dateA = new Date(`${a[0].visitDate}T${(a[0].visitTime || '00:00').replace('.', ':')}:00`).getTime();
+      const dateB = new Date(`${b[0].visitDate}T${(b[0].visitTime || '00:00').replace('.', ':')}:00`).getTime();
+      return dateB - dateA;
+    });
     const groupIndex = sortedGroups.findIndex(g => g.some(v => v.id === visitId));
     return groupIndex >= 0 ? sortedGroups.length - groupIndex : 1;
   };
@@ -838,7 +840,11 @@ export default function AdminVisitsPage() {
     const patientName = getPatientName(v.patientId).toLowerCase();
     const matchSearch = patientName.includes(searchQuery.toLowerCase());
     return matchBranch && matchDate && matchSearch;
-  }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }).sort((a, b) => {
+    const dateA = new Date(`${a.visitDate}T${(a.visitTime || '00:00').replace('.', ':')}:00`).getTime();
+    const dateB = new Date(`${b.visitDate}T${(b.visitTime || '00:00').replace('.', ':')}:00`).getTime();
+    return dateB - dateA;
+  });
 
   // Hitung KPI menggunakan data asli (bukan paginated)
   const todayDateString = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
@@ -2663,7 +2669,11 @@ export default function AdminVisitsPage() {
                 {(() => {
                   const patientVisits = visits
                     .filter(v => v.patientId === selectedPatientHistoryId)
-                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                    .sort((a, b) => {
+                      const dateA = new Date(`${a.visitDate}T${(a.visitTime || '00:00').replace('.', ':')}:00`).getTime();
+                      const dateB = new Date(`${b.visitDate}T${(b.visitTime || '00:00').replace('.', ':')}:00`).getTime();
+                      return dateB - dateA;
+                    });
 
                   const groupedVisits = patientVisits.reduce((acc, visit) => {
                     const key = `${visit.visitDate}_${visit.visitTime}`;
@@ -2677,8 +2687,8 @@ export default function AdminVisitsPage() {
                   const groupedArray = Object.entries(groupedVisits).map(([key, groupVisits]) => ({
                     key,
                     visits: groupVisits,
-                    createdAt: groupVisits[0].createdAt
-                  })).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+                    sortTime: new Date(`${groupVisits[0].visitDate}T${(groupVisits[0].visitTime || '00:00').replace('.', ':')}:00`).getTime()
+                  })).sort((a, b) => b.sortTime - a.sortTime);
 
                   return groupedArray.map((group, idx, arr) => {
                     const firstVisit = group.visits[0];

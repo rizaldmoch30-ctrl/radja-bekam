@@ -184,8 +184,8 @@ export async function GET(
 
     // Sort descending by date and time
     combinedVisits.sort((a, b) => {
-      const dateA = new Date(`${a.visitDate}T${a.visitTime}`);
-      const dateB = new Date(`${b.visitDate}T${b.visitTime}`);
+      const dateA = new Date(`${a.visitDate}T${(a.visitTime || '00:00').replace('.', ':')}`);
+      const dateB = new Date(`${b.visitDate}T${(b.visitTime || '00:00').replace('.', ':')}`);
       return dateB.getTime() - dateA.getTime();
     });
 

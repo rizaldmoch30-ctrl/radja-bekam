@@ -31,6 +31,7 @@ export async function GET() {
     return NextResponse.json({ success: true, message: "Services categorized successfully!" });
   } catch (error: unknown) {
     console.error("Migration error:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }

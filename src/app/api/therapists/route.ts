@@ -173,8 +173,7 @@ export async function POST(request: Request) {
           id: crypto.randomUUID(),
           therapistId: newTherapist.id,
           serviceId: c.serviceId,
-          type: c.type,
-          amount: c.amount
+          commissionAmount: c.commissionAmount
         }));
         
         await db.insert(therapistServiceCommissions).values(newCommissions);

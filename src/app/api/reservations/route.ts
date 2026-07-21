@@ -24,7 +24,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, message: "Reservation saved successfully." });
   } catch (error: unknown) {
     console.error("Error saving reservation:", error);
-    return NextResponse.json({ success: false, error: "Failed to save reservation.", details: error.message }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    return NextResponse.json({ success: false, error: "Failed to save reservation.", details: errorMessage }, { status: 500 });
   }
 }
 

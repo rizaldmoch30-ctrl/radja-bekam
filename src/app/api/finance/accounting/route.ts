@@ -134,6 +134,7 @@ export async function GET(request: Request) {
 
   } catch (error: unknown) {
     console.error("Accounting API Error:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }

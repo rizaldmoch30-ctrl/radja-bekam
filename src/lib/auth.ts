@@ -89,7 +89,12 @@ export async function getSession(): Promise<AdminSession | null> {
     if (signature !== expectedSignature) return null;
 
     const dataStr = Buffer.from(dataBase64, "base64").toString("utf-8");
-    return JSON.parse(dataStr) as AdminSession;
+    const session = JSON.parse(dataStr) as AdminSession;
+    
+    // Refresh permissions based on role to prevent stale cookies when new permissions are added
+    session.permissions = getDefaultPermissions(session.role);
+    
+    return session;
   } catch (error: unknown) {
     if (error && typeof error === "object" && "digest" in error && error.digest === "DYNAMIC_SERVER_USAGE") {
       throw error;

@@ -324,15 +324,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             // Permissions filtering
             const filteredNavLinks = navLinks.filter(link => {
               const perms = session?.permissions || [];
+              const isBranchAdmin = session?.role === "BRANCH_ADMIN";
+              const isCashier = session?.role === "CASHIER";
 
-              if (link.name === "Dashboard") return perms.includes("DASHBOARD_ANALITIK") || session?.role === "BRANCH_ADMIN";
+              if (link.name === "Dashboard") return perms.includes("DASHBOARD_ANALITIK") || isBranchAdmin;
               if (link.name === "Reservasi Online") return perms.includes("RESERVASI_ONLINE");
               if (link.name === "Buku Pasien") return perms.includes("BUKUPASIEN_REKAMMEDIS");
               if (link.name === "Transaksi Pelanggan") return perms.includes("KEUANGAN_PEMASUKAN") || perms.includes("BUKUPASIEN_REKAMMEDIS");
-              if (link.name === "Layanan Terapi") return perms.includes("PENGATURAN_CABANG") || session?.role === "CASHIER" || session?.role === "BRANCH_ADMIN";
+              if (link.name === "Layanan Terapi") return perms.includes("PENGATURAN_CABANG") || isCashier || isBranchAdmin;
 
               if (link.name === "Pegawai") {
                 link.subItems = link.subItems?.filter(sub => {
+                  if (isBranchAdmin || isCashier) return true;
                   if (sub.name === "Data Terapis") return perms.includes("PEGAWAI_TERAPIS");
                   if (sub.name === "Data Staff") return perms.includes("PEGAWAI_STAFF");
                   if (sub.name === "Absensi Pegawai") return perms.includes("PEGAWAI_ABSENSI");
@@ -347,6 +350,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
               if (link.name === "Keuangan") {
                 link.subItems = link.subItems?.filter(sub => {
+                  if (isBranchAdmin || isCashier) return true;
                   if (sub.name === "Pemasukan & Pengeluaran") return perms.includes("KEUANGAN_PEMASUKAN");
                   if (sub.name === "Pengeluaran Klinik") return perms.includes("KEUANGAN_PENGELUARAN");
                   if (sub.name === "Mutasi Kas") return perms.includes("KEUANGAN_MUTASI");

@@ -315,6 +315,14 @@ export default function AdminFinancePage() {
   const totalExpense = transactions.filter(t => t.type === "EXPENSE").reduce((sum, t) => sum + t.amount, 0);
   const netProfit = totalIncome - totalExpense;
 
+  const cashIncome = transactions.filter(t => t.type === "INCOME" && t.paymentMethod === "CASH").reduce((sum, t) => sum + t.amount, 0);
+  const cashExpense = transactions.filter(t => t.type === "EXPENSE" && t.paymentMethod === "CASH").reduce((sum, t) => sum + t.amount, 0);
+  const netCash = cashIncome - cashExpense;
+
+  const nonCashIncome = transactions.filter(t => t.type === "INCOME" && t.paymentMethod !== "CASH").reduce((sum, t) => sum + t.amount, 0);
+  const nonCashExpense = transactions.filter(t => t.type === "EXPENSE" && t.paymentMethod !== "CASH").reduce((sum, t) => sum + t.amount, 0);
+  const netNonCash = nonCashIncome - nonCashExpense;
+
   const formatRupiah = (amount: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount);
   };
@@ -478,6 +486,39 @@ export default function AdminFinancePage() {
                   Laba Bersih
                 </div>
                 <div className="text-4xl font-bold relative z-10">{formatRupiah(netProfit)}</div>
+              </div>
+            </div>
+
+            {/* Saldo Cash vs Non-Cash Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 relative overflow-hidden group hover:shadow-md transition-shadow">
+                <div className="absolute right-0 top-0 opacity-5 p-4 group-hover:scale-110 transition-transform">
+                  <DollarSign className="h-24 w-24 text-green-500" />
+                </div>
+                <div className="flex items-center gap-2 text-gray-500 font-medium mb-2 relative z-10">
+                  <div className="p-2 bg-green-100 rounded-lg text-green-600"><DollarSign className="h-5 w-5" /></div>
+                  Saldo Uang Fisik (CASH)
+                </div>
+                <div className="text-2xl font-bold text-gray-900 relative z-10">{formatRupiah(netCash)}</div>
+                <div className="mt-2 text-sm text-gray-500 relative z-10 flex gap-4">
+                  <span className="text-green-600">In: {formatRupiah(cashIncome)}</span>
+                  <span className="text-red-500">Out: {formatRupiah(cashExpense)}</span>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 relative overflow-hidden group hover:shadow-md transition-shadow">
+                <div className="absolute right-0 top-0 opacity-5 p-4 group-hover:scale-110 transition-transform">
+                  <CreditCard className="h-24 w-24 text-blue-500" />
+                </div>
+                <div className="flex items-center gap-2 text-gray-500 font-medium mb-2 relative z-10">
+                  <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600"><CreditCard className="h-5 w-5" /></div>
+                  Saldo Non-Kas (Transfer/E-Wallet)
+                </div>
+                <div className="text-2xl font-bold text-gray-900 relative z-10">{formatRupiah(netNonCash)}</div>
+                <div className="mt-2 text-sm text-gray-500 relative z-10 flex gap-4">
+                  <span className="text-green-600">In: {formatRupiah(nonCashIncome)}</span>
+                  <span className="text-red-500">Out: {formatRupiah(nonCashExpense)}</span>
+                </div>
               </div>
             </div>
 

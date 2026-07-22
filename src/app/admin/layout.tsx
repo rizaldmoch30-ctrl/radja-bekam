@@ -335,7 +335,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
               if (link.name === "Pegawai") {
                 link.subItems = link.subItems?.filter(sub => {
-                  if (isBranchAdmin || isCashier) return true;
                   if (sub.name === "Data Terapis") return perms.includes("PEGAWAI_TERAPIS");
                   if (sub.name === "Data Staff") return perms.includes("PEGAWAI_STAFF");
                   if (sub.name === "Absensi Pegawai") return perms.includes("PEGAWAI_ABSENSI");
@@ -350,7 +349,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
               if (link.name === "Keuangan") {
                 link.subItems = link.subItems?.filter(sub => {
-                  if (isBranchAdmin || isCashier) return true;
                   if (sub.name === "Pemasukan & Pengeluaran") return perms.includes("KEUANGAN_PEMASUKAN");
                   if (sub.name === "Pengeluaran Klinik") return perms.includes("KEUANGAN_PENGELUARAN");
                   if (sub.name === "Mutasi Kas") return perms.includes("KEUANGAN_MUTASI");

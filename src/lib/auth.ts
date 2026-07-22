@@ -91,8 +91,10 @@ export async function getSession(): Promise<AdminSession | null> {
     const dataStr = Buffer.from(dataBase64, "base64").toString("utf-8");
     const session = JSON.parse(dataStr) as AdminSession;
     
-    // Refresh permissions based on role to prevent stale cookies when new permissions are added
-    session.permissions = getDefaultPermissions(session.role);
+    // Only use default permissions if permissions array is missing or invalid
+    if (!session.permissions || !Array.isArray(session.permissions)) {
+      session.permissions = getDefaultPermissions(session.role);
+    }
     
     return session;
   } catch (error: unknown) {

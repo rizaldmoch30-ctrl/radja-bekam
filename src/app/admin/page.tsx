@@ -112,7 +112,6 @@ export default function AdminDashboard() {
   const [targetIncome, setTargetIncome] = useState(0);
   const [targetVisits, setTargetVisits] = useState(0);
   const [chartData, setChartData] = useState<any[]>([]);
-  const [monthlyBalance, setMonthlyBalance] = useState<any>(null);
   const [summaryData, setSummaryData] = useState<any>({
     kasDanBank: 0,
     pendapatan: 0,
@@ -158,12 +157,11 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [kpiRes, summaryRes, branchRes, sessionRes, mbRes] = await Promise.all([
+      const [kpiRes, summaryRes, branchRes, sessionRes] = await Promise.all([
         fetch(`/api/dashboard/kpi-chart?month=${month}&branchId=${filterBranch}`),
         fetch(`/api/dashboard/summary?month=${month}&branchId=${filterBranch}`),
         fetch("/api/branches"),
-        fetch("/api/auth/session"),
-        fetch(`/api/finance/monthly-balance?month=${month}&branch=${filterBranch}`)
+        fetch("/api/auth/session")
       ]);
 
       if (kpiRes.ok) {
@@ -190,11 +188,6 @@ export default function AdminDashboard() {
       if (sessionRes.ok) {
         const sJson = await sessionRes.json();
         setSession(sJson.session);
-      }
-      
-      if (mbRes.ok) {
-        const mbJson = await mbRes.json();
-        setMonthlyBalance(mbJson);
       }
     } catch (e) {
       console.error(e);
@@ -431,39 +424,6 @@ export default function AdminDashboard() {
                       <span className="text-blue-50 text-sm font-medium flex items-center gap-1.5"><Target className="w-4 h-4" /> Capaian Target</span>
                       <span className="text-blue-300 font-black text-lg">{showBalance ? (incomePercent === 0 ? "Belum ditentukan" : `${incomePercent}%`) : "••%"}</span>
                    </div>
-                </div>
-              </div>
-            )}
-
-            {/* Saldo Cash vs Non-Cash Widget */}
-            {(session?.role === "SUPER_ADMIN" || session?.role === "INVESTOR") && monthlyBalance && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                <div className="bg-white rounded-[20px] p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-green-100 flex items-center justify-between relative overflow-hidden group hover:shadow-md hover:border-green-300 transition-all">
-                  <div className="absolute right-0 top-0 w-32 h-32 bg-green-50 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-                  <div className="relative z-10">
-                    <div className="text-xs font-bold text-green-600 uppercase tracking-widest mb-1 flex items-center gap-2">
-                      <Wallet className="w-4 h-4" /> Uang Fisik (CASH)
-                    </div>
-                    <div className="text-2xl font-black text-gray-900">{showBalance ? <AnimatedNumber value={monthlyBalance.netCash} /> : "Rp ••••••••"}</div>
-                    <div className="text-[10px] text-gray-500 font-medium mt-1">Total surplus mutasi tunai bulan ini</div>
-                  </div>
-                  <div className="w-12 h-12 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform relative z-10">
-                    <Wallet className="w-6 h-6" />
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-[20px] p-6 shadow-[0_2px_10px_rgba(0,0,0,0.02)] border border-indigo-100 flex items-center justify-between relative overflow-hidden group hover:shadow-md hover:border-indigo-300 transition-all">
-                  <div className="absolute right-0 top-0 w-32 h-32 bg-indigo-50 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-                  <div className="relative z-10">
-                    <div className="text-xs font-bold text-indigo-600 uppercase tracking-widest mb-1 flex items-center gap-2">
-                      <WalletCards className="w-4 h-4" /> Non-Kas (Transfer)
-                    </div>
-                    <div className="text-2xl font-black text-gray-900">{showBalance ? <AnimatedNumber value={monthlyBalance.netNonCash} /> : "Rp ••••••••"}</div>
-                    <div className="text-[10px] text-gray-500 font-medium mt-1">Total surplus transfer & digital bulan ini</div>
-                  </div>
-                  <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform relative z-10">
-                    <WalletCards className="w-6 h-6" />
-                  </div>
                 </div>
               </div>
             )}

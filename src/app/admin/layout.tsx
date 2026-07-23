@@ -144,10 +144,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const bottomNavLinks = bottomNavLinksRaw.filter(link => {
     const perms = session?.permissions || [];
-    if (link.name === "Dashboard") return perms.includes("DASHBOARD_ANALITIK") || session?.role === "BRANCH_ADMIN";
-    if (link.name === "Visits") return perms.includes("BUKUPASIEN_REKAMMEDIS");
-    if (link.name === "Reservasi") return perms.includes("RESERVASI_ONLINE");
-    if (link.name === "Finance") return perms.includes("KEUANGAN_PEMASUKAN") || perms.includes("KEUANGAN_PENGELUARAN") || perms.includes("KEUANGAN_MUTASI") || perms.includes("KEUANGAN_LABARUGI");
+    const isSuper = session?.role === "SUPER_ADMIN";
+    if (link.name === "Dashboard") return perms.includes("DASHBOARD_ANALITIK") || session?.role === "BRANCH_ADMIN" || isSuper;
+    if (link.name === "Visits") return perms.includes("BUKUPASIEN_REKAMMEDIS") || isSuper;
+    if (link.name === "Reservasi") return perms.includes("RESERVASI_ONLINE") || isSuper;
+    if (link.name === "Finance") return perms.includes("KEUANGAN_PEMASUKAN") || perms.includes("KEUANGAN_PENGELUARAN") || perms.includes("KEUANGAN_MUTASI") || perms.includes("KEUANGAN_LABARUGI") || isSuper;
     return false;
   });
 
@@ -327,33 +328,35 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               const isBranchAdmin = session?.role === "BRANCH_ADMIN";
               const isCashier = session?.role === "CASHIER";
 
-              if (link.name === "Dashboard") return perms.includes("DASHBOARD_ANALITIK") || isBranchAdmin;
-              if (link.name === "Reservasi Online") return perms.includes("RESERVASI_ONLINE");
-              if (link.name === "Buku Pasien") return perms.includes("BUKUPASIEN_REKAMMEDIS");
-              if (link.name === "Transaksi Pelanggan") return perms.includes("KEUANGAN_PEMASUKAN") || perms.includes("BUKUPASIEN_REKAMMEDIS");
-              if (link.name === "Layanan Terapi") return perms.includes("PENGATURAN_CABANG") || isCashier || isBranchAdmin;
+              const isSuper = session?.role === "SUPER_ADMIN";
+              if (link.name === "Dashboard") return perms.includes("DASHBOARD_ANALITIK") || isBranchAdmin || isSuper;
+              if (link.name === "Reservasi Online") return perms.includes("RESERVASI_ONLINE") || isSuper;
+              if (link.name === "Buku Pasien") return perms.includes("BUKUPASIEN_REKAMMEDIS") || isSuper;
+              if (link.name === "Transaksi Pelanggan") return perms.includes("KEUANGAN_PEMASUKAN") || perms.includes("BUKUPASIEN_REKAMMEDIS") || isSuper;
+              if (link.name === "Layanan Terapi") return perms.includes("PENGATURAN_CABANG") || isCashier || isBranchAdmin || isSuper;
 
               if (link.name === "Pegawai") {
                 link.subItems = link.subItems?.filter(sub => {
-                  if (sub.name === "Data Terapis") return perms.includes("PEGAWAI_TERAPIS");
-                  if (sub.name === "Data Staff") return perms.includes("PEGAWAI_STAFF");
-                  if (sub.name === "Absensi Pegawai") return perms.includes("PEGAWAI_ABSENSI");
-                  if (sub.name === "Surat Mutasi") return perms.includes("PEGAWAI_MUTASI");
-                  if (sub.name === "Slip Gaji Terapis" || sub.name === "Slip Gaji Staff") return perms.includes("PEGAWAI_SLIP");
+                  const isSuper = session?.role === "SUPER_ADMIN";
+                  if (sub.name === "Data Terapis") return perms.includes("PEGAWAI_TERAPIS") || isSuper;
+                  if (sub.name === "Data Staff") return perms.includes("PEGAWAI_STAFF") || isSuper;
+                  if (sub.name === "Absensi Pegawai") return perms.includes("PEGAWAI_ABSENSI") || isSuper;
+                  if (sub.name === "Surat Mutasi") return perms.includes("PEGAWAI_MUTASI") || isSuper;
+                  if (sub.name === "Slip Gaji Terapis" || sub.name === "Slip Gaji Staff") return perms.includes("PEGAWAI_SLIP") || isSuper;
                   return false;
                 });
                 return (link.subItems && link.subItems.length > 0);
               }
 
-              if (link.name === "Inventaris") return perms.includes("INVENTARIS_BARANG");
+              if (link.name === "Inventaris") return perms.includes("INVENTARIS_BARANG") || isSuper;
 
               if (link.name === "Keuangan") {
                 link.subItems = link.subItems?.filter(sub => {
-                  if (sub.name === "Pemasukan & Pengeluaran") return perms.includes("KEUANGAN_PEMASUKAN");
-                  if (sub.name === "Pengeluaran Klinik") return perms.includes("KEUANGAN_PENGELUARAN");
-                  if (sub.name === "Mutasi Kas") return perms.includes("KEUANGAN_MUTASI");
-                  if (sub.name === "Laporan Laba Rugi") return perms.includes("KEUANGAN_LABARUGI");
-                  if (sub.name === "Buku Besar") return perms.includes("KEUANGAN_LABARUGI");
+                  if (sub.name === "Pemasukan & Pengeluaran") return perms.includes("KEUANGAN_PEMASUKAN") || isSuper;
+                  if (sub.name === "Pengeluaran Klinik") return perms.includes("KEUANGAN_PENGELUARAN") || isSuper;
+                  if (sub.name === "Mutasi Kas") return perms.includes("KEUANGAN_MUTASI") || isSuper;
+                  if (sub.name === "Laporan Laba Rugi") return perms.includes("KEUANGAN_LABARUGI") || isSuper;
+                  if (sub.name === "Buku Besar") return perms.includes("KEUANGAN_LABARUGI") || isSuper;
                   return false;
                 });
                 return (link.subItems && link.subItems.length > 0);

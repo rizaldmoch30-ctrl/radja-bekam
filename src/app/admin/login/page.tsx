@@ -57,9 +57,9 @@ export default function AdminLoginPage() {
       }
 
       if (data.user?.role === "SUPER_ADMIN" || data.user?.role === "INVESTOR" || data.user?.role === "BRANCH_ADMIN") {
-        router.push("/admin");
+        window.location.href = "/admin";
       } else {
-        router.push("/admin/visits");
+        window.location.href = "/admin/visits";
       }
     } catch {
       setError("Terjadi kesalahan jaringan");

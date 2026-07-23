@@ -139,31 +139,23 @@ export async function POST(request: Request) {
       });
     }
 
-    // 3. ISS-011: Cek duplikasi kunjungan (pasien + layanan + tanggal sama)
-    for (const sId of finalServiceIds) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const duplicateConditions: any[] = [
-        eq(patientVisits.patientId, patientId),
-        eq(patientVisits.serviceId, sId),
-        like(patientVisits.visitDate, visitDate),
-        eq(patientVisits.status, "in_progress")
-      ];
-      if (therapistId) {
-        duplicateConditions.push(eq(patientVisits.therapistId, therapistId));
-      }
+    // 3. ISS-011: Cek duplikasi kunjungan (pasien + tanggal sama)
+    const duplicateCheck = await db
+      .select({ id: patientVisits.id })
+      .from(patientVisits)
+      .where(
+        and(
+          eq(patientVisits.patientId, patientId),
+          like(patientVisits.visitDate, visitDate)
+        )
+      )
+      .limit(1);
 
-      const duplicateCheck = await db
-        .select({ id: patientVisits.id })
-        .from(patientVisits)
-        .where(and(...duplicateConditions))
-        .limit(1);
-
-      if (duplicateCheck.length > 0) {
-        return Response.json(
-          { error: "Kunjungan duplikat: pasien ini sudah tercatat untuk layanan yang sama pada tanggal tersebut.", duplicateVisitId: duplicateCheck[0].id },
-          { status: 409 }
-        );
-      }
+    if (duplicateCheck.length > 0) {
+      return Response.json(
+        { error: "Kunjungan duplikat: pasien ini sudah memiliki data kunjungan pada hari ini.", duplicateVisitId: duplicateCheck[0].id },
+        { status: 409 }
+      );
     }
 
     // Tentukan status kunjungan: jika ada checkInTime + terapis, berarti sedang berlangsung

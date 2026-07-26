@@ -5,7 +5,7 @@ import crypto from "crypto";
 
 async function run() {
   console.log("🌱 Inserting categories...");
-  
+
   const categories = [
     { name: 'biaya penyusutan sewa ruko', type: 'EXPENSE' },
     { name: 'biaya sistem kasir', type: 'EXPENSE' }
@@ -20,7 +20,7 @@ async function run() {
     });
     console.log(`Inserted ${cat.name}`);
   }
-  
+
   console.log("✅ Done");
   process.exit(0);
 }

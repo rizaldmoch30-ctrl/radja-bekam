@@ -72,6 +72,7 @@ export default function AdminVisitsPage() {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [session, setSession] = useState<any>(null);
+  const [todayInvoices, setTodayInvoices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -352,19 +353,22 @@ export default function AdminVisitsPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [resVisits, resPatients, resTherapists, resBranches, resServices, resSession] = await Promise.all([
+      const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
+      const [resVisits, resPatients, resTherapists, resBranches, resServices, resSession, resInvoices] = await Promise.all([
         fetch("/api/patient-visits"),
         fetch("/api/patients"),
         fetch("/api/therapists"),
         fetch("/api/branches"),
         fetch("/api/services"),
-        fetch("/api/auth/session")
+        fetch("/api/auth/session"),
+        fetch(`/api/invoices?date=${today}`)
       ]);
       if (resVisits.ok) setVisits((await resVisits.json()).data || []);
       if (resPatients.ok) setPatients((await resPatients.json()).data || []);
       if (resTherapists.ok) setTherapists(await resTherapists.json() || []);
       if (resBranches.ok) setBranches((await resBranches.json()).data || []);
       if (resServices.ok) setServices((await resServices.json()).data || []);
+      if (resInvoices.ok) setTodayInvoices((await resInvoices.json()).data || []);
       if (resSession.ok) {
         const sessionData = await resSession.json();
         setSession(sessionData.session);
@@ -855,12 +859,9 @@ export default function AdminVisitsPage() {
     branchVisits.filter(v => v.visitDate === todayDateString).map(v => `${v.patientId}_${v.visitTime}`)
   )).length;
   
-  const kpiRevenueToday = branchVisits
-    .filter(v => v.visitDate === todayDateString && v.paymentStatus === "PAID")
-    .reduce((sum, v) => {
-      const service = services.find(s => s.id === v.serviceId);
-      return sum + (service?.price || 0);
-    }, 0);
+  const kpiRevenueToday = todayInvoices
+    .filter(inv => selectedBranchId === "ALL" || inv.branchId === selectedBranchId)
+    .reduce((sum, inv) => sum + (inv.grandTotal || 0), 0);
     
   const kpiNewPatientsToday = Array.from(new Set(
     branchVisits

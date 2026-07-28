@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { therapistCommissions, patientVisits, therapistMonthlyReports } from "@/lib/db/schema";
+import {
+  therapistCommissions,
+  patientVisits,
+  therapistMonthlyReports,
+  invoices,
+} from "@/lib/db/schema";
 import { eq, and, like } from "drizzle-orm";
 import { calculateTherapistCommission } from "@/lib/commission";
 import { getSession } from "@/lib/auth";
@@ -23,9 +28,14 @@ export async function GET(request: Request) {
         amount: therapistCommissions.amount,
         serviceId: patientVisits.serviceId,
         visitDate: patientVisits.visitDate,
+        invoiceItems: invoices.items,
       })
       .from(therapistCommissions)
-      .innerJoin(patientVisits, eq(therapistCommissions.visitId, patientVisits.id));
+      .innerJoin(
+        patientVisits,
+        eq(therapistCommissions.visitId, patientVisits.id),
+      )
+      .leftJoin(invoices, eq(therapistCommissions.visitId, invoices.visitId));
 
     let fixedCount = 0;
     const fixedDetails = [];
@@ -35,12 +45,37 @@ export async function GET(request: Request) {
       if (!c.serviceId || !c.therapistId) continue;
 
       // Kalkulasi ulang menggunakan rule terbaru (Override > Global > Flat)
-      const correctAmount = await calculateTherapistCommission(
-        db,
-        c.therapistId,
-        c.serviceId,
-        1
-      );
+      let correctAmount = 0;
+      if (c.invoiceItems) {
+        try {
+          const items = JSON.parse(c.invoiceItems);
+          for (const item of items) {
+            if (item.serviceId) {
+              const comm = await calculateTherapistCommission(
+                db,
+                c.therapistId,
+                item.serviceId,
+                item.qty || 1,
+              );
+              correctAmount += comm;
+            }
+          }
+        } catch (e) {
+          correctAmount = await calculateTherapistCommission(
+            db,
+            c.therapistId,
+            c.serviceId,
+            1,
+          );
+        }
+      } else {
+        correctAmount = await calculateTherapistCommission(
+          db,
+          c.therapistId,
+          c.serviceId,
+          1,
+        );
+      }
 
       if (c.amount !== correctAmount) {
         await db
@@ -48,8 +83,10 @@ export async function GET(request: Request) {
           .set({ amount: correctAmount })
           .where(eq(therapistCommissions.id, c.id));
         fixedCount++;
-        fixedDetails.push(`Diperbarui komisi ${c.id}: Rp ${c.amount} -> Rp ${correctAmount}`);
-        
+        fixedDetails.push(
+          `Diperbarui komisi ${c.id}: Rp ${c.amount} -> Rp ${correctAmount}`,
+        );
+
         if (c.visitDate) {
           const month = c.visitDate.substring(0, 7);
           affectedMonths.add(`${c.therapistId}|${month}`);
@@ -61,41 +98,45 @@ export async function GET(request: Request) {
     let syncedReportsCount = 0;
     for (const affected of affectedMonths) {
       const [therapistId, month] = affected.split("|");
-      
+
       // Get all commissions for this therapist in this month
       const monthCommissions = await db
         .select({ amount: therapistCommissions.amount })
         .from(therapistCommissions)
-        .innerJoin(patientVisits, eq(therapistCommissions.visitId, patientVisits.id))
+        .innerJoin(
+          patientVisits,
+          eq(therapistCommissions.visitId, patientVisits.id),
+        )
         .where(
           and(
             eq(therapistCommissions.therapistId, therapistId),
-            like(patientVisits.visitDate, `${month}%`)
-          )
+            like(patientVisits.visitDate, `${month}%`),
+          ),
         );
-        
+
       const totalComm = monthCommissions.reduce((s, c) => s + c.amount, 0);
-      
+
       const report = await db
         .select()
         .from(therapistMonthlyReports)
         .where(
           and(
             eq(therapistMonthlyReports.therapistId, therapistId),
-            eq(therapistMonthlyReports.month, month)
-          )
+            eq(therapistMonthlyReports.month, month),
+          ),
         )
         .limit(1);
-        
+
       if (report.length > 0) {
         const r = report[0];
-        const newThp = r.baseSalary + totalComm + r.allowances + r.bonuses - r.deductions;
+        const newThp =
+          r.baseSalary + totalComm + r.allowances + r.bonuses - r.deductions;
         await db
           .update(therapistMonthlyReports)
-          .set({ 
+          .set({
             commissions: totalComm,
             takeHomePay: newThp,
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
           })
           .where(eq(therapistMonthlyReports.id, r.id));
         syncedReportsCount++;
@@ -105,11 +146,15 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       message: `Berhasil memperbaiki ${fixedCount} data komisi dan mensinkronisasi ${syncedReportsCount} laporan bulanan.`,
-      details: fixedDetails
+      details: fixedDetails,
     });
-
   } catch (error: unknown) {
     console.error("Gagal sinkronisasi komisi:", error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Internal Server Error" }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Internal Server Error",
+      },
+      { status: 500 },
+    );
   }
 }

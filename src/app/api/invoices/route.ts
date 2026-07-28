@@ -104,8 +104,9 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ data: formatted });
   } catch (error: unknown) {
-    if (error.message === "Cabang tidak ditemukan") {
-      return NextResponse.json({ error: error.message }, { status: 404 });
+    const err = error as Error;
+    if (err.message === "Cabang tidak ditemukan") {
+      return NextResponse.json({ error: err.message }, { status: 404 });
     }
     console.error("GET /api/invoices error:", error);
     return NextResponse.json(
@@ -340,6 +341,8 @@ export async function POST(request: Request) {
         }
       }
 
+      let primaryVisitId = visitsToCheck[0] || (visitId ? visitId : null);
+
       await tx.insert(invoices).values({
         id: invoiceId,
         invoiceNumber,
@@ -426,7 +429,7 @@ export async function POST(request: Request) {
       const visitsToMark =
         visitIds && visitIds.length > 0 ? visitIds : visitId ? [visitId] : [];
       const finalVisitIds: string[] = [];
-      let primaryVisitId = visitsToMark[0] || (visitId ? visitId : null);
+      // primaryVisitId sudah dideklarasikan di atas
 
       let visitsDetails: (typeof patientVisits.$inferSelect)[] = [];
 
@@ -645,7 +648,7 @@ export async function POST(request: Request) {
   } catch (error: unknown) {
     console.error("POST /api/invoices error:", error);
     return NextResponse.json(
-      { error: `Gagal membuat struk: ${error.message}` },
+      { error: `Gagal membuat struk: ${(error as Error).message}` },
       { status: 500 },
     );
   }

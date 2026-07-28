@@ -428,8 +428,15 @@ export async function POST(request: Request) {
       const finalVisitIds: string[] = [];
       let primaryVisitId = visitsToMark[0] || (visitId ? visitId : null);
 
+      let visitsDetails: (typeof patientVisits.$inferSelect)[] = [];
+
       if (visitsToMark.length > 0) {
         finalVisitIds.push(...visitsToMark);
+        visitsDetails = await tx
+          .select()
+          .from(patientVisits)
+          .where(inArray(patientVisits.id, visitsToMark));
+
         await tx
           .update(patientVisits)
           .set({
@@ -443,6 +450,12 @@ export async function POST(request: Request) {
         // POS standalone
         primaryVisitId = `V-${Date.now()}`;
         finalVisitIds.push(primaryVisitId);
+        visitsDetails = [
+          {
+            id: primaryVisitId,
+            serviceId: items[0]?.serviceId || "MANUAL",
+          } as any,
+        ];
         await tx.insert(patientVisits).values({
           id: primaryVisitId,
           patientId: patientId,
@@ -471,6 +484,7 @@ export async function POST(request: Request) {
           const commissionDetails = [];
 
           // Calculate TOTAL commission for ALL items
+          const availableVisits = [...visitsDetails];
           for (const item of items) {
             const serviceId = item.serviceId;
             if (!serviceId) continue;
@@ -485,6 +499,23 @@ export async function POST(request: Request) {
             if (commissionAmount > 0) {
               totalCommission += commissionAmount;
               commissionDetails.push(item.name || serviceId);
+
+              const vIdx = availableVisits.findIndex(
+                (v) => v.serviceId === serviceId,
+              );
+              const assignedVisitId =
+                vIdx >= 0
+                  ? availableVisits.splice(vIdx, 1)[0].id
+                  : primaryVisitId;
+
+              await tx.insert(therapistCommissions).values({
+                id: crypto.randomUUID(),
+                therapistId,
+                visitId: assignedVisitId,
+                amount: commissionAmount,
+                status: "PAID",
+                paidAt: now,
+              });
             }
           }
 
@@ -531,16 +562,6 @@ export async function POST(request: Request) {
                 syncErr,
               );
             }
-
-            // BUG-03 FIX: Status komisi PAID (konsisten dengan pay/route.ts)
-            await tx.insert(therapistCommissions).values({
-              id: crypto.randomUUID(),
-              therapistId,
-              visitId: primaryVisitId,
-              amount: totalCommission,
-              status: "PAID",
-              paidAt: now,
-            });
 
             // Langsung catat komisi sebagai pengeluaran / beban di sistem keuangan
             const commTrxId = crypto.randomUUID();

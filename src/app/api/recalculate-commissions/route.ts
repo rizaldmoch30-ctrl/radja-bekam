@@ -6,7 +6,8 @@ import {
   therapistMonthlyReports,
   invoices,
 } from "@/lib/db/schema";
-import { eq, and, like } from "drizzle-orm";
+import { eq, and, like, isNull, isNotNull } from "drizzle-orm";
+import crypto from "crypto";
 import { calculateTherapistCommission } from "@/lib/commission";
 import { getSession } from "@/lib/auth";
 
@@ -28,54 +29,28 @@ export async function GET(request: Request) {
         amount: therapistCommissions.amount,
         serviceId: patientVisits.serviceId,
         visitDate: patientVisits.visitDate,
-        invoiceItems: invoices.items,
       })
       .from(therapistCommissions)
       .innerJoin(
         patientVisits,
         eq(therapistCommissions.visitId, patientVisits.id),
-      )
-      .leftJoin(invoices, eq(therapistCommissions.visitId, invoices.visitId));
+      );
 
     let fixedCount = 0;
+    let newCount = 0;
     const fixedDetails = [];
     const affectedMonths = new Set<string>(); // Format: therapistId|YYYY-MM
 
     for (const c of commissions) {
       if (!c.serviceId || !c.therapistId) continue;
 
-      // Kalkulasi ulang menggunakan rule terbaru (Override > Global > Flat)
-      let correctAmount = 0;
-      if (c.invoiceItems) {
-        try {
-          const items = JSON.parse(c.invoiceItems);
-          for (const item of items) {
-            if (item.serviceId) {
-              const comm = await calculateTherapistCommission(
-                db,
-                c.therapistId,
-                item.serviceId,
-                item.qty || 1,
-              );
-              correctAmount += comm;
-            }
-          }
-        } catch (e) {
-          correctAmount = await calculateTherapistCommission(
-            db,
-            c.therapistId,
-            c.serviceId,
-            1,
-          );
-        }
-      } else {
-        correctAmount = await calculateTherapistCommission(
-          db,
-          c.therapistId,
-          c.serviceId,
-          1,
-        );
-      }
+      // Kalkulasi ulang MURNI per layanan (akan memecah komisi yang sebelumnya teragregasi POS)
+      const correctAmount = await calculateTherapistCommission(
+        db,
+        c.therapistId,
+        c.serviceId,
+        1,
+      );
 
       if (c.amount !== correctAmount) {
         await db
@@ -90,6 +65,59 @@ export async function GET(request: Request) {
         if (c.visitDate) {
           const month = c.visitDate.substring(0, 7);
           affectedMonths.add(`${c.therapistId}|${month}`);
+        }
+      }
+    }
+
+    // CARI KUNJUNGAN YANG SUDAH DIBAYAR TAPI TIDAK PUNYA KOMISI (Efek bug POS lama)
+    const missingVisits = await db
+      .select({
+        visitId: patientVisits.id,
+        therapistId: patientVisits.therapistId,
+        serviceId: patientVisits.serviceId,
+        visitDate: patientVisits.visitDate,
+      })
+      .from(patientVisits)
+      .leftJoin(
+        therapistCommissions,
+        eq(patientVisits.id, therapistCommissions.visitId),
+      )
+      .where(
+        and(
+          eq(patientVisits.paymentStatus, "PAID"),
+          eq(patientVisits.status, "completed"),
+          isNotNull(patientVisits.therapistId),
+          isNull(therapistCommissions.id),
+        ),
+      );
+
+    for (const v of missingVisits) {
+      if (!v.therapistId || !v.serviceId) continue;
+      const commissionAmount = await calculateTherapistCommission(
+        db,
+        v.therapistId,
+        v.serviceId,
+        1,
+      );
+
+      if (commissionAmount > 0) {
+        const newId = crypto.randomUUID();
+        await db.insert(therapistCommissions).values({
+          id: newId,
+          therapistId: v.therapistId,
+          visitId: v.visitId,
+          amount: commissionAmount,
+          status: "PAID",
+          paidAt: new Date().toISOString(),
+        });
+        newCount++;
+        fixedDetails.push(
+          `Dibuat komisi baru ${newId} untuk kunjungan ${v.visitId} sebesar Rp ${commissionAmount}`,
+        );
+
+        if (v.visitDate) {
+          const month = v.visitDate.substring(0, 7);
+          affectedMonths.add(`${v.therapistId}|${month}`);
         }
       }
     }
@@ -145,7 +173,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Berhasil memperbaiki ${fixedCount} data komisi dan mensinkronisasi ${syncedReportsCount} laporan bulanan.`,
+      message: `Berhasil memperbaiki ${fixedCount} data komisi lama, membuat ${newCount} data komisi baru yang hilang, dan mensinkronisasi ${syncedReportsCount} laporan bulanan.`,
       details: fixedDetails,
     });
   } catch (error: unknown) {

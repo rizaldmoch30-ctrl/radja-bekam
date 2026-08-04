@@ -490,7 +490,7 @@ export default function TherapistReportsPage() {
                       )
                         return;
                       try {
-                        const res = await fetch("/api/recalculate-commissions");
+                        const res = await fetch("/api/recalculate-commissions", { method: "POST" });
                         const data = await res.json();
                         if (data.success) {
                           alert(data.message);

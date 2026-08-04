@@ -41,7 +41,6 @@ export default function AdminTherapistsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedTherapist, setSelectedTherapist] = useState<Therapist | null>(null);
   const [saving, setSaving] = useState(false);
-  const [filterBranch, setFilterBranch] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   
@@ -205,10 +204,9 @@ export default function AdminTherapistsPage() {
   };
 
   const filteredTherapists = therapists.filter(t => {
-    const matchesBranch = filterBranch === "all" || t.branchId === filterBranch;
     const matchesSearch = t.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           t.specialization.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesBranch && matchesSearch;
+    return matchesSearch;
   }).sort((a, b) => a.name.localeCompare(b.name));
 
   const getContractStatus = (endDate?: string | null) => {
@@ -231,7 +229,7 @@ export default function AdminTherapistsPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, filterBranch]);
+  }, [searchQuery]);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -256,18 +254,6 @@ export default function AdminTherapistsPage() {
                   <kbd className="font-sans px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded-md text-[10px] font-bold text-gray-500">K</kbd>
                 </div>
               </div>
-              {session?.role === "SUPER_ADMIN" && (
-                <select 
-                  value={filterBranch} 
-                  onChange={(e) => setFilterBranch(e.target.value)}
-                  className="w-full sm:w-auto px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 text-gray-900 text-sm appearance-none transition-all cursor-pointer"
-                >
-                  <option value="all">Semua Cabang</option>
-                  {branches.map(b => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-              )}
               <button 
                 onClick={() => {
                   setFormData({ id: "", name: "", specialization: "", phone: "", gender: "L", baseSalary: 0, commissionRate: 0, isActive: true, branchId: "", photoUrl: "", birthDate: "", pinCode: "", contractStartDate: "", contractEndDate: "" });

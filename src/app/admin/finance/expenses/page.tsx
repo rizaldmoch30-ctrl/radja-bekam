@@ -53,7 +53,6 @@ export default function AdminExpensesPage() {
   const [session, setSession] = useState<any>(null);
   
   // Filters
-  const [filterBranch, setFilterBranch] = useState("");
   const [startDate, setStartDate] = useState<string>(() => {
     const d = new Date();
     d.setDate(1);
@@ -156,7 +155,6 @@ export default function AdminExpensesPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      params.append("branch", filterBranch || "ALL");
       if (startDate) params.append("startDate", startDate);
       if (endDate) params.append("endDate", endDate);
 
@@ -181,7 +179,7 @@ export default function AdminExpensesPage() {
   useEffect(() => {
     setCurrentPage(1); // reset pagination when filters change
     fetchTransactions();
-  }, [filterBranch, startDate, endDate]);
+  }, [startDate, endDate]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Hapus catatan kas ini? Tindakan ini tidak bisa dibatalkan.")) return;
@@ -283,24 +281,7 @@ export default function AdminExpensesPage() {
           icon={TrendingDown}
           rightContent={
             <div className="flex flex-wrap items-center gap-3 mt-4 lg:mt-0">
-              {(session?.role === "SUPER_ADMIN" || session?.role === "INVESTOR") ? (
-                <select
-                  value={filterBranch}
-                  onChange={(e) => setFilterBranch(e.target.value)}
-                  className="bg-white border border-gray-200 text-gray-700 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none appearance-none transition-all cursor-pointer shadow-sm hover:bg-gray-50 font-medium"
-                >
-                  <option value="">Semua Cabang</option>
-                  {branches.map((b) => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-              ) : (
-                <div className="bg-gray-50 border border-gray-200 text-gray-700 rounded-xl px-4 py-2.5 text-sm font-medium flex items-center gap-2 shadow-inner">
-                  <MapPin className="w-4 h-4 text-gray-400" />
-                  {branches.find(b => b.id === session?.branchId)?.name || "Cabang Anda"}
-                </div>
-              )}
-              
+
               <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl px-2 py-1.5 hover:border-blue-200 transition-colors">
                 <input
                   type="date"
@@ -326,7 +307,7 @@ export default function AdminExpensesPage() {
 
               <button 
                 onClick={() => {
-                  const defaultBranchId = (session?.role !== "SUPER_ADMIN" && session?.role !== "INVESTOR") ? session?.branchId : filterBranch;
+                  const defaultBranchId = (session?.role !== "SUPER_ADMIN" && session?.role !== "INVESTOR") ? session?.branchId : "";
                   setFormData({ type: "EXPENSE", category: expenseCategories[0] || "", amount: 0, description: "", branchId: defaultBranchId || "", paymentMethod: "CASH", attachmentUrl: "", date: getCurrentDateTimeLocal() });
                   setPersonCount(1);
                   setIsFormOpen(true);

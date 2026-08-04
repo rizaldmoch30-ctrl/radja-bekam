@@ -51,7 +51,6 @@ export default function AdminFinancePage() {
   const [session, setSession] = useState<any>(null);
   
   // Filters
-  const [filterBranch, setFilterBranch] = useState("");
   const [startDate, setStartDate] = useState<string>(() => {
     const d = new Date();
     d.setDate(1);
@@ -98,7 +97,6 @@ export default function AdminFinancePage() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      params.append("branch", filterBranch || "ALL");
       if (startDate) params.append("startDate", startDate);
       if (endDate) params.append("endDate", endDate);
 
@@ -188,7 +186,7 @@ export default function AdminFinancePage() {
   useEffect(() => {
     setCurrentPage(1); // reset pagination when filters change
     fetchTransactions();
-  }, [filterBranch, startDate, endDate]);
+  }, [startDate, endDate]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Hapus catatan kas ini? Tindakan ini tidak bisa dibatalkan.")) return;
@@ -345,17 +343,7 @@ export default function AdminFinancePage() {
               </Link>
             )}
             
-            <select
-              value={filterBranch}
-              onChange={(e) => setFilterBranch(e.target.value)}
-              className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:ring-primary focus:border-primary"
-            >
-              <option value="">Semua Cabang</option>
-              {branches.map((b) => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </select>
-            
+
             <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-sm rounded-lg px-2 py-1.5">
               <input
                 type="date"

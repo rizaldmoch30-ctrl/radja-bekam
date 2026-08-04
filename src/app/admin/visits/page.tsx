@@ -76,7 +76,7 @@ export default function AdminVisitsPage() {
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [selectedBranchId, setSelectedBranchId] = useState<string>("ALL");
+
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDate, setFilterDate] = useState("");
   const [tableDensity, setTableDensity] = useState<"compact" | "comfortable" | "large">("comfortable");
@@ -191,7 +191,7 @@ export default function AdminVisitsPage() {
   // Pagination Reset Effect
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedBranchId, activeTab, filterDate]);
+  }, [searchQuery, activeTab, filterDate]);
 
   // POS (Kasir) Tab States
   const [posPhone, setPosPhone] = useState("");
@@ -839,11 +839,10 @@ export default function AdminVisitsPage() {
   };
 
   let finalVisits = visits.filter(v => {
-    const matchBranch = selectedBranchId === "ALL" || v.branchId === selectedBranchId;
     const matchDate = filterDate === "" || v.visitDate === filterDate;
     const patientName = getPatientName(v.patientId).toLowerCase();
     const matchSearch = patientName.includes(searchQuery.toLowerCase());
-    return matchBranch && matchDate && matchSearch;
+    return matchDate && matchSearch;
   }).sort((a, b) => {
     const dateA = new Date(`${a.visitDate}T${(a.visitTime || '00:00').replace('.', ':')}:00`).getTime();
     const dateB = new Date(`${b.visitDate}T${(b.visitTime || '00:00').replace('.', ':')}:00`).getTime();
@@ -853,15 +852,13 @@ export default function AdminVisitsPage() {
   // Hitung KPI menggunakan data asli (bukan paginated)
   const todayDateString = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
   
-  const branchVisits = visits.filter(v => selectedBranchId === "ALL" || v.branchId === selectedBranchId);
+  const branchVisits = visits;
   
   const kpiVisitsToday = Array.from(new Set(
     branchVisits.filter(v => v.visitDate === todayDateString).map(v => `${v.patientId}_${v.visitTime}`)
   )).length;
   
-  const kpiRevenueToday = todayInvoices
-    .filter(inv => selectedBranchId === "ALL" || inv.branchId === selectedBranchId)
-    .reduce((sum, inv) => sum + (inv.grandTotal || 0), 0);
+  const kpiRevenueToday = todayInvoices.reduce((sum, inv) => sum + (inv.grandTotal || 0), 0);
     
   const kpiNewPatientsToday = Array.from(new Set(
     branchVisits
@@ -1821,25 +1818,6 @@ export default function AdminVisitsPage() {
 
         {activeTab === "list" && (
           <>
-            {/* Branch Filter Dropdown - Only show if Super Admin */}
-            {session?.role === "SUPER_ADMIN" && !loading && branches.length > 0 && (
-              <div className="mb-4">
-                <div className="relative w-full sm:w-72">
-                  <Store className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                  <select
-                    value={selectedBranchId}
-                    onChange={(e) => setSelectedBranchId(e.target.value)}
-                    className="w-full pl-10 pr-10 py-2.5 bg-white border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all appearance-none shadow-sm text-gray-700 font-medium hover:border-gray-300 cursor-pointer"
-                  >
-                    <option value="ALL">Semua Cabang</option>
-                    {branches.map(branch => (
-                      <option key={branch.id} value={branch.id}>{branch.name}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="w-5 h-5 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                </div>
-              </div>
-            )}
 
             {/* Insight Panel KPIs */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -1998,9 +1976,7 @@ export default function AdminVisitsPage() {
                       <th className="px-6 py-4">Waktu & Tgl</th>
                       <th className="px-6 py-4 font-semibold">Profil Pasien</th>
                       <th className="px-6 py-4 font-semibold">Info Layanan</th>
-                      {selectedBranchId === "ALL" && (
-                        <th className="px-6 py-4 font-semibold">Cabang</th>
-                      )}
+
                       <th className="px-6 py-4">Status Pembayaran</th>
                       <th className="px-6 py-4 w-1/4">Catatan Medis</th>
                     </tr>
@@ -2084,15 +2060,7 @@ export default function AdminVisitsPage() {
                                 </div>
                               </div>
                             </td>
-                            {selectedBranchId === "ALL" && (
-                              <td className={tdClass}>
-                                <div className="flex flex-col gap-1">
-                                  <div className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-1 rounded-md">
-                                    <Store className="w-3.5 h-3.5"/> {getBranchName(v.branchId)}
-                                  </div>
-                                </div>
-                              </td>
-                            )}
+
                             <td className={tdClass}>
                               {group.every(g => g.paymentStatus === "PAID") ? (
                                 <div className="flex flex-col items-start gap-1">

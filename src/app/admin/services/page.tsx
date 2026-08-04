@@ -34,7 +34,6 @@ export default function AdminServicesPage() {
 
   const [session, setSession] = useState<any>(null);
   const [branches, setBranches] = useState<any[]>([]);
-  const [filterBranch, setFilterBranch] = useState("ALL");
 
   const [formData, setFormData] = useState({
     name: "",
@@ -51,7 +50,7 @@ export default function AdminServicesPage() {
     setLoading(true);
     try {
       const [res, branchRes, sessionRes] = await Promise.all([
-        fetch(`/api/services?all=false&branchId=${filterBranch}`),
+        fetch(`/api/services?all=false`),
         fetch("/api/branches"),
         fetch("/api/auth/session")
       ]);
@@ -79,7 +78,7 @@ export default function AdminServicesPage() {
 
   useEffect(() => {
     fetchData();
-  }, [filterBranch]);
+  }, []);
 
   const resetForm = () => {
     setFormData({
@@ -89,7 +88,7 @@ export default function AdminServicesPage() {
       durationMinutes: "",
       globalCommission: "",
       category: "Paket Treatment",
-      branchId: filterBranch !== "ALL" ? filterBranch : (branches.length > 0 ? branches[0].id : "ALL"),
+      branchId: branches.length > 0 ? branches[0].id : "ALL",
       isActive: true,
     });
     setEditingId(null);

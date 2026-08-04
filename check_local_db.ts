@@ -10,7 +10,7 @@ async function run() {
     console.log(`Local DB invoices count:`, res.rows[0].count);
     await pool.end();
   } catch (e) {
-    console.error("Local DB error:", e.message);
+    console.error("Local DB error:", (e as Error).message);
   }
 }
 

@@ -19,11 +19,10 @@ export default function ReservationsClient({
   branches?: any[];
 }) {
   const [activeTab, setActiveTab] = useState<"list" | "calendar">("list");
-  const [filterBranch, setFilterBranch] = useState("ALL");
   const [currentWeek, setCurrentWeek] = useState(new Date());
 
-  const filteredData = data.filter(d => filterBranch === "ALL" || d.res.branchId === filterBranch);
-  const filteredVisits = visits.filter(v => filterBranch === "ALL" || v.branchId === filterBranch);
+  const filteredData = data;
+  const filteredVisits = visits;
 
   const startOfWeek = new Date(currentWeek);
   startOfWeek.setDate(currentWeek.getDate() - currentWeek.getDay() + 1); // Monday
@@ -106,22 +105,6 @@ export default function ReservationsClient({
           </button>
         </div>
 
-        {/* Branch Filter Dropdown - Only show if Super Admin */}
-        {session?.role === "SUPER_ADMIN" && branches && branches.length > 0 && (
-          <div className="relative w-full sm:w-64">
-            <select
-              value={filterBranch}
-              onChange={(e) => setFilterBranch(e.target.value)}
-              className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 text-gray-900 text-sm appearance-none transition-all cursor-pointer shadow-sm"
-            >
-              <option value="ALL">Semua Cabang</option>
-              {branches.map(b => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </select>
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 font-bold text-[10px]">▼</div>
-          </div>
-        )}
       </div>
 
       {activeTab === "list" && (

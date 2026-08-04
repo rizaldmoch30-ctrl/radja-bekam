@@ -465,7 +465,12 @@ function InvoiceRow({ invoice, onEdit, onDelete }: { invoice: Invoice; onEdit: (
 export default function TransaksiPelangganPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
-  const [date, setDate] = useState(todayStr());
+  const [startDate, setStartDate] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(1);
+    return d.toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
+  });
+  const [endDate, setEndDate] = useState<string>(todayStr());
   const [activeMethod, setActiveMethod] = useState("ALL");
   const [search, setSearch] = useState("");
   const [editTarget, setEditTarget] = useState<Invoice | null>(null);
@@ -473,15 +478,12 @@ export default function TransaksiPelangganPage() {
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const [session, setSession] = useState<any>(null);
-  const [branches, setBranches] = useState<any[]>([]);
-  const [filterBranch, setFilterBranch] = useState("ALL");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [res, branchRes, sessionRes] = await Promise.all([
-        fetch(`/api/invoices?date=${date}`),
-        fetch("/api/branches"),
+      const [res, sessionRes] = await Promise.all([
+        fetch(`/api/invoices?startDate=${startDate}&endDate=${endDate}`),
         fetch("/api/auth/session")
       ]);
       const json = await res.json();
@@ -493,10 +495,6 @@ export default function TransaksiPelangganPage() {
         }));
         setInvoices(data);
       }
-      if (branchRes.ok) {
-        const bJson = await branchRes.json();
-        setBranches(bJson.data || []);
-      }
       if (sessionRes.ok) {
         const sJson = await sessionRes.json();
         setSession(sJson.session);
@@ -504,7 +502,7 @@ export default function TransaksiPelangganPage() {
     } finally {
       setLoading(false);
     }
-  }, [date]);
+  }, [startDate, endDate]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -540,14 +538,13 @@ export default function TransaksiPelangganPage() {
   const filtered = invoices.filter(inv => {
     const isSplitMatch = inv.paymentMethod === "SPLIT" && inv.splitPayments?.some(sp => sp.method === activeMethod);
     const matchMethod = activeMethod === "ALL" || inv.paymentMethod === activeMethod || isSplitMatch;
-    const matchBranch = filterBranch === "ALL" || inv.branchId === filterBranch;
     const q = search.toLowerCase();
     const matchSearch = !q ||
       inv.patientName.toLowerCase().includes(q) ||
       inv.patientPhone.includes(q) ||
       inv.invoiceNumber.toLowerCase().includes(q) ||
       (inv.therapistName || "").toLowerCase().includes(q);
-    return matchMethod && matchSearch && matchBranch;
+    return matchMethod && matchSearch;
   });
 
   // Summary per method
@@ -609,33 +606,28 @@ export default function TransaksiPelangganPage() {
 
       {/* Controls */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        {/* Date */}
-        <div className="relative">
-          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="date"
-            value={date}
-            onChange={e => setDate(e.target.value)}
-            className="pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl bg-white text-sm font-medium text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition cursor-pointer"
-          />
-        </div>
-
-        {/* Branch Filter Dropdown - Only show if Super Admin */}
-        {session?.role === "SUPER_ADMIN" && !loading && branches.length > 0 && (
-          <div className="relative w-full sm:w-64">
-            <select
-              value={filterBranch}
-              onChange={(e) => setFilterBranch(e.target.value)}
-              className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 text-gray-900 text-sm appearance-none transition-all cursor-pointer shadow-sm"
-            >
-              <option value="ALL">Semua Cabang</option>
-              {branches.map(b => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </select>
-            <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+        {/* Date Filters */}
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="date"
+              value={startDate}
+              onChange={e => setStartDate(e.target.value)}
+              className="pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl bg-white text-sm font-medium text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition cursor-pointer w-full sm:w-auto"
+            />
           </div>
-        )}
+          <span className="text-gray-400 text-sm font-medium">-</span>
+          <div className="relative">
+            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="date"
+              value={endDate}
+              onChange={e => setEndDate(e.target.value)}
+              className="pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl bg-white text-sm font-medium text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition cursor-pointer w-full sm:w-auto"
+            />
+          </div>
+        </div>
 
         {/* Search */}
         <div className="relative flex-1 min-w-0">
@@ -724,7 +716,7 @@ export default function TransaksiPelangganPage() {
             <div>
               <span className="text-sm font-bold text-gray-700">{filtered.length} transaksi</span>
               <span className="text-gray-400 text-sm ml-2">
-                — {new Date(date + "T00:00:00").toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                — {new Date(startDate + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })} - {new Date(endDate + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
               </span>
             </div>
             <div className="h-4 w-px bg-gray-200 hidden sm:block"></div>
@@ -752,8 +744,8 @@ export default function TransaksiPelangganPage() {
           <div className="flex flex-col items-center justify-center py-20 text-gray-400">
             <Receipt className="w-12 h-12 text-gray-200 mb-3" />
             <p className="font-semibold text-gray-500">Tidak ada transaksi</p>
-            <p className="text-sm mt-1">
-              {search ? "Coba kata kunci lain" : `Belum ada transaksi pada ${new Date(date + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}`}
+            <p className="text-sm mt-1 text-center">
+              {search ? "Coba kata kunci lain" : `Belum ada transaksi dari tanggal ${new Date(startDate + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })} hingga ${new Date(endDate + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}`}
             </p>
           </div>
         ) : (

@@ -456,7 +456,7 @@ export default function AdminLabaRugiPage() {
           <div className="space-y-8 mt-8">
 
             {/* ── Summary Cards ── */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Total Pendapatan Card */}
               <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgb(20,184,166,0.12)] transition-all duration-300 flex items-center gap-5 group relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-500"></div>
@@ -501,27 +501,6 @@ export default function AdminLabaRugiPage() {
                 </div>
               </div>
 
-              {/* Biaya Terapis Card */}
-              <div className="bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgb(249,115,22,0.12)] transition-all duration-300 flex items-center gap-5 group relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-500/10 to-orange-500/5 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-500"></div>
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shrink-0 relative z-10">
-                  <DollarSign className="w-7 h-7 text-white" />
-                </div>
-                <div className="relative z-10 flex-1">
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">Biaya Terapis</p>
-                  <p className="text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-600 to-orange-600 tracking-tight">{formatRupiah(reportData.totalBiayaTerapis)}</p>
-                  {selectedMonth !== "ALL" && prevMonthReportData && (() => {
-                    const cmp = getComparison(reportData.totalBiayaTerapis, prevMonthReportData.totalBiayaTerapis);
-                    return (
-                      <div className={`flex items-center gap-1 mt-2 text-xs font-bold ${cmp.direction === 'up' ? 'text-rose-600' : cmp.direction === 'down' ? 'text-emerald-600' : 'text-gray-400'}`}>
-                        {cmp.direction === 'up' ? <ArrowUpRight className="w-3.5 h-3.5" /> : cmp.direction === 'down' ? <ArrowDownRight className="w-3.5 h-3.5" /> : <Equal className="w-3.5 h-3.5" />}
-                        <span>{cmp.pct >= 0 ? '+' : ''}{cmp.pct.toFixed(1)}%</span>
-                        <span className="text-gray-400 font-medium ml-1">vs {getPrevMonthName()}</span>
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
 
               {/* Laba Rugi Card */}
               <div className={`bg-white/80 backdrop-blur-xl p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 hover:-translate-y-1.5 transition-all duration-300 flex items-center gap-5 group relative overflow-hidden ${reportData.labaRugi >= 0 ? "hover:shadow-[0_20px_40px_rgb(16,185,129,0.15)]" : "hover:shadow-[0_20px_40px_rgb(244,63,94,0.15)]"}`}>

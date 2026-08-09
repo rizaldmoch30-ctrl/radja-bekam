@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { financeTransactions, inventoryItems, patientVisits, services, attendance, reservations } from "@/lib/db/schema";
+import { financeTransactions, inventoryItems, patientVisits, services, attendance, reservations, invoices } from "@/lib/db/schema";
 import { sql, eq, and, inArray, desc } from "drizzle-orm";
 import { getActiveBranchFilter } from "@/lib/auth";
 
@@ -56,15 +56,31 @@ export async function GET(request: Request) {
 
     const monthFinance = await monthFinanceQuery.groupBy(financeTransactions.type);
 
-    let monthIncome = 0;
+    let monthNetIncome = 0;
     let monthExpense = 0;
 
     for (const row of monthFinance) {
-      if (row.type === "INCOME") monthIncome = row.totalAmount;
+      if (row.type === "INCOME") monthNetIncome = row.totalAmount;
       if (row.type === "EXPENSE") monthExpense = row.totalAmount;
     }
 
-    const labaBersih = monthIncome - monthExpense;
+    // Ambil Omzet (Gross) dari tabel invoices untuk menyamakan dengan perhitungan manual
+    let monthInvoiceQuery = db
+      .select({
+        subtotal: sql<number>`SUM(${invoices.subtotal})`
+      })
+      .from(invoices);
+    const invDateCondition = sql`to_char(${invoices.createdAt}::timestamp, 'YYYY-MM') = ${month}`;
+    if (branchFilter) {
+      monthInvoiceQuery = monthInvoiceQuery.where(and(invDateCondition, eq(invoices.branchId, branchFilter))) as any;
+    } else {
+      monthInvoiceQuery = monthInvoiceQuery.where(invDateCondition) as any;
+    }
+    const monthInvoiceResult = await monthInvoiceQuery;
+    const monthIncome = monthInvoiceResult[0]?.subtotal || 0;
+    
+    // Laba Bersih = Kas Masuk Bersih - Pengeluaran Kas
+    const labaBersih = monthNetIncome - monthExpense;
 
     // 2.5 Pendapatan & Pengeluaran Bulan Lalu
     const [year, mth] = month.split('-');
@@ -91,14 +107,27 @@ export async function GET(request: Request) {
     }
 
     const lastMonthFinance = await lastMonthFinanceQuery.groupBy(financeTransactions.type);
-    let lastMonthIncome = 0;
+    let lastMonthNetIncome = 0;
     let lastMonthExpense = 0;
 
     for (const row of lastMonthFinance) {
-      if (row.type === "INCOME") lastMonthIncome = row.totalAmount;
+      if (row.type === "INCOME") lastMonthNetIncome = row.totalAmount;
       if (row.type === "EXPENSE") lastMonthExpense = row.totalAmount;
     }
-    const labaBersihBulanLalu = lastMonthIncome - lastMonthExpense;
+    
+    let lastMonthInvoiceQuery = db
+      .select({ subtotal: sql<number>`SUM(${invoices.subtotal})` })
+      .from(invoices);
+    const lmInvDateCondition = sql`to_char(${invoices.createdAt}::timestamp, 'YYYY-MM') = ${lastMonthStr}`;
+    if (branchFilter) {
+      lastMonthInvoiceQuery = lastMonthInvoiceQuery.where(and(lmInvDateCondition, eq(invoices.branchId, branchFilter))) as any;
+    } else {
+      lastMonthInvoiceQuery = lastMonthInvoiceQuery.where(lmInvDateCondition) as any;
+    }
+    const lastMonthInvoiceResult = await lastMonthInvoiceQuery;
+    const lastMonthIncome = lastMonthInvoiceResult[0]?.subtotal || 0;
+
+    const labaBersihBulanLalu = lastMonthNetIncome - lastMonthExpense;
 
     // 3. Persediaan (Total Stock Quantity - global since items are master list)
     const inventoryQuery = await db
@@ -145,55 +174,47 @@ export async function GET(request: Request) {
     const yesterdayVisits = yesterdayVisitsResult[0]?.count || 0;
 
     // 5. Pendapatan Hari Ini & Kemarin
-    let dailyIncomeQuery = db
+    let dailyInvoiceQuery = db
       .select({
-        totalAmount: sql<number>`SUM(${financeTransactions.amount})`,
+        subtotal: sql<number>`SUM(${invoices.subtotal})`,
         totalCount: sql<number>`count(*)`
       })
-      .from(financeTransactions)
-      .where(and(
-        sql`date(${financeTransactions.date}::timestamp) = ${todayStr}`,
-        eq(financeTransactions.type, "INCOME")
-      ));
+      .from(invoices)
+      .where(sql`date(${invoices.createdAt}::timestamp) = ${todayStr}`);
 
     if (branchFilter) {
-      dailyIncomeQuery = db
+      dailyInvoiceQuery = db
         .select({
-          totalAmount: sql<number>`SUM(${financeTransactions.amount})`,
+          subtotal: sql<number>`SUM(${invoices.subtotal})`,
           totalCount: sql<number>`count(*)`
         })
-        .from(financeTransactions)
+        .from(invoices)
         .where(and(
-          sql`date(${financeTransactions.date}::timestamp) = ${todayStr}`,
-          eq(financeTransactions.type, "INCOME"),
-          eq(financeTransactions.branchId, branchFilter)
+          sql`date(${invoices.createdAt}::timestamp) = ${todayStr}`,
+          eq(invoices.branchId, branchFilter)
         ));
     }
 
-    const dailyIncomeResult = await dailyIncomeQuery;
-    const pendapatanHarian = dailyIncomeResult[0]?.totalAmount || 0;
-    const transaksiHarian = dailyIncomeResult[0]?.totalCount || 0;
+    const dailyInvoiceResult = await dailyInvoiceQuery;
+    const pendapatanHarian = dailyInvoiceResult[0]?.subtotal || 0;
+    const transaksiHarian = dailyInvoiceResult[0]?.totalCount || 0;
 
-    let yesterdayIncomeQuery = db
-      .select({ totalAmount: sql<number>`SUM(${financeTransactions.amount})` })
-      .from(financeTransactions)
-      .where(and(
-        sql`date(${financeTransactions.date}::timestamp) = ${yesterdayStr}`,
-        eq(financeTransactions.type, "INCOME")
-      ));
+    let yesterdayInvoiceQuery = db
+      .select({ subtotal: sql<number>`SUM(${invoices.subtotal})` })
+      .from(invoices)
+      .where(sql`date(${invoices.createdAt}::timestamp) = ${yesterdayStr}`);
 
     if (branchFilter) {
-      yesterdayIncomeQuery = db
-        .select({ totalAmount: sql<number>`SUM(${financeTransactions.amount})` })
-        .from(financeTransactions)
+      yesterdayInvoiceQuery = db
+        .select({ subtotal: sql<number>`SUM(${invoices.subtotal})` })
+        .from(invoices)
         .where(and(
-          sql`date(${financeTransactions.date}::timestamp) = ${yesterdayStr}`,
-          eq(financeTransactions.type, "INCOME"),
-          eq(financeTransactions.branchId, branchFilter)
+          sql`date(${invoices.createdAt}::timestamp) = ${yesterdayStr}`,
+          eq(invoices.branchId, branchFilter)
         ));
     }
-    const yesterdayIncomeResult = await yesterdayIncomeQuery;
-    const pendapatanKemarin = yesterdayIncomeResult[0]?.totalAmount || 0;
+    const yesterdayInvoiceResult = await yesterdayInvoiceQuery;
+    const pendapatanKemarin = yesterdayInvoiceResult[0]?.subtotal || 0;
 
     // Pengeluaran Operasional Hari Ini & Kemarin
     let dailyOpExpenseQuery = db

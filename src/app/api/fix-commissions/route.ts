@@ -5,6 +5,8 @@ import { calculateTherapistCommission } from "@/lib/commission";
 import { eq } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 
+export const maxDuration = 60;
+
 export async function GET() {
   try {
     const session = await getSession();
@@ -28,9 +30,15 @@ export async function GET() {
 
     let fixedCount = 0;
     const details = [];
+    
+    const cache = {
+      overrides: new Map<string, number | null>(),
+      services: new Map<string, { gc: number | null; price: number; name: string }>(),
+      therapists: new Map<string, number | null>()
+    };
 
     for (const c of allComms) {
-      const expected = await calculateTherapistCommission(db, c.therapistId, c.serviceId, 1);
+      const expected = await calculateTherapistCommission(db, c.therapistId, c.serviceId, 1, cache);
       
       if (expected !== c.currentAmount) {
         // Fix the amount in DB

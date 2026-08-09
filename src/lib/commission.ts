@@ -86,41 +86,79 @@ export async function calculateTherapistCommission(
   dbInstance: any,
   therapistId: string,
   serviceId: string,
-  qty: number = 1
+  qty: number = 1,
+  cache?: {
+    overrides?: Map<string, number | null>;
+    services?: Map<string, { gc: number | null; price: number; name: string }>;
+    therapists?: Map<string, number | null>;
+  }
 ): Promise<number> {
   // 1. Override
-  const overrideRow = await dbInstance
-    .select({ amount: therapistServiceCommissions.commissionAmount })
-    .from(therapistServiceCommissions)
-    .where(
-      and(
-        eq(therapistServiceCommissions.therapistId, therapistId),
-        eq(therapistServiceCommissions.serviceId, serviceId)
+  let overrideCommission: number | null = null;
+  const overrideKey = `${therapistId}_${serviceId}`;
+  
+  if (cache?.overrides && cache.overrides.has(overrideKey)) {
+    overrideCommission = cache.overrides.get(overrideKey) ?? null;
+  } else {
+    const overrideRow = await dbInstance
+      .select({ amount: therapistServiceCommissions.commissionAmount })
+      .from(therapistServiceCommissions)
+      .where(
+        and(
+          eq(therapistServiceCommissions.therapistId, therapistId),
+          eq(therapistServiceCommissions.serviceId, serviceId)
+        )
       )
-    )
-    .limit(1);
-    
-  const overrideCommission = overrideRow.length > 0 ? overrideRow[0].amount : null;
+      .limit(1);
+    overrideCommission = overrideRow.length > 0 ? overrideRow[0].amount : null;
+    if (cache?.overrides) {
+      cache.overrides.set(overrideKey, overrideCommission);
+    }
+  }
 
   // 2. Global, Price & Name
-  const svcRow = await dbInstance
-    .select({ gc: services.globalCommission, price: services.price, name: services.name })
-    .from(services)
-    .where(eq(services.id, serviceId))
-    .limit(1);
+  let serviceGlobalCommission: number | null = 0;
+  let servicePrice = 0;
+  let serviceName = "";
+  
+  if (cache?.services && cache.services.has(serviceId)) {
+    const cachedSvc = cache.services.get(serviceId)!;
+    serviceGlobalCommission = cachedSvc.gc;
+    servicePrice = cachedSvc.price;
+    serviceName = cachedSvc.name;
+  } else {
+    const svcRow = await dbInstance
+      .select({ gc: services.globalCommission, price: services.price, name: services.name })
+      .from(services)
+      .where(eq(services.id, serviceId))
+      .limit(1);
 
-  const serviceGlobalCommission = svcRow.length > 0 ? svcRow[0].gc : 0;
-  const servicePrice = svcRow.length > 0 ? svcRow[0].price : 0;
-  const serviceName = svcRow.length > 0 ? svcRow[0].name : "";
+    serviceGlobalCommission = svcRow.length > 0 ? svcRow[0].gc : 0;
+    servicePrice = svcRow.length > 0 ? svcRow[0].price : 0;
+    serviceName = svcRow.length > 0 ? svcRow[0].name : "";
+    
+    if (cache?.services) {
+      cache.services.set(serviceId, { gc: serviceGlobalCommission, price: servicePrice, name: serviceName });
+    }
+  }
 
   // 3. Flat Rate
-  const thRow = await dbInstance
-    .select({ cr: therapists.commissionRate })
-    .from(therapists)
-    .where(eq(therapists.id, therapistId))
-    .limit(1);
+  let therapistCommissionRate: number | null = 0;
+  
+  if (cache?.therapists && cache.therapists.has(therapistId)) {
+    therapistCommissionRate = cache.therapists.get(therapistId)!;
+  } else {
+    const thRow = await dbInstance
+      .select({ cr: therapists.commissionRate })
+      .from(therapists)
+      .where(eq(therapists.id, therapistId))
+      .limit(1);
 
-  const therapistCommissionRate = thRow.length > 0 ? thRow[0].cr : 0;
+    therapistCommissionRate = thRow.length > 0 ? thRow[0].cr : 0;
+    if (cache?.therapists) {
+      cache.therapists.set(therapistId, therapistCommissionRate);
+    }
+  }
 
   return calculateCommissionAmount({
     overrideCommission,

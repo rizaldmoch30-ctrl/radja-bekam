@@ -23,6 +23,7 @@ export function calculateCommissionAmount(params: {
   serviceGlobalCommission?: number | null;
   therapistCommissionRate?: number | null;
   servicePrice?: number;
+  serviceName?: string;
   qty: number;
 }): number {
   const qty = params.qty || 0;
@@ -35,14 +36,44 @@ export function calculateCommissionAmount(params: {
     return val;
   };
 
+  // 1. Override
   if (params.overrideCommission != null) {
     return resolveAmount(params.overrideCommission) * qty;
   }
 
+  // 1.5. Dynamic Backend Logic based on Service Name Keywords
+  if (params.serviceName) {
+    const nameLower = params.serviceName.toLowerCase();
+    let dynamicCommission = 0;
+    let matched = false;
+
+    // Hardcoded rules requested by user
+    if (nameLower.includes("bekam holistik")) {
+      dynamicCommission += 35000;
+      matched = true;
+    }
+    
+    if (nameLower.includes("refleksi")) {
+      dynamicCommission += 30000;
+      matched = true;
+    }
+    
+    if (nameLower.includes("bekam kepala")) {
+      dynamicCommission += 15000;
+      matched = true;
+    }
+
+    if (matched) {
+      return dynamicCommission * qty;
+    }
+  }
+
+  // 2. Global
   if (params.serviceGlobalCommission != null && params.serviceGlobalCommission > 0) {
     return resolveAmount(params.serviceGlobalCommission) * qty;
   }
 
+  // 3. Flat Rate
   if (params.therapistCommissionRate != null && params.therapistCommissionRate > 0) {
     return resolveAmount(params.therapistCommissionRate) * qty;
   }
@@ -71,15 +102,16 @@ export async function calculateTherapistCommission(
     
   const overrideCommission = overrideRow.length > 0 ? overrideRow[0].amount : null;
 
-  // 2. Global & Price
+  // 2. Global, Price & Name
   const svcRow = await dbInstance
-    .select({ gc: services.globalCommission, price: services.price })
+    .select({ gc: services.globalCommission, price: services.price, name: services.name })
     .from(services)
     .where(eq(services.id, serviceId))
     .limit(1);
 
   const serviceGlobalCommission = svcRow.length > 0 ? svcRow[0].gc : 0;
   const servicePrice = svcRow.length > 0 ? svcRow[0].price : 0;
+  const serviceName = svcRow.length > 0 ? svcRow[0].name : "";
 
   // 3. Flat Rate
   const thRow = await dbInstance
@@ -95,6 +127,7 @@ export async function calculateTherapistCommission(
     serviceGlobalCommission,
     therapistCommissionRate,
     servicePrice,
+    serviceName,
     qty
   });
 }

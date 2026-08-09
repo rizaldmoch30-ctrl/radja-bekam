@@ -32,9 +32,7 @@ export async function GET() {
     const details = [];
     
     const cache = {
-      overrides: new Map<string, number | null>(),
-      services: new Map<string, { gc: number | null; price: number; name: string }>(),
-      therapists: new Map<string, number | null>()
+      services: new Map<string, { gc: number | null; price: number; name: string }>()
     };
 
     for (const c of allComms) {

@@ -1,5 +1,5 @@
-import { eq, and } from "drizzle-orm";
-import { services, therapists, therapistServiceCommissions } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import { services } from "@/lib/db/schema";
 
 /**
  * ⚠️ WARNING UNTUK AI AGENTS & DEVELOPERS:
@@ -8,22 +8,17 @@ import { services, therapists, therapistServiceCommissions } from "@/lib/db/sche
  * Selalu panggil fungsi ini jika Anda perlu menghitung komisi.
  * 
  * Hierarki Komisi:
- * 1. Override Commission (therapistServiceCommissions)
- * 2. Global Commission (services.globalCommission)
- * 3. Flat Rate Commission (therapists.commissionRate)
+ * 1. MURNI dari Global Commission (services.globalCommission)
  * 
  * @param dbInstance - Instance Drizzle DB (bisa `db` biasa atau `tx` dari transaksi)
- * @param therapistId - ID terapis
+ * @param therapistId - ID terapis (untuk kompatibilitas fungsi lama, meski tidak dipakai dalam rumus)
  * @param serviceId - ID layanan terapi
  * @param qty - Jumlah layanan (default 1)
  * @returns Nominal komisi total yang berhak didapatkan
  */
 export function calculateCommissionAmount(params: {
-  overrideCommission?: number | null;
   serviceGlobalCommission?: number | null;
-  therapistCommissionRate?: number | null;
   servicePrice?: number;
-  serviceName?: string;
   qty: number;
 }): number {
   const qty = params.qty || 0;
@@ -36,46 +31,8 @@ export function calculateCommissionAmount(params: {
     return val;
   };
 
-  // 1. Override
-  if (params.overrideCommission != null) {
-    return resolveAmount(params.overrideCommission) * qty;
-  }
-
-  // 1.5. Dynamic Backend Logic based on Service Name Keywords
-  if (params.serviceName) {
-    const nameLower = params.serviceName.toLowerCase();
-    let dynamicCommission = 0;
-    let matched = false;
-
-    // Hardcoded rules requested by user
-    if (nameLower.includes("bekam holistik")) {
-      dynamicCommission += 35000;
-      matched = true;
-    }
-    
-    if (nameLower.includes("refleksi")) {
-      dynamicCommission += 30000;
-      matched = true;
-    }
-    
-    if (nameLower.includes("bekam kepala")) {
-      dynamicCommission += 15000;
-      matched = true;
-    }
-
-    if (matched) {
-      return dynamicCommission * qty;
-    }
-  }
-
-  // 2. Global
   if (params.serviceGlobalCommission != null && params.serviceGlobalCommission > 0) {
     return resolveAmount(params.serviceGlobalCommission) * qty;
-  }
-
-  // 3. Flat Rate
-  if (params.therapistCommissionRate != null && params.therapistCommissionRate > 0) {
-    return resolveAmount(params.therapistCommissionRate) * qty;
   }
 
   return 0;
@@ -88,44 +45,17 @@ export async function calculateTherapistCommission(
   serviceId: string,
   qty: number = 1,
   cache?: {
-    overrides?: Map<string, number | null>;
     services?: Map<string, { gc: number | null; price: number; name: string }>;
-    therapists?: Map<string, number | null>;
   }
 ): Promise<number> {
-  // 1. Override
-  let overrideCommission: number | null = null;
-  const overrideKey = `${therapistId}_${serviceId}`;
-  
-  if (cache?.overrides && cache.overrides.has(overrideKey)) {
-    overrideCommission = cache.overrides.get(overrideKey) ?? null;
-  } else {
-    const overrideRow = await dbInstance
-      .select({ amount: therapistServiceCommissions.commissionAmount })
-      .from(therapistServiceCommissions)
-      .where(
-        and(
-          eq(therapistServiceCommissions.therapistId, therapistId),
-          eq(therapistServiceCommissions.serviceId, serviceId)
-        )
-      )
-      .limit(1);
-    overrideCommission = overrideRow.length > 0 ? overrideRow[0].amount : null;
-    if (cache?.overrides) {
-      cache.overrides.set(overrideKey, overrideCommission);
-    }
-  }
-
-  // 2. Global, Price & Name
+  // Global, Price
   let serviceGlobalCommission: number | null = 0;
   let servicePrice = 0;
-  let serviceName = "";
   
   if (cache?.services && cache.services.has(serviceId)) {
     const cachedSvc = cache.services.get(serviceId)!;
     serviceGlobalCommission = cachedSvc.gc;
     servicePrice = cachedSvc.price;
-    serviceName = cachedSvc.name;
   } else {
     const svcRow = await dbInstance
       .select({ gc: services.globalCommission, price: services.price, name: services.name })
@@ -135,37 +65,15 @@ export async function calculateTherapistCommission(
 
     serviceGlobalCommission = svcRow.length > 0 ? svcRow[0].gc : 0;
     servicePrice = svcRow.length > 0 ? svcRow[0].price : 0;
-    serviceName = svcRow.length > 0 ? svcRow[0].name : "";
     
     if (cache?.services) {
-      cache.services.set(serviceId, { gc: serviceGlobalCommission, price: servicePrice, name: serviceName });
-    }
-  }
-
-  // 3. Flat Rate
-  let therapistCommissionRate: number | null = 0;
-  
-  if (cache?.therapists && cache.therapists.has(therapistId)) {
-    therapistCommissionRate = cache.therapists.get(therapistId)!;
-  } else {
-    const thRow = await dbInstance
-      .select({ cr: therapists.commissionRate })
-      .from(therapists)
-      .where(eq(therapists.id, therapistId))
-      .limit(1);
-
-    therapistCommissionRate = thRow.length > 0 ? thRow[0].cr : 0;
-    if (cache?.therapists) {
-      cache.therapists.set(therapistId, therapistCommissionRate);
+      cache.services.set(serviceId, { gc: serviceGlobalCommission, price: servicePrice, name: svcRow.length > 0 ? svcRow[0].name : "" });
     }
   }
 
   return calculateCommissionAmount({
-    overrideCommission,
     serviceGlobalCommission,
-    therapistCommissionRate,
     servicePrice,
-    serviceName,
     qty
   });
 }

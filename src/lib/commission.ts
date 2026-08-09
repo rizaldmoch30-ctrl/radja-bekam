@@ -22,20 +22,29 @@ export function calculateCommissionAmount(params: {
   overrideCommission?: number | null;
   serviceGlobalCommission?: number | null;
   therapistCommissionRate?: number | null;
+  servicePrice?: number;
   qty: number;
 }): number {
   const qty = params.qty || 0;
+  const price = params.servicePrice || 0;
+
+  const resolveAmount = (val: number) => {
+    if (val > 0 && val <= 100) {
+      return (val / 100) * price;
+    }
+    return val;
+  };
 
   if (params.overrideCommission != null) {
-    return params.overrideCommission * qty;
+    return resolveAmount(params.overrideCommission) * qty;
   }
 
   if (params.serviceGlobalCommission != null && params.serviceGlobalCommission > 0) {
-    return params.serviceGlobalCommission * qty;
+    return resolveAmount(params.serviceGlobalCommission) * qty;
   }
 
   if (params.therapistCommissionRate != null && params.therapistCommissionRate > 0) {
-    return params.therapistCommissionRate * qty;
+    return resolveAmount(params.therapistCommissionRate) * qty;
   }
 
   return 0;
@@ -62,14 +71,15 @@ export async function calculateTherapistCommission(
     
   const overrideCommission = overrideRow.length > 0 ? overrideRow[0].amount : null;
 
-  // 2. Global
+  // 2. Global & Price
   const svcRow = await dbInstance
-    .select({ gc: services.globalCommission })
+    .select({ gc: services.globalCommission, price: services.price })
     .from(services)
     .where(eq(services.id, serviceId))
     .limit(1);
 
   const serviceGlobalCommission = svcRow.length > 0 ? svcRow[0].gc : 0;
+  const servicePrice = svcRow.length > 0 ? svcRow[0].price : 0;
 
   // 3. Flat Rate
   const thRow = await dbInstance
@@ -84,6 +94,7 @@ export async function calculateTherapistCommission(
     overrideCommission,
     serviceGlobalCommission,
     therapistCommissionRate,
+    servicePrice,
     qty
   });
 }

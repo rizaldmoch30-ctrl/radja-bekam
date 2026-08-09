@@ -79,4 +79,43 @@ test("Sistem Komisi Terapis - Hierarki", async (t) => {
     assert.equal(result, 0, "Layanan dengan Qty 0 tidak boleh menghasilkan komisi");
   });
 
+  await t.test("Percentage: Jika override <= 100, hitung sebagai persentase", () => {
+    const result = calculateCommissionAmount({
+      overrideCommission: 50,
+      servicePrice: 200000,
+      qty: 1
+    });
+    assert.equal(result, 100000, "Gagal menghitung persentase untuk overrideCommission <= 100");
+  });
+
+  await t.test("Percentage: Jika global <= 100, hitung sebagai persentase", () => {
+    const result = calculateCommissionAmount({
+      overrideCommission: null,
+      serviceGlobalCommission: 40,
+      servicePrice: 200000,
+      qty: 1
+    });
+    assert.equal(result, 80000, "Gagal menghitung persentase untuk serviceGlobalCommission <= 100");
+  });
+
+  await t.test("Percentage: Jika therapist rate <= 100, hitung sebagai persentase", () => {
+    const result = calculateCommissionAmount({
+      overrideCommission: null,
+      serviceGlobalCommission: 0,
+      therapistCommissionRate: 30,
+      servicePrice: 200000,
+      qty: 1
+    });
+    assert.equal(result, 60000, "Gagal menghitung persentase untuk therapistCommissionRate <= 100");
+  });
+
+  await t.test("Percentage: Perkalian Qty untuk persentase", () => {
+    const result = calculateCommissionAmount({
+      overrideCommission: 50,
+      servicePrice: 200000,
+      qty: 3
+    });
+    assert.equal(result, 300000, "Gagal mengkalikan qty untuk persentase");
+  });
+
 });

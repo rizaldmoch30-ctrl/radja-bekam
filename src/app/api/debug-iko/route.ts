@@ -1,27 +1,28 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { patientVisits, patients, services, therapists } from "@/lib/db/schema";
-import { eq, like, and } from "drizzle-orm";
+import { patientVisits, services, therapistCommissions, therapists } from "@/lib/db/schema";
+import { eq, ilike } from "drizzle-orm";
 
 export async function GET(request: Request) {
   try {
-    const visits = await db.select({
-      visitId: patientVisits.id,
-      date: patientVisits.visitDate,
-      patientName: patients.name,
-      serviceName: services.name,
-      therapistName: therapists.name,
-      price: services.price,
-      globalComm: services.globalCommission
-    })
-    .from(patientVisits)
-    .leftJoin(patients, eq(patientVisits.patientId, patients.id))
-    .leftJoin(services, eq(patientVisits.serviceId, services.id))
-    .leftJoin(therapists, eq(patientVisits.therapistId, therapists.id))
-    .where(and(like(patients.name, '%RIKO%'), eq(patientVisits.visitDate, '2026-08-01')));
-    
-    return NextResponse.json(visits);
+    const visits = await db
+      .select({
+        visitId: patientVisits.id,
+        serviceId: patientVisits.serviceId,
+        serviceName: services.name,
+        commAmount: therapistCommissions.amount,
+        therapistName: therapists.name,
+        visitDate: patientVisits.visitDate
+      })
+      .from(patientVisits)
+      .innerJoin(services, eq(patientVisits.serviceId, services.id))
+      .innerJoin(therapists, eq(patientVisits.therapistId, therapists.id))
+      .leftJoin(therapistCommissions, eq(patientVisits.id, therapistCommissions.visitId))
+      .where(ilike(therapists.name, "%MAS NUR FIQIH%"))
+      .limit(100);
+
+    return NextResponse.json({ visits });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error.message });
   }
 }

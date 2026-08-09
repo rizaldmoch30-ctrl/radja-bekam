@@ -22,9 +22,15 @@ export default function TherapistHistoryPage({ params }: { params: Promise<{ id:
   const unwrappedParams = use(params);
   const therapistId = unwrappedParams.id;
   
-  const [month, setMonth] = useState(() => {
+  const [startDate, setStartDate] = useState(() => {
     const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    d.setDate(1);
+    return d.toISOString().split("T")[0];
+  });
+  
+  const [endDate, setEndDate] = useState(() => {
+    const d = new Date();
+    return d.toISOString().split("T")[0];
   });
   
   const [data, setData] = useState<HistoryData[]>([]);
@@ -38,7 +44,7 @@ export default function TherapistHistoryPage({ params }: { params: Promise<{ id:
       setLoading(true);
       setError("");
       try {
-        const res = await fetch(`/api/therapists/${therapistId}/history?month=${month}`);
+        const res = await fetch(`/api/therapists/${therapistId}/history?startDate=${startDate}&endDate=${endDate}`);
         if (!res.ok) {
           const errData = await res.json();
           throw new Error(errData.error || "Gagal mengambil riwayat pasien");
@@ -57,7 +63,7 @@ export default function TherapistHistoryPage({ params }: { params: Promise<{ id:
     };
 
     fetchHistory();
-  }, [therapistId, month]);
+  }, [therapistId, startDate, endDate]);
 
   const formatRupiah = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -80,10 +86,11 @@ export default function TherapistHistoryPage({ params }: { params: Promise<{ id:
     }
   };
 
-  const getMonthReadable = (monthCode: string) => {
-    if (!monthCode) return "";
-    const [y, m] = monthCode.split("-");
-    return new Date(parseInt(y), parseInt(m) - 1, 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+  const getPeriodReadable = () => {
+    if (!startDate || !endDate) return "";
+    const start = new Date(startDate).toLocaleDateString("id-ID", { day: 'numeric', month: "short", year: "numeric" });
+    const end = new Date(endDate).toLocaleDateString("id-ID", { day: 'numeric', month: "short", year: "numeric" });
+    return start === end ? start : `${start} - ${end}`;
   };
 
   return (
@@ -103,13 +110,20 @@ export default function TherapistHistoryPage({ params }: { params: Promise<{ id:
           description={therapist ? `Transparansi tindakan & komisi untuk Terapis: ${therapist.name}` : "Memuat detail terapis..."}
           icon={FileText}
           rightContent={
-            <div className="relative">
-              <Calendar className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            <div className="flex items-center gap-2 bg-white border border-gray-200 shadow-sm rounded-xl px-2 py-1.5 focus-within:ring-2 focus-within:ring-teal-500/20 transition-all">
+              <Calendar className="w-4 h-4 text-gray-400 ml-2" />
               <input
-                type="month"
-                value={month}
-                onChange={(e) => setMonth(e.target.value)}
-                className="pl-9 pr-4 py-2.5 bg-white border border-gray-200 text-gray-900 rounded-xl focus:ring-2 focus:ring-teal-500/20 text-sm outline-none cursor-pointer w-full sm:w-auto transition-all shadow-sm"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="bg-transparent border-none focus:outline-none text-gray-900 font-medium text-sm cursor-pointer"
+              />
+              <span className="text-gray-400 font-bold px-1">-</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="bg-transparent border-none focus:outline-none text-gray-900 font-medium text-sm cursor-pointer"
               />
             </div>
           }
@@ -132,7 +146,7 @@ export default function TherapistHistoryPage({ params }: { params: Promise<{ id:
                   </div>
                   <div>
                     <h3 className="text-gray-500 text-xs font-bold uppercase tracking-wider">Total Pasien</h3>
-                    <p className="text-xs font-medium text-gray-400">Periode {getMonthReadable(month)}</p>
+                    <p className="text-xs font-medium text-gray-400">Periode {getPeriodReadable()}</p>
                   </div>
                 </div>
                 <div className="mt-2 relative z-10">
@@ -188,7 +202,7 @@ export default function TherapistHistoryPage({ params }: { params: Promise<{ id:
                         <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
                           <div className="flex flex-col items-center justify-center">
                             <Clock className="w-10 h-10 text-gray-300 mb-3" />
-                            <p className="font-medium text-gray-600">Belum ada pasien di bulan ini</p>
+                            <p className="font-medium text-gray-600">Belum ada pasien di periode ini</p>
                             <p className="text-sm mt-1">Data penanganan akan otomatis muncul setelah kunjungan selesai.</p>
                           </div>
                         </td>

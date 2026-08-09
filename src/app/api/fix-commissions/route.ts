@@ -24,7 +24,7 @@ export async function GET() {
       })
       .from(therapistCommissions)
       .innerJoin(patientVisits, eq(therapistCommissions.visitId, patientVisits.id))
-      .innerJoin(services, eq(patientVisits.serviceId, services.id));
+      .leftJoin(services, eq(patientVisits.serviceId, services.id));
 
     let fixedCount = 0;
     const details = [];

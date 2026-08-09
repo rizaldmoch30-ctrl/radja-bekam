@@ -9,7 +9,7 @@ import PageHeader from "@/components/layout/PageHeader";
 export default function AdminSettingsPage() {
   const router = useRouter();
   const [session, setSession] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState("company"); // "company" | "admins"
+  const [activeTab, setActiveTab] = useState("company"); // "company" | "admins" | "system"
   
   // Loading & Saving States
   const [loading, setLoading] = useState(true);
@@ -367,6 +367,13 @@ export default function AdminSettingsPage() {
                 >
                   <Users className="w-4 h-4" />
                   Sesi Admin
+                </button>
+                <button
+                  onClick={() => setActiveTab("system")}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === "system" ? "bg-white text-blue-900 shadow-md" : "text-white/80 hover:text-white hover:bg-white/10"}`}
+                >
+                  <Shield className="w-4 h-4" />
+                  Perawatan Sistem
                 </button>
               </div>
             ) : undefined
@@ -832,6 +839,47 @@ export default function AdminSettingsPage() {
               </div>
             </div>
 
+          </div>
+        )}
+
+        {/* TAB 3: System Maintenance */}
+        {activeTab === "system" && session?.role === "SUPER_ADMIN" && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden p-6 md:p-8">
+            <h3 className="text-lg font-bold border-b pb-2 text-gray-800 flex items-center gap-2 mb-6">
+              <Shield className="w-5 h-5 text-red-500" /> Perawatan Sistem
+            </h3>
+            <div className="space-y-6">
+              <div className="bg-orange-50 border border-orange-200 p-5 rounded-xl">
+                <h4 className="font-bold text-orange-800 mb-2">Perbaikan Data Komisi (Historical Data Fix)</h4>
+                <p className="text-sm text-orange-700 mb-4">
+                  Gunakan fitur ini jika Anda baru saja mengubah aturan perhitungan komisi dan ingin menerapkan perhitungan baru tersebut ke seluruh data transaksi di masa lalu.
+                  Aksi ini akan menghitung ulang komisi berdasarkan konfigurasi terbaru.
+                </p>
+                <button
+                  onClick={async () => {
+                    if (!confirm("Apakah Anda yakin ingin memperbaiki seluruh data komisi? Proses ini tidak dapat dibatalkan.")) return;
+                    setSaving(true);
+                    try {
+                      const res = await fetch("/api/fix-commissions");
+                      const data = await res.json();
+                      if (data.success) {
+                        alert(data.message);
+                      } else {
+                        alert("Gagal: " + data.error);
+                      }
+                    } catch (err) {
+                      alert("Terjadi kesalahan koneksi.");
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                  disabled={saving}
+                  className="bg-orange-600 hover:bg-orange-700 text-white font-bold px-4 py-2.5 rounded-lg text-sm transition-colors"
+                >
+                  {saving ? "Memproses..." : "Jalankan Perbaikan Komisi"}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

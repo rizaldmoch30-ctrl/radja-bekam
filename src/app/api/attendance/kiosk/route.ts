@@ -55,8 +55,26 @@ export async function POST(request: Request) {
     let action = "";
 
     if (existing.length > 0) {
-      // They already have an attendance record today
-      return NextResponse.json({ error: "Anda sudah melakukan absensi hari ini." }, { status: 400 });
+      const record = existing[0];
+      
+      if (!record.clockIn) {
+        // Dummy record exists, update clock in
+        await db.update(attendance).set({
+          clockIn: currentTime,
+          status: currentTime > "09:00" ? "LATE" : "PRESENT",
+          photoUrl: photoUrl,
+        }).where(eq(attendance.id, record.id));
+        action = "Clock In";
+      } else if (!record.clockOut) {
+        // Clock out
+        await db.update(attendance).set({
+          clockOut: currentTime,
+        }).where(eq(attendance.id, record.id));
+        action = "Clock Out";
+      } else {
+        // Both exist
+        return NextResponse.json({ error: "Anda sudah melakukan absensi masuk dan keluar hari ini." }, { status: 400 });
+      }
     } else {
       // Create new record (Clock In)
       const id = `ATT-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;

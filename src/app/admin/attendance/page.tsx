@@ -58,7 +58,7 @@ export default function AttendancePage() {
   const fetchAttendance = useCallback(async (targetDate: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/attendance?date=${targetDate}`);
+      const res = await fetch(`/api/attendance?date=${targetDate}&_t=${Date.now()}`, { cache: 'no-store' });
       if (res.ok) {
         const json = await res.json();
         setRecords(json.data || []);

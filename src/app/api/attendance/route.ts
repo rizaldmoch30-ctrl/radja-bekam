@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { attendance, therapists } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getSession, getActiveBranchFilter } from "@/lib/auth";
+import { getJakartaDateString } from "@/lib/utils";
 
 export async function GET(request: Request) {
   try {
@@ -11,7 +12,7 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const dateParam = searchParams.get("date") || new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
+    const dateParam = searchParams.get("date") || getJakartaDateString();
     
     // Use query param if provided, otherwise fallback to global cookie
     let branchFilter = await getActiveBranchFilter();

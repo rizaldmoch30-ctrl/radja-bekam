@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Calendar, Users, Camera, UserCheck, Play, Image as ImageIcon, Search, Store } from "lucide-react";
 import PageHeader from "@/components/layout/PageHeader";
 import Image from "next/image";
+import { getJakartaDateString } from "@/lib/utils";
 
 type AttendanceRecord = {
   therapistId: string;
@@ -21,7 +22,7 @@ type AttendanceRecord = {
 
 export default function AttendancePage() {
   const router = useRouter();
-  const [date, setDate] = useState(() => new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" }));
+  const [date, setDate] = useState(() => getJakartaDateString());
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);

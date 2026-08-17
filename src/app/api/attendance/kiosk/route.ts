@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { attendance, therapists, branches } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
+import { getJakartaDateString, getJakartaTimeString } from "@/lib/utils";
 export async function POST(request: Request) {
   try {
     const session = await getSession();
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Anda hanya bisa mengakses Kiosk untuk cabang Anda." }, { status: 403 });
     }
 
-    const dateStr = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
+    const dateStr = getJakartaDateString();
     const photoUrl = photoBase64; // Save directly as base64 string to avoid EROFS in serverless environments
 
     // 3. Update or Insert Attendance Record
@@ -49,7 +50,7 @@ export async function POST(request: Request) {
       )
       .limit(1);
 
-    const currentTime = new Date().toLocaleTimeString("sv-SE", { timeZone: "Asia/Jakarta", hour: "2-digit", minute: "2-digit" });
+    const currentTime = getJakartaTimeString();
 
     let action = "";
 

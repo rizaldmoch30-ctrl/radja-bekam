@@ -28,6 +28,15 @@ export default function AdminLabaRugiPage() {
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState<string>("ALL");
+  const [filterMode, setFilterMode] = useState<"period" | "custom">("period");
+  const [customStartDate, setCustomStartDate] = useState<string>(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+  });
+  const [customEndDate, setCustomEndDate] = useState<string>(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  });
   const [investorPercentage, setInvestorPercentage] = useState<number>(0);
   const [managementPercentage, setManagementPercentage] = useState<number>(0);
   const [penyusutanModalInvestor, setPenyusutanModalInvestor] = useState<number>(0);
@@ -47,14 +56,18 @@ export default function AdminLabaRugiPage() {
   const fetchTransactions = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/finance?startDate=${selectedYear}-01-01&endDate=${selectedYear}-12-31`);
+      let url = `/api/finance?startDate=${selectedYear}-01-01&endDate=${selectedYear}-12-31`;
+      if (filterMode === "custom") {
+        url = `/api/finance?startDate=${customStartDate}&endDate=${customEndDate}`;
+      }
+      const res = await fetch(url);
       if (res.ok) setTransactions(await res.json());
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [selectedYear]);
+  }, [selectedYear, filterMode, customStartDate, customEndDate]);
 
   // Fetch previous year data when January is selected (for Dec comparison)
   const fetchPrevYearTransactions = useCallback(async () => {
@@ -84,15 +97,17 @@ export default function AdminLabaRugiPage() {
   const MONTH_NAMES = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 
   const filteredTransactions = useMemo(() => {
+    if (filterMode === "custom") return transactions;
     if (selectedMonth === "ALL") return transactions;
     return transactions.filter(t => {
       const d = new Date(t.date);
       return d.getMonth() + 1 === parseInt(selectedMonth);
     });
-  }, [transactions, selectedMonth]);
+  }, [transactions, selectedMonth, filterMode]);
 
   // Get previous month transactions for comparison
   const prevMonthTransactions = useMemo(() => {
+    if (filterMode === "custom") return [];
     if (selectedMonth === "ALL") return [];
     const currentMonth = parseInt(selectedMonth);
     if (currentMonth === 1) {
@@ -106,7 +121,7 @@ export default function AdminLabaRugiPage() {
       const d = new Date(t.date);
       return d.getMonth() + 1 === currentMonth - 1;
     });
-  }, [transactions, prevYearTransactions, selectedMonth]);
+  }, [transactions, prevYearTransactions, selectedMonth, filterMode]);
 
   // ──────────────────────────────────────────────────────────────────────────
   // LOGIKA SESUAI FOTO:
@@ -265,7 +280,7 @@ export default function AdminLabaRugiPage() {
   // ── Export ────────────────────────────────────────────────────────────────
   const getExportData = () => [
     ["Laporan Laba Rugi"],
-    [`Tahun: ${selectedYear}`, `Bulan: ${selectedMonth === "ALL" ? "Semua Bulan" : selectedMonth}`],
+    [filterMode === "custom" ? `Periode: ${customStartDate} s/d ${customEndDate}` : `Tahun: ${selectedYear}`, filterMode === "custom" ? "" : `Bulan: ${selectedMonth === "ALL" ? "Semua Bulan" : selectedMonth}`],
     [""],
     ["Keterangan", "Nominal"],
     ["PENDAPATAN USAHA", ""],
@@ -294,7 +309,7 @@ export default function AdminLabaRugiPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `Laba_Rugi_${selectedYear}_${selectedMonth}.csv`);
+    link.setAttribute("download", `Laba_Rugi_${filterMode === "custom" ? `${customStartDate}_${customEndDate}` : `${selectedYear}_${selectedMonth}`}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -305,7 +320,7 @@ export default function AdminLabaRugiPage() {
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet(getExportData());
     XLSX.utils.book_append_sheet(wb, ws, "Laba Rugi");
-    XLSX.writeFile(wb, `Laba_Rugi_${selectedYear}_${selectedMonth}.xlsx`);
+    XLSX.writeFile(wb, `Laba_Rugi_${filterMode === "custom" ? `${customStartDate}_${customEndDate}` : `${selectedYear}_${selectedMonth}`}.xlsx`);
     setIsExportMenuOpen(false);
   };
 
@@ -314,7 +329,7 @@ export default function AdminLabaRugiPage() {
     doc.setFontSize(16);
     doc.text("Laporan Laba Rugi", 14, 20);
     doc.setFontSize(11);
-    doc.text(`Tahun: ${selectedYear} | Bulan: ${selectedMonth === "ALL" ? "Semua Bulan" : selectedMonth}`, 14, 28);
+    doc.text(filterMode === "custom" ? `Periode: ${customStartDate} s/d ${customEndDate}` : `Tahun: ${selectedYear} | Bulan: ${selectedMonth === "ALL" ? "Semua Bulan" : selectedMonth}`, 14, 28);
 
     const rows = getExportData().slice(4);
     const tableBody = rows
@@ -338,7 +353,7 @@ export default function AdminLabaRugiPage() {
       columnStyles: { 0: { cellWidth: 120 }, 1: { cellWidth: 60, halign: "right" } },
     });
 
-    doc.save(`Laba_Rugi_${selectedYear}_${selectedMonth}.pdf`);
+    doc.save(`Laba_Rugi_${filterMode === "custom" ? `${customStartDate}_${customEndDate}` : `${selectedYear}_${selectedMonth}`}.pdf`);
     setIsExportMenuOpen(false);
   };
 
@@ -352,35 +367,72 @@ export default function AdminLabaRugiPage() {
           icon={FileText}
           rightContent={
             <div className="flex gap-3 flex-wrap items-center justify-end">
-              {/* Filter Tahun */}
-              <div className="relative group">
-                <select
-                  value={selectedYear}
-                  onChange={e => setSelectedYear(parseInt(e.target.value))}
-                  className="pl-4 pr-10 py-2.5 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-gray-700 font-bold text-sm transition-all cursor-pointer appearance-none hover:border-emerald-300"
+              {/* Filter Mode Toggle */}
+              <div className="flex bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl p-1">
+                <button
+                  onClick={() => setFilterMode("period")}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${filterMode === "period" ? "bg-emerald-100 text-emerald-700" : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"}`}
                 >
-                  {[...Array(5)].map((_, i) => {
-                    const y = new Date().getFullYear() - i;
-                    return <option key={y} value={y}>{y}</option>;
-                  })}
-                </select>
-                <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-emerald-500 transition-colors" />
+                  Bulanan
+                </button>
+                <button
+                  onClick={() => setFilterMode("custom")}
+                  className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${filterMode === "custom" ? "bg-emerald-100 text-emerald-700" : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"}`}
+                >
+                  Rentang Waktu
+                </button>
               </div>
 
-              {/* Filter Bulan */}
-              <div className="relative group">
-                <select
-                  value={selectedMonth}
-                  onChange={e => setSelectedMonth(e.target.value)}
-                  className="pl-4 pr-10 py-2.5 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-gray-700 font-bold text-sm transition-all cursor-pointer appearance-none hover:border-emerald-300"
-                >
-                  <option value="ALL">Semua Bulan</option>
-                  {["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"].map((m, i) => (
-                    <option key={i + 1} value={String(i + 1)}>{m}</option>
-                  ))}
-                </select>
-                <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-emerald-500 transition-colors" />
-              </div>
+              {/* Dynamic Filters based on Mode */}
+              {filterMode === "period" ? (
+                <>
+                  {/* Filter Tahun */}
+                  <div className="relative group">
+                    <select
+                      value={selectedYear}
+                      onChange={e => setSelectedYear(parseInt(e.target.value))}
+                      className="pl-4 pr-10 py-2.5 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-gray-700 font-bold text-sm transition-all cursor-pointer appearance-none hover:border-emerald-300"
+                    >
+                      {[...Array(5)].map((_, i) => {
+                        const y = new Date().getFullYear() - i;
+                        return <option key={y} value={y}>{y}</option>;
+                      })}
+                    </select>
+                    <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-emerald-500 transition-colors" />
+                  </div>
+
+                  {/* Filter Bulan */}
+                  <div className="relative group">
+                    <select
+                      value={selectedMonth}
+                      onChange={e => setSelectedMonth(e.target.value)}
+                      className="pl-4 pr-10 py-2.5 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-gray-700 font-bold text-sm transition-all cursor-pointer appearance-none hover:border-emerald-300"
+                    >
+                      <option value="ALL">Semua Bulan</option>
+                      {["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"].map((m, i) => (
+                        <option key={i + 1} value={String(i + 1)}>{m}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-emerald-500 transition-colors" />
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl px-3 py-1.5 h-[42px]">
+                  <input
+                    type="date"
+                    value={customStartDate}
+                    onChange={e => setCustomStartDate(e.target.value)}
+                    className="bg-transparent focus:outline-none text-gray-700 font-bold text-sm cursor-pointer"
+                  />
+                  <span className="text-gray-400 font-bold">-</span>
+                  <input
+                    type="date"
+                    value={customEndDate}
+                    onChange={e => setCustomEndDate(e.target.value)}
+                    className="bg-transparent focus:outline-none text-gray-700 font-bold text-sm cursor-pointer"
+                  />
+                </div>
+              )}
 
               {/* Bagi Hasil Investor */}
               <div className="flex items-center gap-2 bg-white/80 backdrop-blur-md border border-gray-200/60 shadow-[0_2px_10px_rgb(0,0,0,0.02)] rounded-xl px-4 py-2 hover:border-emerald-200 transition-colors">
